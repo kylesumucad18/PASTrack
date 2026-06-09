@@ -507,10 +507,7 @@ document.addEventListener("DOMContentLoaded", function () {
     volGrad.addColorStop(0, 'rgba(59, 130, 246, 0.22)');
     volGrad.addColorStop(1, 'rgba(59, 130, 246, 0)');
 
-    const volumeData = {
-        weekly:  { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], data: [12, 18, 14, 22, 16, 8, 4],  max: 30  },
-        monthly: { labels: ['Week 1','Week 2','Week 3','Week 4'],       data: [68, 82, 75, 88],            max: 120 }
-    };
+    const volumeData = {{ volume_chart_data|safe }};
 
     const volChart = new Chart(ctxVol, {
         type: 'line',
@@ -541,7 +538,7 @@ document.addEventListener("DOMContentLoaded", function () {
             },
             scales: {
                 y: {
-                    beginAtZero: true, suggestedMax: 30,
+                    beginAtZero: true, suggestedMax: volumeData.weekly.max,
                     ticks: { color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
                     border: { display: false }, grid: { color: 'rgba(226,232,240,0.5)' }
                 },
@@ -565,26 +562,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // ==========================================
     // 2. NUMBERING BREAKDOWN DOUGHNUT
     // ==========================================
-    const breakdownData = {
-        all: {
-            labels: ['Consolidation', 'Subdivision', 'Transfer', 'Annotation'],
-            data: [84, 56, 92, 68],
-            colors: ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981'],
-            total: 300, centerLabel: 'Total Cases'
-        },
-        by_lgu: {
-            labels: ['Cebu City', 'Consolacion', 'Liloan', 'Others'],
-            data: [120, 65, 55, 60],
-            colors: ['#0ea5e9', '#8b5cf6', '#f97316', '#94a3b8'],
-            total: 300, centerLabel: 'By LGU'
-        },
-        by_status: {
-            labels: ['Numbered', 'Pending', 'In Progress'],
-            data: [210, 45, 45],
-            colors: ['#10b981', '#f59e0b', '#3b82f6'],
-            total: 300, centerLabel: 'By Status'
-        }
-    };
+    const breakdownData = {{ breakdown_chart_data|safe }};
 
     const ctxBreak = document.getElementById('breakdownChart').getContext('2d');
     const breakChart = new Chart(ctxBreak, {

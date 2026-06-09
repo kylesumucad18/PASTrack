@@ -1635,14 +1635,120 @@ def dashboard(request):
 
     elif user.role == "capitol_approver":
         today = timezone.localdate()
+        
+        # Filter Logic
+        q = (request.GET.get("q") or "").strip()
+        case_type_filter = (request.GET.get("case_type") or "").strip()
+        lgu_filter = (request.GET.get("lgu") or "").strip()
+        
+        base_qs = Case.objects.filter(status="for_approval")
+        
+        if q:
+            base_qs = base_qs.filter(Q(tracking_id__icontains=q) | Q(client_name__icontains=q))
+        if case_type_filter:
+            base_qs = base_qs.filter(case_type=case_type_filter)
+        if lgu_filter:
+            base_qs = base_qs.filter(submitted_by__lgu_municipality=lgu_filter)
 
+        # 1. KPIs
         stats_pending_approval = Case.objects.filter(status="for_approval").count()
         stats_approved_today = AuditLog.objects.filter(actor=user, action="case_approval", created_at__date=today).count()
         stats_total_signed = AuditLog.objects.filter(actor=user, action="case_approval").count()
         stats_cases_denied = AuditLog.objects.filter(actor=user, action="case_status_change", details__new_status="in_review").count()
 
-        qs = Case.objects.filter(status="for_approval").select_related("assigned_to", "submitted_by").order_by("updated_at")
-        paginator = Paginator(qs, 10)
+        # Calculate Avg Approval Time (hours)
+        avg_approval_time = 0
+        recent_approved = AuditLog.objects.filter(actor=user, action="case_approval").order_by("-created_at")[:20]
+        if recent_approved.exists():
+            total_seconds = 0
+            count = 0
+            for log in recent_approved:
+                tracking_id = log.target_object.replace("Case: ", "")
+                forwarded_log = AuditLog.objects.filter(
+                    target_object=f"Case: {tracking_id}",
+                    action="case_status_change",
+                    details__new_status="for_approval"
+                ).order_by("-created_at").first()
+                if forwarded_log:
+                    delta = log.created_at - forwarded_log.created_at
+                    total_seconds += delta.total_seconds()
+                    count += 1
+            if count > 0:
+                avg_approval_time = round(total_seconds / (count * 3600), 1)
+
+        # 2. Volume Chart Data
+        # Weekly
+        week_start = today - timedelta(days=today.weekday())
+        weekly_labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        weekly_data = [0]*7
+        for i in range(7):
+            day = week_start + timedelta(days=i)
+            weekly_data[i] = AuditLog.objects.filter(actor=user, action="case_approval", created_at__date=day).count()
+        
+        # Monthly
+        month_start = today.replace(day=1)
+        monthly_labels = ['Week 1','Week 2','Week 3','Week 4']
+        monthly_data = [0]*4
+        for week_num in range(4):
+            ws = month_start + timedelta(weeks=week_num)
+            we = ws + timedelta(days=6)
+            monthly_data[week_num] = AuditLog.objects.filter(
+                actor=user, action="case_approval", 
+                created_at__date__gte=ws, created_at__date__lte=we
+            ).count()
+        
+        volume_chart_data = {
+            "weekly": {"labels": weekly_labels, "data": weekly_data, "max": max(weekly_data + [10])},
+            "monthly": {"labels": monthly_labels, "data": monthly_data, "max": max(monthly_data + [20])}
+        }
+
+        # 3. Breakdown Chart Data
+        # By Status
+        status_raw = list(Case.objects.filter(assigned_to=user).values("status").annotate(count=Count("id")))
+        status_labels_map = dict(Case.STATUS_CHOICES)
+        status_data = {
+            "labels": [status_labels_map.get(r["status"], r["status"]) for r in status_raw],
+            "data": [r["count"] for r in status_raw],
+            "colors": ['#3b82f6', '#22c55e', '#ef4444', '#f59e0b', '#8b5cf6', '#10b981', '#0ea5e9', '#64748b'][:len(status_raw)],
+            "total": sum(r["count"] for r in status_raw),
+            "centerLabel": "By Status"
+        }
+        if not status_data["labels"]:
+            status_data = {"labels": ["No Data"], "data": [0], "colors": ["#e2e8f0"], "total": 0, "centerLabel": "By Status"}
+
+        # By Type
+        type_raw = list(Case.objects.filter(assigned_to=user).values("case_type").annotate(count=Count("id")))
+        type_labels_map = dict(Case.CASE_TYPE_CHOICES)
+        type_data = {
+            "labels": [type_labels_map.get(r["case_type"], r["case_type"])[:15] + "..." if len(type_labels_map.get(r["case_type"], r["case_type"])) > 15 else type_labels_map.get(r["case_type"], r["case_type"]) for r in type_raw],
+            "data": [r["count"] for r in type_raw],
+            "colors": ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#0ea5e9'][:len(type_raw)],
+            "total": sum(r["count"] for r in type_raw),
+            "centerLabel": "By Type"
+        }
+        if not type_data["labels"]:
+            type_data = {"labels": ["No Data"], "data": [0], "colors": ["#e2e8f0"], "total": 0, "centerLabel": "By Type"}
+
+        # By Examiner
+        examiner_raw = list(Case.objects.filter(status="for_approval").values("assigned_to__full_name", "assigned_to__email").annotate(count=Count("id")))
+        examiner_data = {
+            "labels": [r["assigned_to__full_name"] or r["assigned_to__email"] or "Unknown" for r in examiner_raw],
+            "data": [r["count"] for r in examiner_raw],
+            "colors": ['#0ea5e9', '#8b5cf6', '#f97316', '#94a3b8', '#10b981', '#ef4444'][:len(examiner_raw)],
+            "total": sum(r["count"] for r in examiner_raw),
+            "centerLabel": "By Examiner"
+        }
+        if not examiner_data["labels"]:
+            examiner_data = {"labels": ["No Data"], "data": [0], "colors": ["#e2e8f0"], "total": 0, "centerLabel": "By Examiner"}
+
+        breakdown_chart_data = {
+            "all": status_data,
+            "by_type": type_data,
+            "by_examiner": examiner_data
+        }
+
+        # 4. Table Queue
+        paginator = Paginator(base_qs.select_related("assigned_to", "submitted_by").order_by("updated_at"), 10)
         page_obj = paginator.get_page(request.GET.get("page") or 1)
 
         approved_logs = AuditLog.objects.filter(actor=user, action="case_approval", created_at__date=today).order_by("-created_at")[:5]
@@ -1663,9 +1769,17 @@ def dashboard(request):
             "stats_approved_today": stats_approved_today,
             "stats_total_signed": stats_total_signed,
             "stats_cases_denied": stats_cases_denied,
+            "stats_avg_approval_time": avg_approval_time,
+            "volume_chart_data": volume_chart_data,
+            "breakdown_chart_data": breakdown_chart_data,
             "page_obj": page_obj,
             "approved_today_cases": approved_today_cases,
             "staff_activity": staff_activity,
+            "case_type_choices": Case.CASE_TYPE_CHOICES,
+            "lgu_choices": CustomUser.LGU_MUNICIPALITY_CHOICES,
+            "filter_q": q,
+            "filter_case_type": case_type_filter,
+            "filter_lgu": lgu_filter,
         })
         template = "core/dashboard_approver.html"
 
@@ -1729,6 +1843,77 @@ def dashboard(request):
         stats_numbered_total = qs_numbered.count()
         stats_numbered_today = AuditLog.objects.filter(actor=user, action="case_numbered", created_at__date=today).count()
 
+        # 1. Volume Chart Data
+        # Weekly
+        week_start = today - timedelta(days=today.weekday())
+        weekly_labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        weekly_data = [0]*7
+        for i in range(7):
+            day = week_start + timedelta(days=i)
+            weekly_data[i] = AuditLog.objects.filter(actor=user, action="case_numbered", created_at__date=day).count()
+        
+        # Monthly
+        month_start = today.replace(day=1)
+        monthly_labels = ['Week 1','Week 2','Week 3','Week 4']
+        monthly_data = [0]*4
+        for week_num in range(4):
+            ws = month_start + timedelta(weeks=week_num)
+            we = ws + timedelta(days=6)
+            monthly_data[week_num] = AuditLog.objects.filter(
+                actor=user, action="case_numbered", 
+                created_at__date__gte=ws, created_at__date__lte=we
+            ).count()
+        
+        volume_chart_data = {
+            "weekly": {"labels": weekly_labels, "data": weekly_data, "max": max(weekly_data + [15])},
+            "monthly": {"labels": monthly_labels, "data": monthly_data, "max": max(monthly_data + [50])}
+        }
+
+        # 2. Breakdown Chart Data
+        # By Type
+        type_raw = list(Case.objects.filter(td_number__isnull=False).values("case_type").annotate(count=Count("id")))
+        type_labels_map = dict(Case.CASE_TYPE_CHOICES)
+        type_data = {
+            "labels": [type_labels_map.get(r["case_type"], r["case_type"])[:15] + "..." if len(type_labels_map.get(r["case_type"], r["case_type"])) > 15 else type_labels_map.get(r["case_type"], r["case_type"]) for r in type_raw],
+            "data": [r["count"] for r in type_raw],
+            "colors": ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#0ea5e9'][:len(type_raw)],
+            "total": sum(r["count"] for r in type_raw),
+            "centerLabel": "By Type"
+        }
+        if not type_data["labels"]:
+            type_data = {"labels": ["No Data"], "data": [0], "colors": ["#e2e8f0"], "total": 0, "centerLabel": "By Type"}
+
+        # By LGU
+        lgu_raw = list(Case.objects.filter(td_number__isnull=False).values("submitted_by__lgu_municipality").annotate(count=Count("id")))
+        lgu_data = {
+            "labels": [r["submitted_by__lgu_municipality"] or "Unknown" for r in lgu_raw],
+            "data": [r["count"] for r in lgu_raw],
+            "colors": ['#0ea5e9', '#8b5cf6', '#f97316', '#94a3b8', '#10b981', '#ef4444'][:len(lgu_raw)],
+            "total": sum(r["count"] for r in lgu_raw),
+            "centerLabel": "By LGU"
+        }
+        if not lgu_data["labels"]:
+            lgu_data = {"labels": ["No Data"], "data": [0], "colors": ["#e2e8f0"], "total": 0, "centerLabel": "By LGU"}
+
+        # By Status
+        status_raw = list(Case.objects.filter(status__in=["for_numbering", "for_release", "released"]).values("status").annotate(count=Count("id")))
+        status_labels_map = dict(Case.STATUS_CHOICES)
+        status_data = {
+            "labels": [status_labels_map.get(r["status"], r["status"]) for r in status_raw],
+            "data": [r["count"] for r in status_raw],
+            "colors": ['#10b981', '#f59e0b', '#3b82f6', '#8b5cf6', '#ef4444'][:len(status_raw)],
+            "total": sum(r["count"] for r in status_raw),
+            "centerLabel": "By Status"
+        }
+        if not status_data["labels"]:
+            status_data = {"labels": ["No Data"], "data": [0], "colors": ["#e2e8f0"], "total": 0, "centerLabel": "By Status"}
+
+        breakdown_chart_data = {
+            "all": type_data,
+            "by_lgu": lgu_data,
+            "by_status": status_data
+        }
+
         sequences = list(LGUTaxDeclarationSequence.objects.all())
         featured_sequence = random.choice(sequences) if sequences else None
 
@@ -1746,6 +1931,8 @@ def dashboard(request):
             "featured_sequence": featured_sequence,
             "tab": tab,
             "stats_numbered_total": stats_numbered_total,
+            "volume_chart_data": volume_chart_data,
+            "breakdown_chart_data": breakdown_chart_data,
         })
         template = "core/dashboard_numberer.html"
 
@@ -1762,6 +1949,88 @@ def dashboard(request):
         stats_released_week = AuditLog.objects.filter(actor=user, action="case_released", created_at__date__gte=start_of_week).count()
         stats_total_released = AuditLog.objects.filter(actor=user, action="case_released").count()
 
+        # 1. Volume Chart Data
+        # Weekly
+        weekly_labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        weekly_data = [0]*7
+        for i in range(7):
+            day = start_of_week + timedelta(days=i)
+            weekly_data[i] = AuditLog.objects.filter(actor=user, action="case_released", created_at__date=day).count()
+        
+        # Monthly
+        month_start = today.replace(day=1)
+        monthly_labels = ['Week 1','Week 2','Week 3','Week 4']
+        monthly_data = [0]*4
+        for week_num in range(4):
+            ws = month_start + timedelta(weeks=week_num)
+            we = ws + timedelta(days=6)
+            monthly_data[week_num] = AuditLog.objects.filter(
+                actor=user, action="case_released", 
+                created_at__date__gte=ws, created_at__date__lte=we
+            ).count()
+        
+        volume_chart_data = {
+            "weekly": {"labels": weekly_labels, "data": weekly_data, "max": max(weekly_data + [10])},
+            "monthly": {"labels": monthly_labels, "data": monthly_data, "max": max(monthly_data + [40])}
+        }
+
+        # 2. Pipeline/Breakdown Chart Data
+        # All statuses
+        pipeline_all = {
+            "labels": ['For Release','Released Today','Released This Week','Total Dispatched'],
+            "data":   [stats_pending, stats_released_today, stats_released_week, stats_total_released],
+            "colors": ['#f59e0b','#059669','#6366f1','#0ea5e9'],
+            "total": stats_pending + stats_released_week,
+            "centerLabel": "Total Active"
+        }
+
+        # For Release by Type
+        for_release_raw = list(Case.objects.filter(status="for_release").values("case_type").annotate(count=Count("id")))
+        type_labels_map = dict(Case.CASE_TYPE_CHOICES)
+        for_release_data = {
+            "labels": [type_labels_map.get(r["case_type"], r["case_type"])[:15] for r in for_release_raw],
+            "data":   [r["count"] for r in for_release_raw],
+            "colors": ['#f59e0b','#fbbf24','#fcd34d','#fef3c7'][:len(for_release_raw)],
+            "total": stats_pending,
+            "centerLabel": "For Release"
+        }
+        if not for_release_data["labels"]:
+            for_release_data = {"labels": ["None"], "data": [0], "colors": ["#e2e8f0"], "total": 0, "centerLabel": "For Release"}
+
+        # Released Today (AM vs PM)
+        released_today_logs = AuditLog.objects.filter(actor=user, action="case_released", created_at__date=today)
+        am_count = 0
+        pm_count = 0
+        for log in released_today_logs:
+            if timezone.localtime(log.created_at).hour < 12:
+                am_count += 1
+            else:
+                pm_count += 1
+        
+        released_today_data = {
+            "labels": ['Morning','Afternoon'],
+            "data":   [am_count, pm_count],
+            "colors": ['#059669','#34d399'],
+            "total": stats_released_today,
+            "centerLabel": "Released Today"
+        }
+
+        # Released This Week (by day)
+        released_week_data = {
+            "labels": weekly_labels[:5], # Mon-Fri
+            "data":   weekly_data[:5],
+            "colors": ['#6366f1','#818cf8','#a5b4fc','#c7d2fe','#e0e7ff'],
+            "total": sum(weekly_data[:5]),
+            "centerLabel": "This Week"
+        }
+
+        pipeline_chart_data = {
+            "all": pipeline_all,
+            "for_release": for_release_data,
+            "released_today": released_today_data,
+            "released_week": released_week_data
+        }
+
         recent_activity = AuditLog.objects.filter(
             actor=user,
             action__in=["login", "logout", "case_released"]
@@ -1775,6 +2044,8 @@ def dashboard(request):
             "stats_released_week": stats_released_week,
             "stats_total_released": stats_total_released,
             "recent_activity": recent_activity,
+            "volume_chart_data": volume_chart_data,
+            "pipeline_chart_data": pipeline_chart_data,
         })
         template = "core/dashboard_releaser.html"
         

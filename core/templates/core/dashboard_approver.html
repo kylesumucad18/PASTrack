@@ -478,10 +478,7 @@ document.addEventListener("DOMContentLoaded", function () {
     volGrad.addColorStop(0, 'rgba(59, 130, 246, 0.22)');
     volGrad.addColorStop(1, 'rgba(59, 130, 246, 0)');
 
-    const volumeData = {
-        weekly:  { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], data: [5, 8, 6, 10, 7, 2, 1],  max: 15  },
-        monthly: { labels: ['Week 1','Week 2','Week 3','Week 4'],       data: [28, 35, 32, 38],            max: 50 }
-    };
+    const volumeData = {{ volume_chart_data|safe }};
 
     const volChart = new Chart(ctxVol, {
         type: 'line',
@@ -512,7 +509,7 @@ document.addEventListener("DOMContentLoaded", function () {
             },
             scales: {
                 y: {
-                    beginAtZero: true, suggestedMax: 15,
+                    beginAtZero: true, suggestedMax: volumeData.weekly.max,
                     ticks: { color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
                     border: { display: false }, grid: { color: 'rgba(226,232,240,0.5)' }
                 },
@@ -536,26 +533,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // ==========================================
     // 2. APPROVAL BREAKDOWN DOUGHNUT
     // ==========================================
-    const breakdownData = {
-        all: {
-            labels: ['Approved', 'Returned for Edits', 'Pending Review'],
-            data: [156, 18, 24],
-            colors: ['#22c55e', '#ef4444', '#3b82f6'],
-            total: 198, centerLabel: 'Total Cases'
-        },
-        by_type: {
-            labels: ['Consolidation', 'Subdivision', 'Transfer', 'Annotation'],
-            data: [58, 42, 64, 34],
-            colors: ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981'],
-            total: 198, centerLabel: 'By Type'
-        },
-        by_examiner: {
-            labels: ['Examiner A', 'Examiner B', 'Examiner C', 'Examiner D'],
-            data: [52, 48, 56, 42],
-            colors: ['#0ea5e9', '#8b5cf6', '#f97316', '#94a3b8'],
-            total: 198, centerLabel: 'By Examiner'
-        }
-    };
+    const breakdownData = {{ breakdown_chart_data|safe }};
 
     const ctxBreak = document.getElementById('breakdownChart').getContext('2d');
     const breakChart = new Chart(ctxBreak, {
