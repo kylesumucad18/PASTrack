@@ -1896,8 +1896,10 @@
                     </button>
                 </form>
                 <!-- Inline error message for tracking validation -->
-                <div id="trackErrorMsg" class="hidden w-full max-w-sm mt-3 opacity-0 -translate-y-2 transition-all duration-300 ease-out">
-                    <div class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/20 border border-red-400/30 backdrop-blur-sm">
+                <div id="trackErrorMsg"
+                    class="hidden w-full max-w-sm mt-3 opacity-0 -translate-y-2 transition-all duration-300 ease-out">
+                    <div
+                        class="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/20 border border-red-400/30 backdrop-blur-sm">
                         <i class="ri-error-warning-fill text-red-300 text-base"></i>
                         <span id="trackErrorText" class="text-red-200 text-sm font-medium"></span>
                     </div>
@@ -4488,7 +4490,7 @@
                         experience.
                     </p>
                     <p class="text-white text-sm font-semibold flex items-center gap-2"><i
-                            class="ri-mail-line text-slate-400"></i> pas@cebu.gov.ph</p>
+                            class="ri-mail-line text-slate-400"></i> cebuprovince.pas@cebu.gov.ph</p>
                 </div>
 
                 <div>
@@ -4517,7 +4519,7 @@
                                 class="ri-map-pin-line text-capitol-accent text-base mt-[-2px]"></i> Cebu Provincial
                             Capitol,<br>Escario St, Cebu City</li>
                         <li class="flex items-center gap-2"><i class="ri-phone-line text-capitol-accent text-base"></i>
-                            (032) 888-2328</li>
+                            (032) 888-2338</li>
                     </ul>
                 </div>
             </div>
@@ -4533,96 +4535,96 @@
 </html>
 
 <script>
-    (function () {
-        let hideTimer = null;
+        (function () {
+            let hideTimer = null;
 
-        const form = document.getElementById('trackingForm');
-        const input = document.getElementById('id_tracking');
-        const errorMsg = document.getElementById('trackErrorMsg');
-        const errorText = document.getElementById('trackErrorText');
-        const trackBtn = form ? form.querySelector('button[type="submit"]') : null;
+            const form = document.getElementById('trackingForm');
+            const input = document.getElementById('id_tracking');
+            const errorMsg = document.getElementById('trackErrorMsg');
+            const errorText = document.getElementById('trackErrorText');
+            const trackBtn = form ? form.querySelector('button[type="submit"]') : null;
 
-        function hideError() {
-            if (!errorMsg) return;
-            errorMsg.classList.remove('opacity-100', 'translate-y-0');
-            errorMsg.classList.add('opacity-0', '-translate-y-2');
-            setTimeout(function () {
-                errorMsg.classList.add('hidden');
-            }, 300);
-        }
-
-        function showError(msg) {
-            if (!errorMsg || !errorText) return;
-            // Clear any pending hide timer
-            if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
-            errorText.textContent = msg;
-            errorMsg.classList.remove('hidden');
-            // Trigger reflow for CSS transition
-            void errorMsg.offsetWidth;
-            errorMsg.classList.remove('opacity-0', '-translate-y-2');
-            errorMsg.classList.add('opacity-100', 'translate-y-0');
-            // Auto-hide after 4 seconds
-            hideTimer = setTimeout(hideError, 4000);
-        }
-
-        function setLoading(on) {
-            if (!trackBtn) return;
-            if (on) {
-                trackBtn.disabled = true;
-                trackBtn.dataset.origText = trackBtn.textContent;
-                trackBtn.innerHTML = '<i class="ri-loader-4-line animate-spin"></i>';
-            } else {
-                trackBtn.disabled = false;
-                trackBtn.textContent = trackBtn.dataset.origText || 'Track';
+            function hideError() {
+                if (!errorMsg) return;
+                errorMsg.classList.remove('opacity-100', 'translate-y-0');
+                errorMsg.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(function () {
+                    errorMsg.classList.add('hidden');
+                }, 300);
             }
-        }
 
-        // Hide error when user starts typing again
-        if (input) {
-            input.addEventListener('input', function () {
+            function showError(msg) {
+                if (!errorMsg || !errorText) return;
+                // Clear any pending hide timer
                 if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
-                hideError();
-            });
-        }
+                errorText.textContent = msg;
+                errorMsg.classList.remove('hidden');
+                // Trigger reflow for CSS transition
+                void errorMsg.offsetWidth;
+                errorMsg.classList.remove('opacity-0', '-translate-y-2');
+                errorMsg.classList.add('opacity-100', 'translate-y-0');
+                // Auto-hide after 4 seconds
+                hideTimer = setTimeout(hideError, 4000);
+            }
 
-        if (form) {
-            form.addEventListener('submit', function (e) {
-                e.preventDefault(); // Always prevent default — we handle navigation
-
-                var val = (input ? input.value : '').trim();
-
-                // 1. Blank validation
-                if (!val) {
-                    showError('Please enter your tracking number.');
-                    if (input) input.focus();
-                    return;
+            function setLoading(on) {
+                if (!trackBtn) return;
+                if (on) {
+                    trackBtn.disabled = true;
+                    trackBtn.dataset.origText = trackBtn.textContent;
+                    trackBtn.innerHTML = '<i class="ri-loader-4-line animate-spin"></i>';
+                } else {
+                    trackBtn.disabled = false;
+                    trackBtn.textContent = trackBtn.dataset.origText || 'Track';
                 }
+            }
 
-                // 2. AJAX lookup against Django backend
-                setLoading(true);
-                var url = form.getAttribute('action') + '?q=' + encodeURIComponent(val);
+            // Hide error when user starts typing again
+            if (input) {
+                input.addEventListener('input', function () {
+                    if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
+                    hideError();
+                });
+            }
 
-                fetch(url, {
-                    method: 'GET',
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                }).then(function (resp) {
-                    setLoading(false);
-                    if (resp.redirected) {
-                        // The server found the case and redirected — follow it
-                        window.location.href = resp.url;
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault(); // Always prevent default — we handle navigation
+
+                    var val = (input ? input.value : '').trim();
+
+                    // 1. Blank validation
+                    if (!val) {
+                        showError('Please enter your tracking number.');
+                        if (input) input.focus();
                         return;
                     }
-                    if (resp.status === 404 || resp.status === 200) {
-                        // 404 means not found, 200 without redirect means the track search page rendered (no match)
-                        showError('Tracking Number not found..');
-                    } else {
-                        showError('Something went wrong. Please try again.');
-                    }
-                }).catch(function () {
-                    setLoading(false);
-                    showError('Network error. Please check your connection.');
+
+                    // 2. AJAX lookup against Django backend
+                    setLoading(true);
+                    var url = form.getAttribute('action') + '?q=' + encodeURIComponent(val);
+
+                    fetch(url, {
+                        method: 'GET',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    }).then(function (resp) {
+                        setLoading(false);
+                        if (resp.redirected) {
+                            // The server found the case and redirected — follow it
+                            window.location.href = resp.url;
+                            return;
+                        }
+                        if (resp.status === 404 || resp.status === 200) {
+                            // 404 means not found, 200 without redirect means the track search page rendered (no match)
+                            showError('Tracking Number not found..');
+                        } else {
+                            showError('Something went wrong. Please try again.');
+                        }
+                    }).catch(function () {
+                        setLoading(false);
+                        showError('Network error. Please check your connection.');
+                    });
                 });
-            });
-        }
-    })();
+            }
+        })();
 </script>
