@@ -232,12 +232,19 @@
                     {% endfor %}
                 </select>
 
+                <select name="ownership_type" class="filter-select">
+                    <option value="all">All Ownership Types</option>
+                    {% for key, val in ownership_list %}
+                        <option value="{{ key }}" {% if selected_ownership_type == key %}selected{% endif %}>{{ val }}</option>
+                    {% endfor %}
+                </select>
+
                 <input type="date" name="date_from" class="filter-date" value="{{ selected_date_from }}" title="Date From">
                 <input type="date" name="date_to" class="filter-date" value="{{ selected_date_to }}" title="Date To">
             {% endif %}
 
             <!-- Clear Filters Button -->
-            {% if selected_search or selected_time_range != 'all' or selected_lgu != 'all' or selected_transaction_type != 'all' or selected_date_from or selected_date_to %}
+            {% if selected_search or selected_time_range != 'all' or selected_lgu != 'all' or selected_transaction_type != 'all' or selected_ownership_type != 'all' or selected_date_from or selected_date_to %}
                 <a href="?scope={{ scope }}&tab={{ tab }}" class="btn-outline" title="Clear Filters"><i class="ri-close-line" style="font-size: 1.2rem;"></i></a>
             {% endif %}
         </form>
@@ -264,6 +271,7 @@
     <tr>
         <th class="col-case-no">Case Number</th>
         <th class="col-client">Client & Request</th>
+        <th>Ownership Type</th>
         {% if request.user.role == 'capitol_numberer' %}
             <th>Transaction Number</th>
         {% endif %}
@@ -288,7 +296,13 @@
     <tr class="clickable-row" data-url="{% url 'case_detail' case.tracking_id %}" onclick="window.location=this.dataset.url">
         <td><span class="tracking-code">{{ case.tracking_id }}</span></td>
         <td>
-            <div class="client-name">{{ case.client_name }}</div>
+            <div class="client-name">
+                {% if case.ownership_type == 'corporation' %}
+                    {{ case.corporation_name|default:case.client_display_name }}
+                {% else %}
+                    {{ case.client_display_name }}
+                {% endif %}
+            </div>
             <div class="request-subtext">{{ case.get_case_type_display }}</div>
             {% if case.status in "for_taxmapping,for_approval,approved,for_numbering,for_release,released" %}
                 <div class="request-subtext" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem;">
@@ -300,6 +314,9 @@
                     Approved by: <strong>{{ case.approver_name }}</strong>
                 </div>
             {% endif %}
+        </td>
+        <td>
+            <span class="request-subtext">{{ case.get_ownership_type_display|default:"-" }}</span>
         </td>
 
         {% if request.user.role == 'capitol_numberer' %}

@@ -689,6 +689,9 @@ class Case(TimestampedModel):
 
     @property
     def client_display_name(self) -> str:
+        if self.ownership_type == 'corporation' and self.corporation_name:
+            return self.corporation_name.strip()
+
         last_name = (self.client_last_name or "").strip()
         first_name = (self.client_first_name or "").strip()
         middle_name = (self.client_middle_name or "").strip()

@@ -191,13 +191,16 @@
                 <div class="panel-header"><h2 class="panel-title">Transaction Information</h2></div>
                 <div class="panel-body">
                     <div class="info-grid">
+                        {% if case.ownership_type == 'corporation' %}
+                        <div class="info-item"><span class="info-label">Corporation Name</span><span class="info-value">{{ case.corporation_name|default:case.client_display_name }}</span></div>
+                        {% else %}
                         <div class="info-item"><span class="info-label">Client Name</span><span class="info-value">{{ case.client_display_name }}</span></div>
+                        {% endif %}
+
                         {% if case.ownership_type and case.ownership_type != 'single' %}
                         <div class="info-item"><span class="info-label">Ownership Type</span><span class="info-value">{{ case.get_ownership_type_display }}</span></div>
                         {% if case.ownership_type == 'married' and case.spouse_name %}
                         <div class="info-item"><span class="info-label">Spouse Name</span><span class="info-value">{{ case.spouse_name }}</span></div>
-                        {% elif case.ownership_type == 'corporation' and case.corporation_name %}
-                        <div class="info-item"><span class="info-label">Corporation Name</span><span class="info-value">{{ case.corporation_name }}</span></div>
                         {% elif case.ownership_type == 'others' and case.co_owners %}
                         <div class="info-item">
                             <span class="info-label">Co-owners</span>
