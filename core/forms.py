@@ -115,6 +115,9 @@ class CaseDetailsForm(forms.ModelForm):
                 self.initial.setdefault("area", mun)
                 self.fields["area"].disabled = True
 
+        if self.instance and getattr(self.instance, "tracking_id", None):
+            self.fields["area"].disabled = True
+
     def clean(self):
         cleaned = super().clean() or {}
         
@@ -188,6 +191,7 @@ class CaseDetailsForm(forms.ModelForm):
 class ChecklistItemForm(forms.Form):
     doc_type = forms.ChoiceField(required=False, choices=[("", "— Select —")])
     custom_doc_type = forms.CharField(max_length=120, required=False)
+    old_doc_type = forms.CharField(required=False, widget=forms.HiddenInput())
     file = forms.FileField(required=False)
     is_deleted = forms.BooleanField(required=False, initial=False, widget=forms.HiddenInput())
 

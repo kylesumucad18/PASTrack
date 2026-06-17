@@ -337,7 +337,8 @@ def _build_checklist_rows(formset, documents: list[CaseDocument], requirements=N
         selected = ((f["doc_type"].value() or "").strip())
         custom = ((f["custom_doc_type"].value() or "").strip())
         effective_doc_type = custom if selected == "__custom__" else selected
-        key = (effective_doc_type or "").strip().lower()
+        old_doc = (f["old_doc_type"].value() or "").strip()
+        key = (old_doc or effective_doc_type or "").strip().lower()
         doc = docs_by_key.get(key)
         filename = ""
         if doc and getattr(doc, "file", None):
@@ -349,6 +350,7 @@ def _build_checklist_rows(formset, documents: list[CaseDocument], requirements=N
             "form": f,
             "doc": doc,
             "doc_type": effective_doc_type,
+            "old_doc_type": old_doc or effective_doc_type,
             "filename": filename,
             "is_custom": is_custom,
         })
@@ -3029,13 +3031,23 @@ def case_wizard(request, tracking_id, step: int):
         if case.checklist:
             for item in (case.checklist or []):
                 if isinstance(item, dict):
-                    initial.append({
-                        "doc_type": item.get("doc_type", ""),
-                        "required": False,
-                    })
+                    dt = item.get("doc_type", "")
+                    if dt and dt not in requirements and dt != "Endorsement Letter":
+                        initial.append({
+                            "doc_type": "__custom__",
+                            "custom_doc_type": dt,
+                            "old_doc_type": dt,
+                            "required": False,
+                        })
+                    else:
+                        initial.append({
+                            "doc_type": dt,
+                            "old_doc_type": dt,
+                            "required": False,
+                        })
         else:
             for req in requirements:
-                initial.append({"doc_type": req, "required": False})
+                initial.append({"doc_type": req, "old_doc_type": req, "required": False})
 
         if request.method == "POST":
             if "add_row" in request.POST:
@@ -3089,19 +3101,58 @@ def case_wizard(request, tracking_id, step: int):
                         })
                     seen.add(key)
 
-                    uploaded_file = cd.get("file")
+                import uuid
+                pending_renames = []
+
+                for f in formset:
+                    cd = f.cleaned_data
+                    if not cd: continue
+                    doc_type = (cd.get("doc_type") or "").strip()
+                    if not doc_type: continue
+
                     is_deleted = cd.get("is_deleted")
+                    old_doc_type = (cd.get("old_doc_type") or "").strip()
+
                     if is_deleted:
-                        # User explicitly cleared/deleted the file for this doc_type
-                        to_del = CaseDocument.objects.filter(case=case, doc_type=doc_type)
+                        target = old_doc_type if old_doc_type else doc_type
+                        to_del = CaseDocument.objects.filter(case=case, doc_type=target)
                         for d in to_del:
                             if d.file:
-                                with contextlib.suppress(Exception):
-                                    d.file.delete(save=False)
+                                with contextlib.suppress(Exception): d.file.delete(save=False)
                             d.delete()
-                    elif uploaded_file:
+                    elif old_doc_type and old_doc_type != doc_type:
+                        if CaseDocument.objects.filter(case=case, doc_type=old_doc_type).exists():
+                            temp_name = f"__temp_{uuid.uuid4().hex}"
+                            CaseDocument.objects.filter(case=case, doc_type=old_doc_type).update(doc_type=temp_name)
+                            pending_renames.append((temp_name, doc_type))
+
+                for temp_name, final_name in pending_renames:
+                    orphan = CaseDocument.objects.filter(case=case, doc_type=final_name).first()
+                    if orphan:
+                        if orphan.file:
+                            with contextlib.suppress(Exception): orphan.file.delete(save=False)
+                        orphan.delete()
+                    CaseDocument.objects.filter(case=case, doc_type=temp_name).update(doc_type=final_name)
+
+                for f in formset:
+                    cd = f.cleaned_data
+                    if not cd: continue
+                    doc_type = (cd.get("doc_type") or "").strip()
+                    if not doc_type: continue
+
+                    uploaded_file = cd.get("file")
+                    is_deleted = cd.get("is_deleted")
+
+                    if not is_deleted and uploaded_file:
                         try:
                             change = _upsert_case_document(case=case, doc_type=doc_type, uploaded_file=uploaded_file, actor=request.user)
+                            if isinstance(change, dict):
+                                upload_changes.append({
+                                    "doc_type": doc_type,
+                                    "filename": change.get("filename") or "",
+                                    "previous_filename": change.get("previous_filename") or "",
+                                    "converted_to_pdf": bool(change.get("converted_to_pdf")),
+                                })
                         except ValueError as exc:
                             messages.error(request, str(exc))
                             docs = list(case.documents.all())
@@ -3115,20 +3166,12 @@ def case_wizard(request, tracking_id, step: int):
                                 "rows": _build_checklist_rows(formset, docs, requirements=requirements),
                                 "case_type_requirements": requirements,
                             })
-                        if isinstance(change, dict):
-                            upload_changes.append({
-                                "doc_type": doc_type,
-                                "filename": change.get("filename") or "",
-                                "previous_filename": change.get("previous_filename") or "",
-                                "converted_to_pdf": bool(change.get("converted_to_pdf")),
-                            })
 
                     has_doc = CaseDocument.objects.filter(case=case, doc_type=doc_type).exists()
-                    
                     is_custom = cd.get("doc_type") == "__custom__" or doc_type not in requirements
                     if is_custom and doc_type != "Endorsement Letter" and (is_deleted or not has_doc):
                         continue
-                        
+
                     new_checklist.append({
                         "doc_type": doc_type,
                         "required": False,
@@ -3345,13 +3388,23 @@ def draft_wizard(request, draft_id, step: int):
         if case.checklist:
             for item in (case.checklist or []):
                 if isinstance(item, dict):
-                    initial.append({
-                        "doc_type": item.get("doc_type", ""),
-                        "required": False,
-                    })
+                    dt = item.get("doc_type", "")
+                    if dt and dt not in requirements and dt != "Endorsement Letter":
+                        initial.append({
+                            "doc_type": "__custom__",
+                            "custom_doc_type": dt,
+                            "old_doc_type": dt,
+                            "required": False,
+                        })
+                    else:
+                        initial.append({
+                            "doc_type": dt,
+                            "old_doc_type": dt,
+                            "required": False,
+                        })
         else:
             for req in requirements:
-                initial.append({"doc_type": req, "required": False})
+                initial.append({"doc_type": req, "old_doc_type": req, "required": False})
 
         if request.method == "POST":
             if "add_row" in request.POST:
@@ -3404,17 +3457,49 @@ def draft_wizard(request, draft_id, step: int):
                         })
                     seen.add(key)
 
-                    uploaded_file = cd.get("file")
+                import uuid
+                pending_renames = []
+
+                for f in formset:
+                    cd = f.cleaned_data
+                    if not cd: continue
+                    doc_type = (cd.get("doc_type") or "").strip()
+                    if not doc_type: continue
+
                     is_deleted = cd.get("is_deleted")
+                    old_doc_type = (cd.get("old_doc_type") or "").strip()
+
                     if is_deleted:
-                        # User explicitly cleared/deleted the file for this doc_type
-                        to_del = CaseDocument.objects.filter(case=case, doc_type=doc_type)
+                        target = old_doc_type if old_doc_type else doc_type
+                        to_del = CaseDocument.objects.filter(case=case, doc_type=target)
                         for d in to_del:
                             if d.file:
-                                with contextlib.suppress(Exception):
-                                    d.file.delete(save=False)
+                                with contextlib.suppress(Exception): d.file.delete(save=False)
                             d.delete()
-                    elif uploaded_file:
+                    elif old_doc_type and old_doc_type != doc_type:
+                        if CaseDocument.objects.filter(case=case, doc_type=old_doc_type).exists():
+                            temp_name = f"__temp_{uuid.uuid4().hex}"
+                            CaseDocument.objects.filter(case=case, doc_type=old_doc_type).update(doc_type=temp_name)
+                            pending_renames.append((temp_name, doc_type))
+
+                for temp_name, final_name in pending_renames:
+                    orphan = CaseDocument.objects.filter(case=case, doc_type=final_name).first()
+                    if orphan:
+                        if orphan.file:
+                            with contextlib.suppress(Exception): orphan.file.delete(save=False)
+                        orphan.delete()
+                    CaseDocument.objects.filter(case=case, doc_type=temp_name).update(doc_type=final_name)
+
+                for f in formset:
+                    cd = f.cleaned_data
+                    if not cd: continue
+                    doc_type = (cd.get("doc_type") or "").strip()
+                    if not doc_type: continue
+
+                    uploaded_file = cd.get("file")
+                    is_deleted = cd.get("is_deleted")
+
+                    if not is_deleted and uploaded_file:
                         try:
                             _upsert_case_document(case=case, doc_type=doc_type, uploaded_file=uploaded_file, actor=request.user)
                         except ValueError as exc:
@@ -3432,11 +3517,10 @@ def draft_wizard(request, draft_id, step: int):
                             })
 
                     has_doc = CaseDocument.objects.filter(case=case, doc_type=doc_type).exists()
-                    
                     is_custom = cd.get("doc_type") == "__custom__" or doc_type not in requirements
                     if is_custom and doc_type != "Endorsement Letter" and (is_deleted or not has_doc):
                         continue
-                        
+
                     new_checklist.append({
                         "doc_type": doc_type,
                         "required": False,
@@ -3982,6 +4066,7 @@ def submissions(request):
     time_range = (request.GET.get("time_range") or "all").strip()
     lgu = (request.GET.get("lgu") or "all").strip()
     transaction_type = (request.GET.get("transaction_type") or "all").strip()
+    ownership_type = (request.GET.get("ownership_type") or "all").strip()
     date_from_raw = (request.GET.get("date_from") or "").strip()
     date_to_raw = (request.GET.get("date_to") or "").strip()
 
@@ -4243,6 +4328,9 @@ def submissions(request):
     if transaction_type and transaction_type != 'all':
         qs = qs.filter(case_type__iexact=transaction_type)
 
+    if ownership_type and ownership_type != 'all':
+        qs = qs.filter(ownership_type__iexact=ownership_type)
+
     if date_from:
         qs = qs.filter(created_at__date__gte=date_from)
     if date_to:
@@ -4256,6 +4344,9 @@ def submissions(request):
     
     db_type_list = Case.objects.exclude(case_type='').values_list('case_type', flat=True).distinct().order_by('case_type')
     type_list = [(t, dict(Case.CASE_TYPE_CHOICES).get(t, t)) for t in db_type_list]
+
+    db_ownership_list = Case.objects.exclude(ownership_type='').values_list('ownership_type', flat=True).distinct().order_by('ownership_type')
+    ownership_list = [(t, dict(Case.OWNERSHIP_TYPE_CHOICES).get(t, t)) for t in db_ownership_list]
 
     from django.db.models import Subquery, OuterRef, Value
     from django.db.models.functions import Concat
@@ -4290,11 +4381,15 @@ def submissions(request):
         "selected_time_range": time_range,
         "selected_lgu": lgu,
         "selected_transaction_type": transaction_type,
+        "selected_ownership_type": ownership_type,
         "selected_date_from": date_from_raw,
         "selected_date_to": date_to_raw,
         "qs_params": query.urlencode(),
         "qs_params_no_tab": query_no_tab.urlencode(),
-        "examiners": examiners,  # Injected here for the modal logic
+        "lgu_list": lgu_list,
+        "type_list": type_list,
+        "ownership_list": ownership_list,
+        "examiners": examiners,
     })
 
 @login_required
@@ -4898,6 +4993,22 @@ def complete_taxmapping(request, tracking_id):
         details={"old_status": old_status, "new_status": case.status, "taxmapped": True},
     )
 
+    send_case_email(
+        to_email=(case.client_email or "").strip(),
+        subject=f"PAStrack Update: Transaction Approved ({case.tracking_id})",
+        message=(
+            f"Dear Client,\n\n"
+            f"Your transaction has successfully completed the tax mapping process and has been approved for further processing.\n\n"
+            f"Transaction Details:\n"
+            f"• Tracking ID: {case.tracking_id}\n"
+            f"• Current Status: For Numbering\n\n"
+            f"No action is required from you at this time.\n\n"
+            f"You may continue monitoring your transaction through the PASTrack portal.\n\n"
+            f"For FAQs, updates, and assistance, please visit our website or contact the Provincial Assessor's Office.\n\n"
+            f"Thank you for your patience and cooperation."
+        ),
+    )
+
     messages.success(request, f"Case {case.tracking_id} marked as taxmapped and sent to Numberer.")
     return redirect("case_detail", tracking_id=case.tracking_id)
 
@@ -5078,6 +5189,29 @@ def mark_numbered(request, tracking_id):
     )
 
     if old_status == "for_numbering":
+        send_case_email(
+            to_email=(case.client_email or "").strip(),
+            subject=f"PAStrack Update: Documents Ready for Claiming ({case.tracking_id})",
+            message=(
+                f"Dear Client,\n\n"
+                f"Your transaction has been fully processed and is now ready for claiming.\n\n"
+                f"Transaction Details:\n"
+                f"• Tracking ID: {case.tracking_id}\n"
+                f"• Tax Declaration No.: {case.td_number or 'N/A'}\n"
+                f"• Current Status: Ready for Claiming\n\n"
+                f"You or your authorized representative may now claim your official Tax Declaration documents at the Provincial Assessor's Office. "
+                f"Please bring a valid government-issued identification card and your tracking ID upon claiming.\n\n"
+                f"Office Address:\n"
+                f"Provincial Assessor's Office\n"
+                f"Cebu Provincial Capitol, Cebu City\n\n"
+                f"Office Hours:\n"
+                f"Monday to Friday | 8:00 AM – 5:00 PM\n"
+                f"(Except Public Holidays)\n\n"
+                f"You may review your transaction details through the PASTrack portal.\n\n"
+                f"Thank you for using PASTrack."
+            ),
+        )
+
         messages.success(request, f"Transaction Number saved. Case {case.tracking_id} moved to For Release.")
     else:
         messages.success(request, "Transaction Number updated.")
@@ -5211,81 +5345,23 @@ def release_case(request, tracking_id):
     )
 
     date_released = case.released_at.strftime('%B %d, %Y') if case.released_at else timezone.now().strftime('%B %d, %Y')
-    html_message = f"""<p>Dear {case.client_display_name},</p>
-<p>We are pleased to inform you that your real property tax declaration 
-request has been fully processed and is now ready for release by the 
-Provincial Assessor's Office of Cebu.</p>
-<p>Case Reference No.: <b>{case.tracking_id}</b><br>
-Tax Declaration No.: <b>{case.td_number or 'N/A'}</b><br>
-Date Released: <b>{date_released}</b><br>
-Current Status: <b>Released</b></p>
-<p>You or your authorized representative may now claim your official 
-Tax Declaration documents at the Provincial Assessor's Office. 
-Please bring a valid government-issued identification card and 
-your Case Reference Number upon claiming.</p>
-<p>Office Address:<br>
-Provincial Assessor's Office<br>
-Cebu Provincial Capitol, Cebu City</p>
-<p>Office Hours:<br>
-Monday to Friday | 8:00 AM – 5:00 PM<br>
-(Except Public Holidays)</p>
-<p>To verify the status of your case, please visit:<br>
-<a href="https://pastrack.onrender.com/">https://pastrack.onrender.com/</a><br>
-and enter your Case Reference Number in the tracking portal.</p>
-<p>Salamat ug padayon ang inyong pagtamod sa among serbisyo.</p>
-<p>Respectfully,<br>
-Provincial Assessor's Office<br>
-Province of Cebu<br>
-PAStrack Document Tracking System</p>"""
-
-    plain_message = f"""Dear {case.client_display_name},
-
-We are pleased to inform you that your real property tax declaration 
-request has been fully processed and is now ready for release by the 
-Provincial Assessor's Office of Cebu.
-
-Case Reference No.:      {case.tracking_id}
-Tax Declaration No.:     {case.td_number or 'N/A'}
-Date Released:           {date_released}
-Current Status:          Released
-
-You or your authorized representative may now claim your official 
-Tax Declaration documents at the Provincial Assessor's Office. 
-Please bring a valid government-issued identification card and 
-your Case Reference Number upon claiming.
-
-Office Address:
-Provincial Assessor's Office
-Cebu Provincial Capitol, Cebu City
-
-Office Hours:
-Monday to Friday | 8:00 AM – 5:00 PM
-(Except Public Holidays)
-
-To verify the status of your case, please visit:
-https://pastrack.onrender.com/
-and enter your Case Reference Number in the tracking portal.
-
-Salamat ug padayon ang inyong pagtamod sa among serbisyo.
-
-Respectfully,
-Provincial Assessor's Office
-Province of Cebu
-PAStrack Document Tracking System"""
-
+    
     send_case_email(
         to_email=(case.client_email or "").strip(),
-        subject=f"PAStrack Update: Documents Ready for Release ({case.tracking_id})",
+        subject=f"PAStrack Update: Documents Successfully Claimed ({case.tracking_id})",
         message=(
             f"Dear Client,\n\n"
-            f"Your transaction has been completed and is now ready for release.\n\n"
+            f"This is to confirm that the documents for your real property tax declaration request have been successfully claimed from the Provincial Assessor's Office of Cebu.\n\n"
             f"Transaction Details:\n"
             f"• Tracking ID: {case.tracking_id}\n"
-            f"• Current Status: {dict(Case.STATUS_CHOICES).get(case.status, case.status)}\n\n"
-            f"Please prepare any required identification or supporting documents when claiming your records, if applicable.\n\n"
-            f"You may review your transaction details through the PASTrack portal.\n\n"
-            f"For office schedules, FAQs, and assistance, please contact the Provincial Assessor's Office.\n\n"
-            f"Thank you for using PASTrack."
+            f"• Tax Declaration No.: {case.td_number or 'N/A'}\n"
+            f"• Date Claimed: {date_released}\n"
+            f"• Claimed By: {case.claimed_by_name}\n"
+            f"• Claimant Contact: {case.claimed_by_contact}\n"
+            f"• Current Status: Successfully Claimed\n\n"
+            f"This email serves as an official receipt of the document release. If you did not authorize this transaction, please contact us immediately.\n\n"
+            f"You may review your transaction history through the PASTrack portal.\n\n"
+            f"Thank you for transacting with the Provincial Assessor's Office."
         ),
     )
     sns_hook(event="case_released", payload={"tracking_id": case.tracking_id, "status": case.status})
