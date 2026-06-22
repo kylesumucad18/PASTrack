@@ -2617,6 +2617,13 @@ def _maybe_convert_office_upload_to_pdf(uploaded_file):
     if not filename.endswith((".doc", ".docx")):
         return uploaded_file, {"converted": False}
 
+    # Ensure we pick up the latest .env without requiring a server restart
+    from dotenv import load_dotenv
+    from pathlib import Path
+    env_path = Path(__file__).resolve().parent.parent / '.env'
+    if env_path.exists():
+        load_dotenv(dotenv_path=env_path, override=True)
+
     api_secret = os.getenv("CONVERTAPI_SECRET")
     if not api_secret:
         print("[ConvertAPI Debug] Error: CONVERTAPI_SECRET not set in environment variables.")
@@ -2638,16 +2645,25 @@ def _maybe_convert_office_upload_to_pdf(uploaded_file):
         file_content = uploaded_file.read()
         print(f"[ConvertAPI Debug] Input file read into memory: {len(file_content)} bytes")
         
-        # 3. Call ConvertAPI REST endpoint directly
+        # Call ConvertAPI REST endpoint directly
         url = f"https://v2.convertapi.com/convert/{from_fmt}/to/pdf?Secret={api_secret}"
         print(f"[ConvertAPI Debug] URL: {url}")
         
         # Using the file content directly
+        import mimetypes
+        content_type, _ = mimetypes.guess_type(filename)
+        if not content_type:
+            content_type = 'application/octet-stream'
+            
         files = {
-            'File': (filename, file_content)
+            'File': (filename, file_content, content_type)
         }
         
-        response = requests.post(url, files=files, timeout=60)
+        # Disable SSL verification to prevent certifi issues on local Windows
+        import urllib3
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
+        response = requests.post(url, files=files, timeout=60, verify=False)
         print(f"[ConvertAPI Debug] Response Status: {response.status_code}")
         
         if response.status_code != 200:
