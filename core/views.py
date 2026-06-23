@@ -5409,18 +5409,42 @@ def upload_correction_document(request, tracking_id, doc_id):
         
     new_file = request.FILES["file"]
     
+    # Convert the new file if it's an office document
+    final_file, convert_info = _maybe_convert_office_upload_to_pdf(new_file)
+    
     # Create DocumentVersion of the old file
     from .models import DocumentVersion
-    DocumentVersion.objects.create(
+    from django.core.files.base import ContentFile
+    import os
+    import contextlib
+
+    dv = DocumentVersion(
         case=case,
         doc_type=doc.doc_type,
-        file=doc.file,
         uploaded_by=doc.uploaded_by,
         uploaded_at=doc.uploaded_at
     )
     
+    if getattr(doc, "file", None):
+        try:
+            doc.file.open("rb")
+            old_content = doc.file.read()
+            doc.file.close()
+            old_name = os.path.basename(doc.file.name)
+            dv.file.save(old_name, ContentFile(old_content), save=False)
+        except Exception:
+            dv.file = doc.file
+            
+    dv.save()
+    
+    # If the file had a physical copy, delete it so we don't leak storage
+    # since CaseDocument will now point to a new file, and DocumentVersion has its own copy.
+    with contextlib.suppress(Exception):
+        if getattr(doc, "file", None):
+            doc.file.delete(save=False)
+    
     # Update the CaseDocument with the new file
-    doc.file = new_file
+    doc.file = final_file
     doc.uploaded_by = request.user
     doc.uploaded_at = timezone.now()
     doc.reviewed_ok = False
