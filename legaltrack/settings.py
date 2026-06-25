@@ -581,8 +581,13 @@ MEDIA_ROOT = (_env("DJANGO_MEDIA_ROOT") or os.path.join(BASE_DIR, "media")).stri
 AWS_ACCESS_KEY_ID = _env('SUPABASE_S3_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = _env('SUPABASE_S3_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = _env('SUPABASE_BUCKET_NAME', 'pastrack-documents')
-AWS_S3_ENDPOINT_URL = _env('SUPABASE_S3_ENDPOINT_URL', 'https://bmvxrcoumccwkowfltii.storage.supabase.co/storage/v1/s3')
 AWS_S3_REGION_NAME = _env('SUPABASE_S3_REGION', 'ap-southeast-1')
+AWS_S3_ENDPOINT_URL = _env('SUPABASE_S3_ENDPOINT_URL')
+AWS_S3_USE_SSL = True
+AWS_S3_VERIFY = True
+
+# Add this specific line to handle the bucket name in the path
+AWS_S3_CUSTOM_DOMAIN = None
 
 # Tell Django to use S3 (Supabase) for media files
 # DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
