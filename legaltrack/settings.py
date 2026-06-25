@@ -603,3 +603,7 @@ AWS_S3_FILE_OVERWRITE = False # Prevents accidental overwriting of files with th
 
 # Optional: Set how long the preview link lasts before expiring (e.g., 1 hour)
 AWS_QUERYSTRING_EXPIRE = 3600
+
+# Force boto3 to use Path Style addressing (Required for Supabase)
+AWS_S3_ADDRESSING_STYLE = 'path'
+AWS_S3_SIGNATURE_VERSION = 's3v4'
