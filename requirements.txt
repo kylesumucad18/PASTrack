@@ -18,7 +18,7 @@ django-stubs==5.2.8
 django-stubs-ext==5.2.8
 djangorestframework==3.16.1
 djangorestframework-stubs==3.16.6
-docx2pdf==0.1.8
+
 gunicorn==23.0.0
 idna==3.11
 jmespath==1.1.0
@@ -33,7 +33,7 @@ pyright==1.1.407
 python-dateutil==2.9.0.post0
 python-docx==1.2.0
 python-dotenv==1.2.1
-pywin32==311
+
 requests==2.32.5
 s3transfer==0.19.0
 six==1.17.0
