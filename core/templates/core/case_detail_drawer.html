@@ -66,10 +66,10 @@
                 <td>Ownership Type</td>
                 <td>{{ case.get_ownership_type_display }}</td>
             </tr>
-            {% if case.ownership_type == 'married' and case.spouse_name %}
+            {% if case.ownership_type == 'married' and case.spouse_display_name %}
             <tr>
-                <td>Spouse Name</td>
-                <td>{{ case.spouse_name }}</td>
+                <th>Spouse Name</th>
+                <td>{{ case.spouse_display_name }}</td>
             </tr>
             {% elif case.ownership_type == 'corporation' and case.corporation_name %}
             <tr>

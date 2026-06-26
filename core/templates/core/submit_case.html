@@ -895,10 +895,27 @@
                         </div> <!-- End Standard Name Fields -->
 
                         <!-- Spouse Name (hidden by default) -->
-                        <div class="form-group col-12" id="spouse-name-group" style="display: none;">
-                            <label for="id_spouse_name">Name of Spouse<span class="text-danger">*</span></label>
-                            {{ form.spouse_name }}
-                            {% if form.spouse_name.errors %}<span class="error-msg">{{ form.spouse_name.errors.0 }}</span>{% endif %}
+                        <div id="spouse-name-group" style="display: none;">
+                            <div class="form-group col-4">
+                                <label for="id_spouse_first_name">Spouse First Name<span class="text-danger">*</span></label>
+                                {{ form.spouse_first_name }}
+                                {% if form.spouse_first_name.errors %}<span class="error-msg">{{ form.spouse_first_name.errors.0 }}</span>{% endif %}
+                            </div>
+                            <div class="form-group col-2">
+                                <label for="id_spouse_middle_initial">Middle Initial</label>
+                                {{ form.spouse_middle_initial }}
+                                {% if form.spouse_middle_initial.errors %}<span class="error-msg">{{ form.spouse_middle_initial.errors.0 }}</span>{% endif %}
+                            </div>
+                            <div class="form-group col-4">
+                                <label for="id_spouse_last_name">Last Name<span class="text-danger">*</span></label>
+                                {{ form.spouse_last_name }}
+                                {% if form.spouse_last_name.errors %}<span class="error-msg">{{ form.spouse_last_name.errors.0 }}</span>{% endif %}
+                            </div>
+                            <div class="form-group col-2">
+                                <label for="id_spouse_suffix">Suffix</label>
+                                {{ form.spouse_suffix }}
+                                {% if form.spouse_suffix.errors %}<span class="error-msg">{{ form.spouse_suffix.errors.0 }}</span>{% endif %}
+                            </div>
                         </div>
 
                         <!-- Corporation Name (hidden by default) -->
@@ -960,6 +977,20 @@
                             <label for="{{ form.property_title_type.id_for_label }}">Property Title Type</label>
                             {{ form.property_title_type }}
                             {% if form.property_title_type.errors %}<span class="error-msg">{{ form.property_title_type.errors.0 }}</span>{% endif %}
+                        </div>
+
+                        <div class="form-group col-6">
+                            <label for="{{ form.lot_number.id_for_label }}">Lot Number<span class="text-danger">*</span></label>
+                            {{ form.lot_number }}
+                            <small class="form-text" style="color: #6c757d; display: block; margin-top: 0.25rem;">Permanent cadastral map identifier</small>
+                            {% if form.lot_number.errors %}<span class="error-msg">{{ form.lot_number.errors.0 }}</span>{% endif %}
+                        </div>
+
+                        <div class="form-group col-6">
+                            <label for="{{ form.previous_tax_dec_number.id_for_label }}">Previous Tax Dec Number<span class="text-danger">*</span></label>
+                            {{ form.previous_tax_dec_number }}
+                            <small class="form-text" style="color: #6c757d; display: block; margin-top: 0.25rem;">Enter "NA" or "New" if not applicable</small>
+                            {% if form.previous_tax_dec_number.errors %}<span class="error-msg">{{ form.previous_tax_dec_number.errors.0 }}</span>{% endif %}
                         </div>
 
                         <div class="form-group col-12">
@@ -1764,7 +1795,7 @@
     }
     else if (value === 'married') {
       standardFields.style.display = 'contents';
-      spouseGroup.style.display    = 'block';
+      spouseGroup.style.display    = 'contents';
     }
     else if (value === 'corporation') {
       corpGroup.style.display = 'block';
@@ -1787,18 +1818,24 @@
 
 <script>
     // --- Co-Owners Dynamic Rows ---
-    window.addCoOwnerRow = function(firstName = '', lastName = '') {
+    window.addCoOwnerRow = function(firstName = '', middleInitial = '', lastName = '', suffix = '') {
         const container = document.getElementById('co-owners-container');
         if(!container) return;
         const rowId = 'co-owner-' + Date.now() + Math.floor(Math.random() * 1000);
         
         const rowHTML = `
-            <div id="${rowId}" style="display: flex; gap: 0.5rem; align-items: center; animation: fadeIn 0.2s ease-in-out;">
-                <div style="flex: 1;">
+            <div id="${rowId}" style="display: flex; gap: 0.5rem; align-items: center; animation: fadeIn 0.2s ease-in-out; margin-bottom: 0.5rem;">
+                <div style="flex: 2;">
                     <input type="text" class="custom-input co-owner-first" placeholder="First Name" value="${firstName.replace(/"/g, '&quot;')}" oninput="updateCoOwnersInput()">
                 </div>
                 <div style="flex: 1;">
+                    <input type="text" class="custom-input co-owner-middle" placeholder="M.I." value="${middleInitial.replace(/"/g, '&quot;')}" oninput="updateCoOwnersInput()">
+                </div>
+                <div style="flex: 2;">
                     <input type="text" class="custom-input co-owner-last" placeholder="Last Name" value="${lastName.replace(/"/g, '&quot;')}" oninput="updateCoOwnersInput()">
+                </div>
+                <div style="flex: 1;">
+                    <input type="text" class="custom-input co-owner-suffix" placeholder="Suffix" value="${suffix.replace(/"/g, '&quot;')}" oninput="updateCoOwnersInput()">
                 </div>
                 <button type="button" onclick="confirmRemoveCoOwner('${rowId}')" style="background: transparent; color: #ef4444; border: none; cursor: pointer; padding: 0.5rem; border-radius: 4px; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.backgroundColor='#fee2e2'" onmouseout="this.style.backgroundColor='transparent'" title="Remove Co-Owner">
                     <i class="ri-close-line" style="font-size: 1.25rem;"></i>
@@ -1830,9 +1867,18 @@
         const coOwners = [];
         rows.forEach(row => {
             const first = row.querySelector('.co-owner-first').value.trim();
+            const middle = row.querySelector('.co-owner-middle').value.trim();
             const last = row.querySelector('.co-owner-last').value.trim();
-            if (first || last) {
-                coOwners.push(`${first} ${last}`.trim());
+            const suffix = row.querySelector('.co-owner-suffix').value.trim();
+            
+            let fullName = first;
+            if (middle) fullName += ' ' + middle;
+            if (last) fullName += ' ' + last;
+            if (suffix) fullName += ' ' + suffix;
+            
+            fullName = fullName.trim();
+            if (fullName) {
+                coOwners.push(fullName);
             }
         });
         const coOwnersInput = document.getElementById('id_co_owners');
@@ -1853,9 +1899,9 @@
                         if (parts.length > 1) {
                             const last = parts.pop();
                             const first = parts.join(' ');
-                            addCoOwnerRow(first, last);
+                            addCoOwnerRow(first, '', last, '');
                         } else {
-                            addCoOwnerRow(name, '');
+                            addCoOwnerRow(name, '', '', '');
                         }
                     }
                 });

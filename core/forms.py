@@ -64,7 +64,10 @@ class CaseDetailsForm(forms.ModelForm):
         model = Case
         fields: ClassVar[list[str]] = [
             "ownership_type",
-            "spouse_name",
+            "spouse_first_name",
+            "spouse_last_name",
+            "spouse_middle_initial",
+            "spouse_suffix",
             "corporation_name",
             "co_owners",
             "client_first_name",
@@ -79,11 +82,16 @@ class CaseDetailsForm(forms.ModelForm):
             "area_unit",
             "case_type",
             "property_title_type",
+            "lot_number",
+            "previous_tax_dec_number",
             "needs_taxmapping",
         ]
         widgets: ClassVar[dict] = {
             "ownership_type": forms.Select(attrs={"id": "id_ownership_type"}),
-            "spouse_name": forms.TextInput(attrs={"placeholder": "Full name of spouse", "id": "id_spouse_name"}),
+            "spouse_first_name": forms.TextInput(attrs={"placeholder": "First name", "id": "id_spouse_first_name"}),
+            "spouse_last_name": forms.TextInput(attrs={"placeholder": "Last name", "id": "id_spouse_last_name"}),
+            "spouse_middle_initial": forms.TextInput(attrs={"placeholder": "Middle initial", "id": "id_spouse_middle_initial"}),
+            "spouse_suffix": forms.TextInput(attrs={"placeholder": "Suffix", "id": "id_spouse_suffix"}),
             "corporation_name": forms.TextInput(attrs={"placeholder": "Company / Corporation Name", "id": "id_corporation_name"}),
             "co_owners": forms.TextInput(attrs={"placeholder": "Enter co-owner name(s)", "id": "id_co_owners"}),
             "client_first_name": forms.TextInput(attrs={"placeholder": "First name"}),
@@ -104,6 +112,8 @@ class CaseDetailsForm(forms.ModelForm):
             "area_unit": forms.Select(),
             "case_type": forms.Select(),
             "property_title_type": forms.Select(),
+            "lot_number": forms.TextInput(attrs={"placeholder": "e.g. Lot 123-B"}),
+            "previous_tax_dec_number": forms.TextInput(attrs={"placeholder": "e.g. TD-2023-001, NA, or New"}),
         }
 
     def __init__(self, *args, user: CustomUser | None = None, **kwargs):
@@ -133,8 +143,10 @@ class CaseDetailsForm(forms.ModelForm):
             if not cleaned.get('corporation_name'):
                 self.add_error('corporation_name', 'Corporation name is required.')
         elif ownership_type == 'married':
-            if not cleaned.get('spouse_name'):
-                self.add_error('spouse_name', 'Spouse name is required.')
+            if not (cleaned.get("spouse_first_name") or "").strip():
+                self.add_error("spouse_first_name", "Spouse first name is required.")
+            if not (cleaned.get("spouse_last_name") or "").strip():
+                self.add_error("spouse_last_name", "Spouse last name is required.")
         elif ownership_type == 'others':
             if not cleaned.get('co_owners'):
                 self.add_error('co_owners', 'At least one co-owner must be added.')
@@ -589,6 +601,33 @@ class StaffAccountUpdateForm(forms.ModelForm):
             else:
                 self.fields["lgu_municipality"].widget = forms.HiddenInput()
                 self.fields["capitol_role"].initial = self.instance.role
+
+    def clean_capitol_role(self):
+        new_role = self.cleaned_data.get("capitol_role")
+        if not new_role or not self.instance:
+            return new_role
+
+        role_ranks = {
+            "capitol_receiving": 1,
+            "capitol_releaser": 1,
+            "capitol_taxmapper": 2,
+            "capitol_examiner": 3,
+            "capitol_numberer": 4,
+            "capitol_approver": 5,
+        }
+
+        old_role = self.instance.role
+
+        if old_role in role_ranks and new_role in role_ranks:
+            old_rank = role_ranks[old_role]
+            new_rank = role_ranks[new_role]
+
+            if new_rank < old_rank:
+                old_label = self.instance.get_role_display() or old_role
+                new_label = dict(self.fields["capitol_role"].choices).get(new_role, new_role)
+                raise forms.ValidationError(f"Hierarchy violation: Cannot demote staff from {old_label} to {new_label}.")
+
+        return new_role
 
     def save(self, commit=True):
         user: CustomUser = super().save(commit=False)

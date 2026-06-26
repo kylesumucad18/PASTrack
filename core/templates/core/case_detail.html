@@ -199,8 +199,8 @@
 
                         {% if case.ownership_type and case.ownership_type != 'single' %}
                         <div class="info-item"><span class="info-label">Ownership Type</span><span class="info-value">{{ case.get_ownership_type_display }}</span></div>
-                        {% if case.ownership_type == 'married' and case.spouse_name %}
-                        <div class="info-item"><span class="info-label">Spouse Name</span><span class="info-value">{{ case.spouse_name }}</span></div>
+                        {% if case.ownership_type == 'married' and case.spouse_display_name %}
+                        <div class="info-item"><span class="info-label">Spouse Name</span><span class="info-value">{{ case.spouse_display_name }}</span></div>
                         {% elif case.ownership_type == 'others' and case.co_owners %}
                         <div class="info-item">
                             <span class="info-label">Co-owners</span>
@@ -220,7 +220,7 @@
                         <div class="info-item"><span class="info-label">Property Area</span><span class="info-value">{% if case.area_value %}{{ case.area_value }} {{ case.get_area_unit_display }}{% else %}—{% endif %}</span></div>
                         <div class="info-item"><span class="info-label">Date Submitted</span><span class="info-value">{{ case.created_at|date:"M d, Y g:i A" }}</span></div>
                         <div class="info-item">
-                            <span class="info-label">Transaction Number</span>
+                            <span class="info-label">Tax Declaration Number</span>
                             <span class="info-value">{{ case.td_number|default:"—" }}</span>
                         </div>
                         {% if case.claimed_by_name %}
@@ -828,7 +828,7 @@
                                     class="form-control"
                                     style="margin-bottom: 0.5rem;"
                                     required
-                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
                                 >
                                 <button class="btn btn-primary" type="button" onclick="openNumbererModal()" style="width:100%;">
                                     <i class="ri-hashtag"></i> Submit Transaction Number
@@ -843,17 +843,17 @@
                                     type="text"
                                     inputmode="numeric"
                                     pattern="[0-9]*"
-                                    maxlength="6"
+                                    maxlength="5"
                                     name="transaction_number"
                                     value="{{ case.td_number|default:'' }}"
-                                    placeholder="Override Transaction Number (6 digits)"
+                                    placeholder="Override Tax Declaration Number (5 digits)"
                                     class="form-control"
                                     style="margin-bottom: 0.5rem;"
                                     required
-                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 6)"
+                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
                                 >
                                 <button class="btn btn-outline" type="submit" style="width:100%;">
-                                    <i class="ri-edit-2-line"></i> Override Transaction Number
+                                    <i class="ri-edit-2-line"></i> Override Tax Declaration Number
                                 </button>
                             </form>
 
@@ -1171,12 +1171,29 @@
         <div style="font-size: 0.9rem; color: var(--text-muted);">
             Confirm approval for <strong style="color: var(--text-main);">{{ case.tracking_id }}</strong>?
         </div>
-        <form method="post" action="{% url 'approve_case' case.tracking_id %}" style="margin-top: 1rem;">
+        <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
+            <button type="button" class="btn btn-outline" style="flex:1" onclick="closeApproveModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" style="flex:1;" onclick="proceedToAssignNumberer()">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<div id="assignNumbererModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
+    <div class="panel" style="width: 420px; padding: 2rem;">
+        <h3 class="panel-title" style="margin-bottom: 1rem;">Assign to Numberer</h3>
+        <form method="post" action="{% url 'assign_numberer' case.tracking_id %}">
             {% csrf_token %}
             <input type="hidden" name="confirm_approve" value="1">
+            <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; display:block;">Select Numberer</label>
+            <select name="assigned_to" required class="form-control">
+                <option value="" disabled selected>Select from active staff...</option>
+                {% for nm in numberers %}
+                    <option value="{{ nm.id }}">{{ nm.full_name|default:nm.email }} [ {{ nm.pending_cases_count }} ]</option>
+                {% endfor %}
+            </select>
             <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button type="button" class="btn btn-outline" style="flex:1" onclick="closeApproveModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1;">Confirm</button>
+                <button type="button" class="btn btn-outline" style="flex:1" onclick="closeAssignNumbererModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="flex:1;">Submit</button>
             </div>
         </form>
     </div>
@@ -1188,6 +1205,13 @@
     }
     function closeApproveModal() {
         document.getElementById('approveModal').style.display = 'none';
+    }
+    function proceedToAssignNumberer() {
+        closeApproveModal();
+        document.getElementById('assignNumbererModal').style.display = 'flex';
+    }
+    function closeAssignNumbererModal() {
+        document.getElementById('assignNumbererModal').style.display = 'none';
     }
 </script>
 
@@ -1243,7 +1267,7 @@
     }
 </script>
 
-<!-- Duplicate Transaction Number Error Modal -->
+<!-- Duplicate Tax Declaration Number Error Modal -->
 <div id="duplicateErrorModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
     <div class="panel" style="width: 420px; padding: 2rem; border-top: 4px solid #dc2626;">
         <h3 class="panel-title" style="margin-bottom: 0.75rem; color: #dc2626;"><i class="ri-error-warning-line"></i> Duplicate Number</h3>

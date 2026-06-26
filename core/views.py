@@ -3876,6 +3876,12 @@ def case_detail(request, tracking_id):
     if can_assign_taxmapper:
         taxmappers = CustomUser.objects.filter(role="capitol_taxmapper", is_active=True).order_by("full_name", "email")
 
+    numberers = None
+    if can_approve:
+        numberers = CustomUser.objects.filter(role="capitol_numberer", is_active=True).annotate(
+            pending_cases_count=Count('numbered_cases', filter=Q(numbered_cases__status='for_numbering'))
+        ).order_by("full_name", "email")
+
     response_context = {
         "case": case,
         "documents": list(case.documents.all()),
@@ -3905,6 +3911,7 @@ def case_detail(request, tracking_id):
         "can_release": can_release,
         "can_reassign_examiner": can_reassign_examiner,
         "examiners": examiners,
+        "numberers": numberers,
         "case_numbers": case_numbers,
         "last_used_number": last_used_number,
         "suggested_next_number": suggested_next_number,
@@ -4083,6 +4090,7 @@ def submissions(request):
     lgu = (request.GET.get("lgu") or "all").strip()
     transaction_type = (request.GET.get("transaction_type") or "all").strip()
     ownership_type = (request.GET.get("ownership_type") or "all").strip()
+    examiner_filter_id = (request.GET.get("examiner") or "all").strip()
     date_from_raw = (request.GET.get("date_from") or "").strip()
     date_to_raw = (request.GET.get("date_to") or "").strip()
 
@@ -4347,6 +4355,9 @@ def submissions(request):
     if ownership_type and ownership_type != 'all':
         qs = qs.filter(ownership_type__iexact=ownership_type)
 
+    if examiner_filter_id and examiner_filter_id != 'all':
+        qs = qs.filter(assigned_to_id=examiner_filter_id)
+
     if date_from:
         qs = qs.filter(created_at__date__gte=date_from)
     if date_to:
@@ -4363,6 +4374,8 @@ def submissions(request):
 
     db_ownership_list = Case.objects.exclude(ownership_type='').values_list('ownership_type', flat=True).distinct().order_by('ownership_type')
     ownership_list = [(t, dict(Case.OWNERSHIP_TYPE_CHOICES).get(t, t)) for t in db_ownership_list]
+
+    all_examiners = CustomUser.objects.filter(role="capitol_examiner", is_active=True).order_by("full_name", "email")
 
     from django.db.models import Subquery, OuterRef, Value
     from django.db.models.functions import Concat
@@ -4398,6 +4411,7 @@ def submissions(request):
         "selected_lgu": lgu,
         "selected_transaction_type": transaction_type,
         "selected_ownership_type": ownership_type,
+        "selected_examiner": examiner_filter_id,
         "selected_date_from": date_from_raw,
         "selected_date_to": date_to_raw,
         "qs_params": query.urlencode(),
@@ -4406,6 +4420,7 @@ def submissions(request):
         "type_list": type_list,
         "ownership_list": ownership_list,
         "examiners": examiners,
+        "all_examiners": all_examiners,
     })
 
 @login_required
@@ -4945,6 +4960,76 @@ PAStrack Document Tracking System"""
 
 @login_required
 @require_POST
+def assign_numberer(request, tracking_id):
+    case = get_object_or_404(Case, tracking_id=tracking_id)
+
+    if request.user.role != "capitol_approver":
+        messages.error(request, "Only Approvers can assign numberers.")
+        return redirect("case_detail", tracking_id=case.tracking_id)
+
+    if case.status != "for_approval":
+        messages.error(request, "This case is not eligible for approval.")
+        return redirect("case_detail", tracking_id=case.tracking_id)
+
+    if (request.POST.get("confirm_approve") or "").strip() != "1":
+        messages.error(request, "Approval confirmation is required.")
+        return redirect("case_detail", tracking_id=case.tracking_id)
+
+    if case.documents.exists() and case.documents.filter(reviewed_ok=False).exists():
+        messages.error(request, "Review all uploaded documents and mark them as checked before approving.")
+        return redirect("case_detail", tracking_id=case.tracking_id)
+
+    if getattr(case, "needs_taxmapping", False):
+        messages.error(request, "This transaction requires tax mapping. Assign a Tax Mapper instead of approving.")
+        return redirect("case_detail", tracking_id=case.tracking_id)
+
+    numberer_id = request.POST.get("assigned_to")
+    if not numberer_id:
+        messages.error(request, "Please select a Numberer before confirming.")
+        return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+        
+    numberer = get_object_or_404(CustomUser, id=numberer_id, role="capitol_numberer", is_active=True)
+
+    old_status = case.status
+    case.numberer_assigned_to = numberer
+    case.numberer_assigned_at = timezone.now()
+    case.status = "for_numbering"
+    case.save(update_fields=["status", "numberer_assigned_to", "numberer_assigned_at", "updated_at"])
+
+    AuditLog.objects.create(
+        actor=request.user,
+        action="case_approval",
+        target_object=f"Case: {case.tracking_id}",
+        details={
+            "old_status": old_status, 
+            "new_status": case.status,
+            "assigned_to": f"{numberer.get_full_name()} - {numberer.get_role_display()}",
+        }
+    )
+
+    send_case_email(
+        to_email=(case.client_email or "").strip(),
+        subject=f"PAStrack Update: Transaction Approved ({case.tracking_id})",
+        message=(
+            f"Dear Client,\n\n"
+            f"Your transaction has successfully passed review and has been approved for further processing.\n\n"
+            f"Transaction Details:\n"
+            f"• Tracking ID: {case.tracking_id}\n"
+            f"• Current Status: {dict(Case.STATUS_CHOICES).get(case.status, case.status)}\n\n"
+            f"No action is required from you at this time.\n\n"
+            f"You may continue monitoring your transaction through the PASTrack portal.\n\n"
+            f"For FAQs, updates, and assistance, please visit our website or contact the Provincial Assessor's Office.\n\n"
+            f"Thank you for your patience and cooperation."
+        ),
+    )
+    sns_hook(event="case_approved", payload={"tracking_id": case.tracking_id, "status": case.status})
+
+    messages.success(request, f"Case {case.tracking_id} approved and assigned to {numberer.get_full_name()}.")
+    return redirect("case_detail", tracking_id=case.tracking_id)
+
+
+@login_required
+@require_POST
 def assign_taxmapper(request, tracking_id):
     case = get_object_or_404(Case, tracking_id=tracking_id)
 
@@ -5165,18 +5250,18 @@ def mark_numbered(request, tracking_id):
 
     transaction_number = (request.POST.get("transaction_number") or request.POST.get("numbers") or "").strip()
     if not transaction_number:
-        messages.error(request, "Transaction Number is required.")
+        messages.error(request, "Tax Declaration Number is required.")
         return redirect("case_detail", tracking_id=case.tracking_id)
 
-    if not transaction_number.isdigit() or len(transaction_number) != 6:
-        messages.error(request, "Transaction Number must be exactly 6 digits (numbers only).")
+    if not transaction_number.isdigit() or len(transaction_number) != 5:
+        messages.error(request, "Tax Declaration Number must be exactly 5 digits (numbers only).")
         return redirect("case_detail", tracking_id=case.tracking_id)
 
     old_status = case.status
     old_transaction_number = (case.td_number or "").strip()
 
     if old_transaction_number and request.user.role != "super_admin":
-        messages.error(request, "Transaction Number is already set and cannot be overridden.")
+        messages.error(request, "Tax Declaration Number is already set and cannot be overridden.")
         return redirect("case_detail", tracking_id=case.tracking_id)
 
     case.td_number = transaction_number

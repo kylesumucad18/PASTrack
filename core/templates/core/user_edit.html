@@ -299,9 +299,11 @@
                 </div>
 
                 <!-- Name Fields Horizontal Row -->
-                <div class="form-group span-2" style="display: grid; grid-template-columns: 3fr 1.5fr 3fr 1.5fr; gap: 1rem;">
+                <div class="form-group span-2"
+                    style="display: grid; grid-template-columns: 3fr 1.5fr 3fr 1.5fr; gap: 1rem;">
                     <div>
-                        <label for="{{ form.first_name.id_for_label }}">First Name <span style="color: #ef4444;">*</span></label>
+                        <label for="{{ form.first_name.id_for_label }}">First Name <span
+                                style="color: #ef4444;">*</span></label>
                         {{ form.first_name }}
                         {{ form.first_name.errors }}
                     </div>
@@ -311,7 +313,8 @@
                         {{ form.middle_initial.errors }}
                     </div>
                     <div>
-                        <label for="{{ form.last_name.id_for_label }}">Last Name <span style="color: #ef4444;">*</span></label>
+                        <label for="{{ form.last_name.id_for_label }}">Last Name <span
+                                style="color: #ef4444;">*</span></label>
                         {{ form.last_name }}
                         {{ form.last_name.errors }}
                     </div>
@@ -340,12 +343,12 @@
                 </div>
                 {% else %}
                 <div class="form-group span-2">
-                    <label for="{{ form.capitol_role.id_for_label }}">Capitol Assigned Role</label>
+                    <label for="{{ form.capitol_role.id_for_label }}">Change Capitol Assigned Role</label>
                     {{ form.capitol_role }}
                     {{ form.capitol_role.errors }}
                 </div>
                 {% endif %}
-                
+
                 <!-- Account Status -->
                 <div class="form-group span-2">
                     <label for="{{ form.account_status.id_for_label }}">Account Status</label>

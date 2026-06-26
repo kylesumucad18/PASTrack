@@ -56,6 +56,7 @@ urlpatterns = [
     path("case/<str:tracking_id>/reassign-examiner/", views.reassign_case_examiner, name="reassign_case_examiner"),
     path("case/<str:tracking_id>/submit-for-approval/", views.submit_for_approval, name="submit_for_approval"),
     path("case/<str:tracking_id>/approve/", views.approve_case, name="approve_case"),
+    path("case/<str:tracking_id>/assign-numberer/", views.assign_numberer, name="assign_numberer"),
     path("case/<str:tracking_id>/assign-taxmapper/", views.assign_taxmapper, name="assign_taxmapper"),
     path("case/<str:tracking_id>/complete-taxmapping/", views.complete_taxmapping, name="complete_taxmapping"),
     path("case/<str:tracking_id>/return-to-receiving/", views.return_to_receiving, name="return_to_receiving"),

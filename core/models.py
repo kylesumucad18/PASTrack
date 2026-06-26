@@ -503,12 +503,10 @@ class Case(TimestampedModel):
     )
 
     # For Married / Spouses
-    spouse_name = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        help_text="Full name of spouse (if Married/Spouses)"
-    )
+    spouse_first_name = models.CharField(max_length=120, blank=True, null=True)
+    spouse_middle_initial = models.CharField(max_length=10, blank=True, null=True)
+    spouse_last_name = models.CharField(max_length=120, blank=True, null=True)
+    spouse_suffix = models.CharField(max_length=20, blank=True, null=True)
 
     # For Corporation
     corporation_name = models.CharField(
@@ -523,6 +521,10 @@ class Case(TimestampedModel):
         blank=True,
         null=True,
         help_text="List of co-owners (one per line)"
+    )
+    co_owners_details = models.JSONField(
+        default=list,
+        blank=True,
     )
     # ---------- Client info ----------
     client_name = models.CharField(max_length=255, blank=True, default="")
@@ -556,6 +558,16 @@ class Case(TimestampedModel):
         default="",
         choices=PROPERTY_TITLE_TYPE_CHOICES,
         help_text="Required only for Land First Time and Transfer of Ownership cases.",
+    )
+
+    lot_number = models.CharField(
+        max_length=50,
+        help_text="Permanent cadastral map identifier (e.g. Lot 123-B)",
+    )
+
+    previous_tax_dec_number = models.CharField(
+        max_length=50,
+        help_text="Previous Tax Dec Number (e.g. TD-2023-001, NA, New)",
     )
 
     CLASSIFICATION_CHOICES: ClassVar[list[tuple[str, str]]] = [
@@ -660,6 +672,16 @@ class Case(TimestampedModel):
     )
     taxmapped_at = models.DateTimeField(null=True, blank=True)
 
+    # ---------- Numbering ----------
+    numberer_assigned_to = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="numbered_cases"
+    )
+    numberer_assigned_at = models.DateTimeField(null=True, blank=True)
+
     released_at = models.DateTimeField(null=True, blank=True)
     lgu_submitted_at = models.DateTimeField(null=True, blank=True)
     
@@ -704,6 +726,20 @@ class Case(TimestampedModel):
             return (main + (" " + rest if rest else "")).strip().strip(",")
 
         return (self.client_name or "").strip()
+
+    @property
+    def spouse_display_name(self) -> str:
+        last_name = (self.spouse_last_name or "").strip()
+        first_name = (self.spouse_first_name or "").strip()
+        middle_initial = (self.spouse_middle_initial or "").strip()
+        suffix = (self.spouse_suffix or "").strip()
+
+        if last_name or first_name or middle_initial or suffix:
+            main = ", ".join([p for p in [last_name, first_name] if p])
+            rest = " ".join([p for p in [middle_initial, suffix] if p])
+            return (main + (" " + rest if rest else "")).strip().strip(",")
+        
+        return ""
 
     @property
     def client_display_contact(self) -> str:

@@ -239,12 +239,19 @@
                     {% endfor %}
                 </select>
 
+                <select name="examiner" class="filter-select">
+                    <option value="all">All Examiners</option>
+                    {% for ex in all_examiners %}
+                        <option value="{{ ex.id }}" {% if selected_examiner == ex.id|stringformat:"s" %}selected{% endif %}>Examined by: {{ ex.full_name|default:ex.email }}</option>
+                    {% endfor %}
+                </select>
+
                 <input type="date" name="date_from" class="filter-date" value="{{ selected_date_from }}" title="Date From">
                 <input type="date" name="date_to" class="filter-date" value="{{ selected_date_to }}" title="Date To">
             {% endif %}
 
             <!-- Clear Filters Button -->
-            {% if selected_search or selected_time_range != 'all' or selected_lgu != 'all' or selected_transaction_type != 'all' or selected_ownership_type != 'all' or selected_date_from or selected_date_to %}
+            {% if selected_search or selected_time_range != 'all' or selected_lgu != 'all' or selected_transaction_type != 'all' or selected_ownership_type != 'all' or selected_date_from or selected_date_to or selected_examiner != 'all' %}
                 <a href="?scope={{ scope }}&tab={{ tab }}" class="btn-outline" title="Clear Filters"><i class="ri-close-line" style="font-size: 1.2rem;"></i></a>
             {% endif %}
         </form>
