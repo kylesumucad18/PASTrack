@@ -822,16 +822,16 @@
                                     id="numberer_transaction_input"
                                     inputmode="numeric"
                                     pattern="[0-9]*"
-                                    maxlength="6"
+                                    maxlength="5"
                                     name="transaction_number"
-                                    placeholder="Enter 6-digit Transaction Number"
+                                    placeholder="Enter 5-digit Tax Declaration Number"
                                     class="form-control"
                                     style="margin-bottom: 0.5rem;"
                                     required
                                     oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
                                 >
                                 <button class="btn btn-primary" type="button" onclick="openNumbererModal()" style="width:100%;">
-                                    <i class="ri-hashtag"></i> Submit Transaction Number
+                                    <i class="ri-hashtag"></i> Submit Tax Declaration Number
                                 </button>
                             </form>
                         {% endif %}
