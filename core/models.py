@@ -544,6 +544,7 @@ class Case(TimestampedModel):
         ("reassessment_reclassification", "Re-assessment / Re-classification"),
         ("area_increase_decrease", "Increase / Decrease of Area"),
         ("transfer_ownership_tax_decl", "Transfer of Ownership of Tax Declaration"),
+        ("transfer_ownership_partial_segregation", "Transfer of Ownership (Partial / Segregation)"),
     ]
 
     case_type = models.CharField(max_length=64, choices=CASE_TYPE_CHOICES, blank=True, default="")
@@ -593,6 +594,26 @@ class Case(TimestampedModel):
         blank=True,
         null=True,
     )
+
+    original_area = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        blank=True,
+        null=True,
+    )
+
+    transferred_area = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        blank=True,
+        null=True,
+    )
+
+    @property
+    def remaining_area(self):
+        if self.original_area is not None and self.transferred_area is not None:
+            return self.original_area - self.transferred_area
+        return None
 
     AREA_UNIT_CHOICES: ClassVar[list[tuple[str, str]]] = [
         ('sqm', 'Square Meters (sq.m.)'),

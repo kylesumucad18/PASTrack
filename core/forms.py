@@ -85,6 +85,8 @@ class CaseDetailsForm(forms.ModelForm):
             "lot_number",
             "previous_tax_dec_number",
             "needs_taxmapping",
+            "original_area",
+            "transferred_area",
         ]
         widgets: ClassVar[dict] = {
             "ownership_type": forms.Select(attrs={"id": "id_ownership_type"}),
@@ -114,6 +116,8 @@ class CaseDetailsForm(forms.ModelForm):
             "property_title_type": forms.Select(),
             "lot_number": forms.TextInput(attrs={"placeholder": "e.g. Lot 123-B"}),
             "previous_tax_dec_number": forms.TextInput(attrs={"placeholder": "e.g. TD-2023-001, NA, or New"}),
+            "original_area": forms.NumberInput(attrs={"step": "0.0001", "placeholder": "Original area"}),
+            "transferred_area": forms.NumberInput(attrs={"step": "0.0001", "placeholder": "Transferred area"}),
         }
 
     def __init__(self, *args, user: CustomUser | None = None, **kwargs):
@@ -160,12 +164,24 @@ class CaseDetailsForm(forms.ModelForm):
             
         area_value = cleaned.get("area_value")
         area_unit = cleaned.get("area_unit")
-        if area_value is None and not area_unit:
-            self.add_error("area_value", "Property area is required.")
-        elif area_value is not None and not area_unit:
-            self.add_error("area_unit", "Area unit is required.")
-        elif area_value is None and area_unit:
-            self.add_error("area_value", "Area value is required.")
+        case_type = cleaned.get("case_type")
+
+        if case_type == "transfer_ownership_partial_segregation":
+            original_area = cleaned.get("original_area")
+            transferred_area = cleaned.get("transferred_area")
+            if original_area is None:
+                self.add_error("original_area", "Original Area is required.")
+            if transferred_area is None:
+                self.add_error("transferred_area", "Transferred Area is required.")
+            if not area_unit:
+                self.add_error("area_unit", "Area unit is required.")
+        else:
+            if area_value is None and not area_unit:
+                self.add_error("area_value", "Property area is required.")
+            elif area_value is not None and not area_unit:
+                self.add_error("area_unit", "Area unit is required.")
+            elif area_value is None and area_unit:
+                self.add_error("area_value", "Area value is required.")
 
         raw_num = (cleaned.get("client_number") or "").strip()
         raw_email = (cleaned.get("client_email") or "").strip()

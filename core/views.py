@@ -411,10 +411,20 @@ def _case_type_requirements(case_type: str, *, title_type: str = "") -> list[str
             "Transfer Tax / Transfer Fee Receipt",
             "Certified true copy / machine copy of title (if titled)",
         ],
+        "transfer_ownership_partial_segregation": [
+            "Letter request (transfer of ownership of tax declaration)",
+            "Endorsement from Municipal Assessor",
+            "Deed of Conveyance (Registry of Deeds)",
+            "Tax Clearance (current)",
+            "Certificate Authorizing Registration (CAR)",
+            "Subdivision / Consolidation Plan",
+            "Transfer Tax / Transfer Fee Receipt",
+            "Certified true copy / machine copy of title (if titled)",
+        ],
     }
 
     reqs = list(mapping.get(case_type, []))
-    if case_type == "transfer_ownership_tax_decl":
+    if case_type in ("transfer_ownership_tax_decl", "transfer_ownership_partial_segregation"):
         if title_type == "untitled":
             # Remove titled-only document.
             reqs = [r for r in reqs if "machine copy of title" not in (r or "").lower()]
