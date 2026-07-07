@@ -548,6 +548,7 @@ class Case(TimestampedModel):
         ("area_increase_decrease", "Increase / Decrease of Area"),
         ("transfer_ownership_tax_decl", "Transfer of Ownership of Tax Declaration"),
         ("transfer_ownership_partial_segregation", "Transfer of Ownership (Partial / Segregation)"),
+        ("retained_area_new_mother_lot", "Retained Area (New Mother Lot)"),
     ]
 
     case_type = models.CharField(max_length=64, choices=CASE_TYPE_CHOICES, blank=True, default="")
@@ -572,6 +573,12 @@ class Case(TimestampedModel):
     previous_tax_dec_number = models.CharField(
         max_length=50,
         help_text="Previous Tax Dec Number (e.g. TD-2023-001, NA, New)",
+        null=True,
+        blank=True,
+    )
+    is_legacy_override = models.BooleanField(
+        default=False,
+        help_text="Bypass Mother Lot checks for pre-2000s records"
     )
 
     CLASSIFICATION_CHOICES: ClassVar[list[tuple[str, str]]] = [

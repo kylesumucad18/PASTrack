@@ -59,6 +59,10 @@ class CaseDetailsForm(forms.ModelForm):
         label="Taxmapped?",
         help_text="Check if this transaction needs tax mapping.",
     )
+    legacy_document_scan = forms.FileField(
+        required=False,
+        label="Legacy Document Scan",
+    )
 
     class Meta:
         model = Case
@@ -87,6 +91,7 @@ class CaseDetailsForm(forms.ModelForm):
             "needs_taxmapping",
             "original_area",
             "transferred_area",
+            "is_legacy_override",
         ]
         widgets: ClassVar[dict] = {
             "ownership_type": forms.Select(attrs={"id": "id_ownership_type"}),
@@ -118,6 +123,7 @@ class CaseDetailsForm(forms.ModelForm):
             "previous_tax_dec_number": forms.TextInput(attrs={"placeholder": "e.g. TD-2023-001, NA, or New"}),
             "original_area": forms.NumberInput(attrs={"step": "0.0001", "placeholder": "Original area"}),
             "transferred_area": forms.NumberInput(attrs={"step": "0.0001", "placeholder": "Transferred area"}),
+            "is_legacy_override": forms.CheckboxInput(attrs={"id": "id_is_legacy_override"}),
         }
 
     def __init__(self, *args, user: CustomUser | None = None, **kwargs):
@@ -175,6 +181,8 @@ class CaseDetailsForm(forms.ModelForm):
             original_area = cleaned.get("original_area")
             transferred_area = cleaned.get("transferred_area")
             prev_td = cleaned.get("previous_tax_dec_number")
+            is_legacy = cleaned.get("is_legacy_override")
+            legacy_doc = cleaned.get("legacy_document_scan")
             
             if original_area is None:
                 self.add_error("original_area", "Original Area is required.")
@@ -184,18 +192,29 @@ class CaseDetailsForm(forms.ModelForm):
                 self.add_error("area_unit", "Area unit is required.")
                 
             if prev_td and original_area is not None and transferred_area is not None:
-                source_case = Case.objects.filter(td_number=prev_td).first()
-                if not source_case:
-                    self.add_error("previous_tax_dec_number", "Source Tax Dec Number not found. Segregation cannot proceed.")
-                elif source_case.area_value is None:
-                    self.add_error("previous_tax_dec_number", "Source Tax Dec does not have a registered area.")
-                else:
-                    # Validate that original_area matches the DB record
-                    if float(original_area) != float(source_case.area_value):
-                        self.add_error("original_area", f"Original Area does not match the database record for {prev_td}.")
-                    # Prevent over-transferring
+                if is_legacy:
+                    if not legacy_doc and not self.instance.documents.filter(doc_type="Legacy Document Scan").exists():
+                        self.add_error("legacy_document_scan", "A scanned physical document must be uploaded for legacy override.")
                     if transferred_area > original_area:
                         self.add_error("transferred_area", "Transferred Area cannot be greater than the Original Area.")
+                else:
+                    source_case = Case.objects.filter(td_number=prev_td).first()
+                    if not source_case:
+                        self.add_error("previous_tax_dec_number", "Source Tax Dec Number not found. Segregation cannot proceed.")
+                    elif source_case.status == "cancelled":
+                        self.add_error("previous_tax_dec_number", "This Mother Lot has been cancelled. Please use the active Remaining Area Tax Declaration Number instead.")
+                    elif source_case.area_value is None:
+                        self.add_error("previous_tax_dec_number", "Source Tax Dec does not have a registered area.")
+                    else:
+                        # Validate that original_area matches the DB record
+                        if float(original_area) != float(source_case.area_value):
+                            self.add_error("original_area", f"Original Area does not match the database record for {prev_td}.")
+                        # Prevent zero-area segregations
+                        if transferred_area == original_area:
+                            self.add_error("transferred_area", "Error: Segregation leaves 0 sq.m. remaining. Please change the Transaction Type to 'Transfer of Ownership (Total)'.")
+                        # Prevent over-transferring
+                        if transferred_area > original_area:
+                            self.add_error("transferred_area", "Transferred Area cannot be greater than the Original Area.")
         else:
             if area_value is None and not area_unit:
                 self.add_error("area_value", "Property area is required.")

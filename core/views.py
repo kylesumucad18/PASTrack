@@ -3350,9 +3350,22 @@ def draft_wizard(request, draft_id, step: int):
         if request.method == "POST":
             old_case_type = (case.case_type or "").strip()
             old_title_type = (case.property_title_type or "").strip()
+            # Add files to request.POST logic
             form = CaseDetailsForm(request.POST, request.FILES, instance=case, user=request.user)
             if form.is_valid():
                 case = form.save(commit=False)
+                
+                # Check legacy document scan upload
+                legacy_file = request.FILES.get("legacy_document_scan")
+                if form.cleaned_data.get("is_legacy_override") and legacy_file:
+                    CaseDocument.objects.create(
+                        case=case,
+                        doc_type="Legacy Document Scan",
+                        file=legacy_file,
+                        uploaded_by=request.user
+                    )
+                
+                # Default case_type based on role...            
                 case.status = "draft"
                 case.lgu_submitted_at = None
                 if not (case.lgu_area_code or "").strip():
@@ -5318,6 +5331,10 @@ def mark_numbered(request, tracking_id):
                             target_object=f"Case: {source_case.tracking_id}",
                             details={"reason": f"Cancelled due to transfer. New TD: {transaction_number}"}
                         )
+                        
+                        if not case.lot_number and source_case.lot_number:
+                            case.lot_number = source_case.lot_number
+                            case.save(update_fields=["lot_number", "updated_at"])
 
                         if case.case_type == "transfer_ownership_partial_segregation":
                             remaining_area = 0
@@ -5326,11 +5343,12 @@ def mark_numbered(request, tracking_id):
                             
                             record_b = Case.objects.create(
                                 status="for_release",
-                                case_type="transfer_ownership_partial_segregation",
+                                case_type="retained_area_new_mother_lot",
                                 client_first_name=source_case.client_first_name,
                                 client_last_name=source_case.client_last_name,
                                 client_name=source_case.client_name,
                                 client_contact=source_case.client_contact,
+                                client_number=source_case.client_number,
                                 client_email=source_case.client_email,
                                 ownership_type=source_case.ownership_type,
                                 spouse_first_name=source_case.spouse_first_name,
@@ -5357,6 +5375,22 @@ def mark_numbered(request, tracking_id):
                                 target_object=f"Case: {record_b.tracking_id}",
                                 details={"reason": f"Generated Record B (Remaining Area) from {source_case.tracking_id}"}
                             )
+
+                            # Inherit documents without duplicating physical files
+                            inherited_docs = []
+                            for doc in source_case.documents.all():
+                                inherited_docs.append(CaseDocument(
+                                    case=record_b,
+                                    doc_type=doc.doc_type,
+                                    file=doc.file.name,  # Copies DB reference only
+                                    uploaded_by=doc.uploaded_by,
+                                    reviewed_ok=doc.reviewed_ok,
+                                    review_remark=doc.review_remark,
+                                    reviewed_by=doc.reviewed_by,
+                                    reviewed_at=doc.reviewed_at,
+                                ))
+                            if inherited_docs:
+                                CaseDocument.objects.bulk_create(inherited_docs)
 
             AuditLog.objects.create(
                 actor=request.user,
@@ -5658,7 +5692,8 @@ def get_td_area(request, td_number):
         return JsonResponse({
             "success": True,
             "area": str(case.area_value),
-            "classification": case.classification
+            "classification": case.classification,
+            "lgu_origin": case.area
         })
     return JsonResponse({
         "success": False,

@@ -197,7 +197,11 @@
                             <div>
                                 <h3 style="margin: 0 0 0.25rem 0; font-size: 1rem; color: #1e40af;">Mother Lot Record</h3>
                                 <p style="margin: 0; font-size: 0.9rem; color: #1e3a8a;">
-                                    This property was segregated to create 
+                                    {% if child_cases.0.case_type == 'transfer_ownership_tax_decl' %}
+                                        This property was transferred to create 
+                                    {% else %}
+                                        This property was segregated to create 
+                                    {% endif %}
                                     {% for child in child_cases %}<a href="{% url 'case_detail' child.tracking_id %}" style="font-weight: bold; color: #2563eb; text-decoration: underline;">{{ child.tracking_id }}</a>{% if not forloop.last %} and {% endif %}{% endfor %}.
                                 </p>
                             </div>
@@ -236,6 +240,8 @@
                         <div class="info-item"><span class="info-label">Original Area (Mother Lot)</span><span class="info-value">{% if case.original_area %}{{ case.original_area }} {{ case.get_area_unit_display }}{% else %}—{% endif %}</span></div>
                         <div class="info-item"><span class="info-label">Transferred Area</span><span class="info-value">{% if case.transferred_area %}{{ case.transferred_area }} {{ case.get_area_unit_display }}{% else %}—{% endif %}</span></div>
                         <div class="info-item"><span class="info-label">Remaining Area</span><span class="info-value">{% if case.remaining_area is not None %}{{ case.remaining_area }} {{ case.get_area_unit_display }}{% else %}—{% endif %}</span></div>
+                        {% elif case.case_type == 'retained_area_new_mother_lot' %}
+                        <div class="info-item"><span class="info-label">Property Area (Retained)</span><span class="info-value">{% if case.area_value %}{{ case.area_value }} {{ case.get_area_unit_display }}{% else %}-{% endif %}</span></div>
                         {% else %}
                         <div class="info-item"><span class="info-label">Property Area</span><span class="info-value">{% if case.area_value %}{{ case.area_value }} {{ case.get_area_unit_display }}{% else %}—{% endif %}</span></div>
                         {% endif %}
