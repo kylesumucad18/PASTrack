@@ -987,9 +987,9 @@
                         </div>
 
                         <div class="form-group col-6">
-                            <label for="{{ form.previous_tax_dec_number.id_for_label }}">Previous Tax Dec Number<span class="text-danger">*</span></label>
+                            <label id="prev_td_label" for="{{ form.previous_tax_dec_number.id_for_label }}">Previous Tax Dec Number</label>
                             {{ form.previous_tax_dec_number }}
-                            <small class="form-text" style="color: #6c757d; display: block; margin-top: 0.25rem;">Enter "NA" or "New" if not applicable</small>
+                            <small id="prev_td_help_text" class="form-text" style="color: #6c757d; display: block; margin-top: 0.25rem;">Enter "NA" or "New" if not applicable</small>
                             {% if form.previous_tax_dec_number.errors %}<span class="error-msg">{{ form.previous_tax_dec_number.errors.0 }}</span>{% endif %}
                         </div>
 
@@ -1951,15 +1951,39 @@
         const originalAreaInput = document.getElementById('{{ form.original_area.id_for_label }}');
         const transferredAreaInput = document.getElementById('{{ form.transferred_area.id_for_label }}');
         const remainingAreaDisplay = document.getElementById('remaining_area_display');
+        
+        const prevTdLabel = document.getElementById('prev_td_label');
+        const prevTdInput = document.getElementById('{{ form.previous_tax_dec_number.id_for_label }}');
+        const prevTdHelpText = document.getElementById('prev_td_help_text');
 
         function updateAreaFieldsVisibility() {
             if (!caseTypeSelect) return;
-            if (caseTypeSelect.value === 'transfer_ownership_partial_segregation') {
+            const isSegregation = caseTypeSelect.value === 'transfer_ownership_partial_segregation';
+            const isFullTransfer = caseTypeSelect.value === 'transfer_ownership_tax_decl';
+
+            if (isSegregation || isFullTransfer) {
+                if (prevTdLabel) prevTdLabel.innerHTML = 'Previous Tax Dec Number<span class="text-danger">*</span>';
+                if (prevTdInput) prevTdInput.required = true;
+                if (prevTdHelpText) prevTdHelpText.style.display = 'none';
+            } else {
+                if (prevTdLabel) prevTdLabel.innerHTML = 'Previous Tax Dec Number';
+                if (prevTdInput) prevTdInput.required = false;
+                if (prevTdHelpText) prevTdHelpText.style.display = 'block';
+            }
+
+            if (isSegregation) {
                 if (standardAreaWrapper) standardAreaWrapper.style.display = 'none';
                 if (segregationAreaWrapper) segregationAreaWrapper.style.display = 'flex';
                 if (propertyAreaLabel) propertyAreaLabel.innerHTML = 'Property Area (Segregation / Partial)<span class="text-danger">*</span>';
                 if (standardErrors) standardErrors.style.display = 'none';
                 if (segregationErrors) segregationErrors.style.display = 'block';
+                
+                originalAreaInput.readOnly = true; // Strictly lock manual entry
+                const continueBtn = document.querySelector('button[name="save_continue"]');
+                if (continueBtn && (!prevTdInput.value || !originalAreaInput.value)) {
+                     continueBtn.disabled = true;
+                }
+                
                 calculateRemainingArea();
             } else {
                 if (standardAreaWrapper) standardAreaWrapper.style.display = 'flex';
@@ -1967,6 +1991,22 @@
                 if (propertyAreaLabel) propertyAreaLabel.innerHTML = 'Property Area<span class="text-danger">*</span>';
                 if (standardErrors) standardErrors.style.display = 'block';
                 if (segregationErrors) segregationErrors.style.display = 'none';
+                
+                originalAreaInput.readOnly = false;
+                const continueBtn = document.querySelector('button[name="save_continue"]');
+                if (continueBtn) continueBtn.disabled = false;
+                
+                const existingError = document.getElementById('td_ajax_error');
+                if (existingError) existingError.remove();
+                
+                const classificationSelectEl = document.getElementById('{{ form.classification.id_for_label }}');
+                if (classificationSelectEl) {
+                    classificationSelectEl.style.pointerEvents = 'auto';
+                    classificationSelectEl.style.backgroundColor = '';
+                    classificationSelectEl.setAttribute('name', 'classification');
+                    const hiddenCls = document.getElementById('hidden_classification_input');
+                    if (hiddenCls) hiddenCls.remove();
+                }
             }
         }
 
@@ -1989,6 +2029,105 @@
             caseTypeSelect.addEventListener('change', updateAreaFieldsVisibility);
             // Run on init
             updateAreaFieldsVisibility();
+        }
+
+        const classificationSelectEl = document.getElementById('{{ form.classification.id_for_label }}');
+
+        if (prevTdInput) {
+            const handleTdChange = async function() {
+                if (!caseTypeSelect) return;
+                const isSegregation = caseTypeSelect.value === 'transfer_ownership_partial_segregation';
+                if (!isSegregation) return;
+
+                const tdNumber = prevTdInput.value.trim();
+                const continueBtn = document.querySelector('button[name="save_continue"]');
+
+                if (tdNumber.length >= 2) { 
+                    try {
+                        const response = await fetch('/api/get-td-area/' + tdNumber + '/');
+                        const data = await response.json();
+                        if (data.success) {
+                            originalAreaInput.value = data.area;
+                            originalAreaInput.readOnly = true;
+                            
+                            if (classificationSelectEl && data.classification) {
+                                classificationSelectEl.value = data.classification;
+                                classificationSelectEl.style.pointerEvents = 'none';
+                                classificationSelectEl.style.backgroundColor = '#e9ecef';
+                                // Create a hidden input so the value still submits
+                                let hiddenCls = document.getElementById('hidden_classification_input');
+                                if (!hiddenCls) {
+                                    hiddenCls = document.createElement('input');
+                                    hiddenCls.type = 'hidden';
+                                    hiddenCls.id = 'hidden_classification_input';
+                                    hiddenCls.name = 'classification';
+                                    classificationSelectEl.parentNode.appendChild(hiddenCls);
+                                }
+                                hiddenCls.value = data.classification;
+                                // Remove name from select so it doesn't submit disabled value or duplicate
+                                classificationSelectEl.removeAttribute('name');
+                            }
+                            
+                            if (continueBtn) continueBtn.disabled = false;
+                            
+                            const existingError = document.getElementById('td_ajax_error');
+                            if (existingError) existingError.remove();
+                            
+                            calculateRemainingArea();
+                        } else {
+                            originalAreaInput.value = '';
+                            originalAreaInput.readOnly = true; 
+                            
+                            if (classificationSelectEl) {
+                                classificationSelectEl.style.pointerEvents = 'auto';
+                                classificationSelectEl.style.backgroundColor = '';
+                                classificationSelectEl.setAttribute('name', 'classification');
+                                const hiddenCls = document.getElementById('hidden_classification_input');
+                                if (hiddenCls) hiddenCls.remove();
+                            }
+                            
+                            if (continueBtn) continueBtn.disabled = true;
+                            
+                            let errorSpan = document.getElementById('td_ajax_error');
+                            if (!errorSpan) {
+                                errorSpan = document.createElement('span');
+                                errorSpan.id = 'td_ajax_error';
+                                errorSpan.className = 'error-msg';
+                                errorSpan.style.color = '#dc3545';
+                                errorSpan.style.display = 'block';
+                                errorSpan.style.marginTop = '0.25rem';
+                                prevTdInput.parentNode.appendChild(errorSpan);
+                            }
+                            errorSpan.innerText = '❌ Mother Lot not found! You cannot proceed without a valid Source Tax Dec.';
+                            
+                            calculateRemainingArea();
+                        }
+                    } catch (e) {
+                        console.error("Failed to fetch TD area", e);
+                    }
+                } else {
+                    originalAreaInput.value = '';
+                    originalAreaInput.readOnly = true;
+                    if (continueBtn) continueBtn.disabled = true;
+                    
+                    if (classificationSelectEl) {
+                        classificationSelectEl.style.pointerEvents = 'auto';
+                        classificationSelectEl.style.backgroundColor = '';
+                        classificationSelectEl.setAttribute('name', 'classification');
+                        const hiddenCls = document.getElementById('hidden_classification_input');
+                        if (hiddenCls) hiddenCls.remove();
+                    }
+                    
+                    calculateRemainingArea();
+                }
+            };
+            
+            prevTdInput.addEventListener('blur', handleTdChange);
+            prevTdInput.addEventListener('input', function() {
+                if (prevTdInput.value.trim().length === 5) {
+                    handleTdChange();
+                }
+            });
         }
 
         if (originalAreaInput) {

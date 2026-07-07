@@ -313,7 +313,7 @@
             <div class="request-subtext">{{ case.get_case_type_display }}</div>
             {% if case.status in "for_taxmapping,for_approval,approved,for_numbering,for_release,released" %}
                 <div class="request-subtext" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem;">
-                    Examined by: <strong>{{ case.assigned_to.full_name|default:case.assigned_to.email }}</strong>
+                    Examined by: <strong>{% if case.assigned_to %}{{ case.assigned_to.full_name|default:case.assigned_to.email }}{% else %}System Generated{% endif %}</strong>
                 </div>
             {% endif %}
             {% if case.approver_name %}

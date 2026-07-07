@@ -3892,8 +3892,18 @@ def case_detail(request, tracking_id):
             pending_cases_count=Count('numbered_cases', filter=Q(numbered_cases__status='for_numbering'))
         ).order_by("full_name", "email")
 
+    previous_case = None
+    if case.previous_tax_dec_number:
+        previous_case = Case.objects.filter(td_number=case.previous_tax_dec_number).first()
+        
+    child_cases = None
+    if case.td_number:
+        child_cases = Case.objects.filter(previous_tax_dec_number=case.td_number).exclude(pk=case.pk)
+
     response_context = {
         "case": case,
+        "previous_case": previous_case,
+        "child_cases": child_cases,
         "documents": list(case.documents.all()),
         "document_versions": list(DocumentVersion.objects.filter(case=case).order_by("-uploaded_at")),
         "archived_documents": list(ArchivedCaseDocument.objects.filter(case=case).order_by("-archived_at")[:200]),
@@ -5258,14 +5268,26 @@ def mark_numbered(request, tracking_id):
             messages.error(request, "Review all uploaded documents and mark them as checked before numbering.")
             return redirect("case_detail", tracking_id=case.tracking_id)
 
-    transaction_number = (request.POST.get("transaction_number") or request.POST.get("numbers") or "").strip()
-    if not transaction_number:
-        messages.error(request, "Tax Declaration Number is required.")
-        return redirect("case_detail", tracking_id=case.tracking_id)
+    if case.case_type == "transfer_ownership_partial_segregation":
+        transaction_number = (request.POST.get("transaction_number_transferred") or "").strip()
+        transaction_number_remaining = (request.POST.get("transaction_number_remaining") or "").strip()
 
-    if not transaction_number.isdigit() or len(transaction_number) != 5:
-        messages.error(request, "Tax Declaration Number must be exactly 5 digits (numbers only).")
-        return redirect("case_detail", tracking_id=case.tracking_id)
+        if not transaction_number or not transaction_number_remaining:
+            messages.error(request, "Both Tax Declaration Numbers are required for Partial Segregation.")
+            return redirect("case_detail", tracking_id=case.tracking_id)
+
+        if not transaction_number.isdigit() or len(transaction_number) != 5 or not transaction_number_remaining.isdigit() or len(transaction_number_remaining) != 5:
+            messages.error(request, "Both Tax Declaration Numbers must be exactly 5 digits (numbers only).")
+            return redirect("case_detail", tracking_id=case.tracking_id)
+    else:
+        transaction_number = (request.POST.get("transaction_number") or request.POST.get("numbers") or "").strip()
+        if not transaction_number:
+            messages.error(request, "Tax Declaration Number is required.")
+            return redirect("case_detail", tracking_id=case.tracking_id)
+
+        if not transaction_number.isdigit() or len(transaction_number) != 5:
+            messages.error(request, "Tax Declaration Number must be exactly 5 digits (numbers only).")
+            return redirect("case_detail", tracking_id=case.tracking_id)
 
     old_status = case.status
     old_transaction_number = (case.td_number or "").strip()
@@ -5280,7 +5302,73 @@ def mark_numbered(request, tracking_id):
         case.status = "for_release"
         update_fields.append("status")
     try:
-        case.save(update_fields=update_fields)
+        with transaction.atomic():
+            case.save(update_fields=update_fields)
+
+            # Process transfer logic
+            if case.case_type in ["transfer_ownership_tax_decl", "transfer_ownership_partial_segregation"]:
+                if case.previous_tax_dec_number:
+                    source_case = Case.objects.filter(td_number=case.previous_tax_dec_number).select_for_update().first()
+                    if source_case:
+                        source_case.status = "cancelled"
+                        source_case.save(update_fields=["status", "updated_at"])
+                        AuditLog.objects.create(
+                            actor=request.user,
+                            action="case_cancelled",
+                            target_object=f"Case: {source_case.tracking_id}",
+                            details={"reason": f"Cancelled due to transfer. New TD: {transaction_number}"}
+                        )
+
+                        if case.case_type == "transfer_ownership_partial_segregation":
+                            remaining_area = 0
+                            if source_case.area_value and case.transferred_area:
+                                remaining_area = source_case.area_value - case.transferred_area
+                            
+                            record_b = Case.objects.create(
+                                status="for_release",
+                                case_type="transfer_ownership_partial_segregation",
+                                client_first_name=source_case.client_first_name,
+                                client_last_name=source_case.client_last_name,
+                                client_name=source_case.client_name,
+                                client_contact=source_case.client_contact,
+                                client_email=source_case.client_email,
+                                ownership_type=source_case.ownership_type,
+                                spouse_first_name=source_case.spouse_first_name,
+                                spouse_middle_initial=source_case.spouse_middle_initial,
+                                spouse_last_name=source_case.spouse_last_name,
+                                spouse_suffix=source_case.spouse_suffix,
+                                corporation_name=source_case.corporation_name,
+                                co_owners=source_case.co_owners,
+                                co_owners_details=source_case.co_owners_details,
+                                classification=source_case.classification,
+                                area=source_case.area,
+                                lot_number=source_case.lot_number,
+                                area_value=remaining_area,
+                                area_unit=source_case.area_unit,
+                                td_number=transaction_number_remaining,
+                                previous_tax_dec_number=source_case.td_number,
+                                created_by=source_case.created_by,
+                                submitted_by=source_case.submitted_by,
+                                lgu_submitted_at=source_case.lgu_submitted_at,
+                            )
+                            AuditLog.objects.create(
+                                actor=request.user,
+                                action="case_created",
+                                target_object=f"Case: {record_b.tracking_id}",
+                                details={"reason": f"Generated Record B (Remaining Area) from {source_case.tracking_id}"}
+                            )
+
+            AuditLog.objects.create(
+                actor=request.user,
+                action="case_numbered",
+                target_object=f"Case: {case.tracking_id}",
+                details={
+                    "old_status": old_status,
+                    "new_status": case.status,
+                    "transaction_number": transaction_number,
+                    "previous_transaction_number": old_transaction_number,
+                }
+            )
     except IntegrityError:
         return redirect(
             reverse("case_detail", kwargs={"tracking_id": case.tracking_id})
@@ -5558,3 +5646,21 @@ def upload_correction_document(request, tracking_id, doc_id):
         "message": "File updated successfully.", 
         "uploaded_at": doc.uploaded_at.strftime("%b %d, %Y")
     })
+
+@login_required
+def get_td_area(request, td_number):
+    """
+    API Endpoint: Returns the available area and classification for a given Tax Declaration Number.
+    Used for frontend validation during Partial/Segregation transfers.
+    """
+    case = Case.objects.filter(td_number=td_number).first()
+    if case and case.area_value is not None:
+        return JsonResponse({
+            "success": True,
+            "area": str(case.area_value),
+            "classification": case.classification
+        })
+    return JsonResponse({
+        "success": False,
+        "message": "Tax Dec Number not found or has no available area."
+    })

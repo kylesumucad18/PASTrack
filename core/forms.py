@@ -166,15 +166,36 @@ class CaseDetailsForm(forms.ModelForm):
         area_unit = cleaned.get("area_unit")
         case_type = cleaned.get("case_type")
 
+        if case_type in ["transfer_ownership_tax_decl", "transfer_ownership_partial_segregation"]:
+            prev_td = (cleaned.get("previous_tax_dec_number") or "").strip()
+            if not prev_td or prev_td.lower() in ["na", "n/a", "none", "new"]:
+                self.add_error("previous_tax_dec_number", "A valid Previous Tax Dec Number is strictly required for transfer cases (cannot be NA or New).")
+
         if case_type == "transfer_ownership_partial_segregation":
             original_area = cleaned.get("original_area")
             transferred_area = cleaned.get("transferred_area")
+            prev_td = cleaned.get("previous_tax_dec_number")
+            
             if original_area is None:
                 self.add_error("original_area", "Original Area is required.")
             if transferred_area is None:
                 self.add_error("transferred_area", "Transferred Area is required.")
             if not area_unit:
                 self.add_error("area_unit", "Area unit is required.")
+                
+            if prev_td and original_area is not None and transferred_area is not None:
+                source_case = Case.objects.filter(td_number=prev_td).first()
+                if not source_case:
+                    self.add_error("previous_tax_dec_number", "Source Tax Dec Number not found. Segregation cannot proceed.")
+                elif source_case.area_value is None:
+                    self.add_error("previous_tax_dec_number", "Source Tax Dec does not have a registered area.")
+                else:
+                    # Validate that original_area matches the DB record
+                    if float(original_area) != float(source_case.area_value):
+                        self.add_error("original_area", f"Original Area does not match the database record for {prev_td}.")
+                    # Prevent over-transferring
+                    if transferred_area > original_area:
+                        self.add_error("transferred_area", "Transferred Area cannot be greater than the Original Area.")
         else:
             if area_value is None and not area_unit:
                 self.add_error("area_value", "Property area is required.")

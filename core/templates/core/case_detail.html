@@ -190,6 +190,20 @@
             <div class="panel">
                 <div class="panel-header"><h2 class="panel-title">Transaction Information</h2></div>
                 <div class="panel-body">
+                    {% if child_cases %}
+                    <div style="border-left: 4px solid #3b82f6; background: #eff6ff; padding: 1rem; margin-bottom: 1.5rem; border-radius: 4px;">
+                        <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
+                            <i class="ri-information-fill" style="color: #3b82f6; font-size: 1.25rem;"></i>
+                            <div>
+                                <h3 style="margin: 0 0 0.25rem 0; font-size: 1rem; color: #1e40af;">Mother Lot Record</h3>
+                                <p style="margin: 0; font-size: 0.9rem; color: #1e3a8a;">
+                                    This property was segregated to create 
+                                    {% for child in child_cases %}<a href="{% url 'case_detail' child.tracking_id %}" style="font-weight: bold; color: #2563eb; text-decoration: underline;">{{ child.tracking_id }}</a>{% if not forloop.last %} and {% endif %}{% endfor %}.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                     <div class="info-grid">
                         {% if case.ownership_type == 'corporation' %}
                         <div class="info-item"><span class="info-label">Corporation Name</span><span class="info-value">{{ case.corporation_name|default:case.client_display_name }}</span></div>
@@ -231,7 +245,13 @@
                             {% if not case.previous_tax_dec_number or case.previous_tax_dec_number|lower == 'na' or case.previous_tax_dec_number|lower == 'none' or case.previous_tax_dec_number|lower == 'n/a' %}
                                 <span class="info-value" style="color: var(--text-muted); font-style: italic;">None</span>
                             {% else %}
-                                <span class="info-value">{{ case.previous_tax_dec_number }}</span>
+                                <span class="info-value">
+                                    {% if previous_case %}
+                                        <a href="{% url 'case_detail' previous_case.tracking_id %}" class="text-primary text-decoration-underline">{{ case.previous_tax_dec_number }}</a>
+                                    {% else %}
+                                        {{ case.previous_tax_dec_number }}
+                                    {% endif %}
+                                </span>
                             {% endif %}
                         </div>
                         <div class="info-item">
@@ -840,19 +860,54 @@
                         {% if is_numberer and can_number %}
                             <form id="numbererForm" method="post" action="{% url 'mark_numbered' case.tracking_id %}" class="btn-block">
                                 {% csrf_token %}
-                                <input
-                                    type="text"
-                                    id="numberer_transaction_input"
-                                    inputmode="numeric"
-                                    pattern="[0-9]*"
-                                    maxlength="5"
-                                    name="transaction_number"
-                                    placeholder="Enter 5-digit TD Number"
-                                    class="form-control"
-                                    style="margin-bottom: 0.5rem;"
-                                    required
-                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
-                                >
+                                {% if case.case_type == 'transfer_ownership_partial_segregation' %}
+                                    <input
+                                        type="text"
+                                        id="numberer_transaction_input_transferred"
+                                        inputmode="numeric"
+                                        pattern="\d{5}"
+                                        minlength="5"
+                                        maxlength="5"
+                                        name="transaction_number_transferred"
+                                        placeholder="New TD Number (Transferred)"
+                                        class="form-control"
+                                        style="margin-bottom: 0.5rem;"
+                                        required
+                                        title="Please enter exactly 5 digits"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
+                                    >
+                                    <input
+                                        type="text"
+                                        id="numberer_transaction_input_remaining"
+                                        inputmode="numeric"
+                                        pattern="\d{5}"
+                                        minlength="5"
+                                        maxlength="5"
+                                        name="transaction_number_remaining"
+                                        placeholder="New TD Number (Remaining)"
+                                        class="form-control"
+                                        style="margin-bottom: 0.5rem;"
+                                        required
+                                        title="Please enter exactly 5 digits"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
+                                    >
+                                {% else %}
+                                    <input
+                                        type="text"
+                                        id="numberer_transaction_input"
+                                        inputmode="numeric"
+                                        pattern="\d{5}"
+                                        minlength="5"
+                                        maxlength="5"
+                                        name="transaction_number"
+                                        placeholder="Enter 5-digit TD Number"
+                                        class="form-control"
+                                        style="margin-bottom: 0.5rem;"
+                                        required
+                                        title="Please enter exactly 5 digits"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
+                                    >
+                                {% endif %}
                                 <button class="btn btn-primary" type="button" onclick="openNumbererModal()" style="width:100%;">
                                     <i class="ri-hashtag"></i> Submit TD Number
                                 </button>
@@ -862,22 +917,56 @@
                         {% if request.user.role == "super_admin" %}
                             <form method="post" action="{% url 'mark_numbered' case.tracking_id %}" class="btn-block">
                                 {% csrf_token %}
-                                <input
-                                    type="text"
-                                    inputmode="numeric"
-                                    pattern="[0-9]*"
-                                    maxlength="5"
-                                    name="transaction_number"
-                                    value="{{ case.td_number|default:'' }}"
-                                    placeholder="Override Tax Declaration Number (5 digits)"
-                                    class="form-control"
-                                    style="margin-bottom: 0.5rem;"
-                                    required
-                                    oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
-                                >
+                                {% if case.case_type == 'transfer_ownership_partial_segregation' %}
+                                    <input
+                                        type="text"
+                                        inputmode="numeric"
+                                        pattern="\d{5}"
+                                        minlength="5"
+                                        maxlength="5"
+                                        name="transaction_number_transferred"
+                                        placeholder="Override TD Number (Transferred)"
+                                        class="form-control"
+                                        style="margin-bottom: 0.5rem;"
+                                        required
+                                        title="Please enter exactly 5 digits"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
+                                    >
+                                    <input
+                                        type="text"
+                                        inputmode="numeric"
+                                        pattern="\d{5}"
+                                        minlength="5"
+                                        maxlength="5"
+                                        name="transaction_number_remaining"
+                                        placeholder="Override TD Number (Remaining)"
+                                        class="form-control"
+                                        style="margin-bottom: 0.5rem;"
+                                        required
+                                        title="Please enter exactly 5 digits"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
+                                    >
+                                {% else %}
+                                    <input
+                                        type="text"
+                                        inputmode="numeric"
+                                        pattern="\d{5}"
+                                        minlength="5"
+                                        maxlength="5"
+                                        name="transaction_number"
+                                        value="{{ case.td_number|default:'' }}"
+                                        placeholder="Override Tax Declaration Number (5 digits)"
+                                        class="form-control"
+                                        style="margin-bottom: 0.5rem;"
+                                        required
+                                        title="Please enter exactly 5 digits"
+                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
+                                    >
+                                {% endif %}
                                 <button class="btn btn-outline" type="submit" style="width:100%;">
                                     <i class="ri-edit-2-line"></i> Override Tax Declaration Number
                                 </button>
+
                             </form>
 
                             <button class="btn btn-danger btn-block" type="button" onclick="openDeleteTransactionModal('{{ case.tracking_id }}')">
@@ -1355,12 +1444,25 @@
 
 <script>
     function openNumbererModal() {
-        const input = document.getElementById('numberer_transaction_input');
-        if (input && input.value.trim().length > 0) {
-            document.getElementById('numbererModalTDDisplay').innerText = input.value.trim();
-            document.getElementById('numbererSubmitModal').style.display = 'flex';
+        const isPartial = document.getElementById('numberer_transaction_input_transferred') !== null;
+        if (isPartial) {
+            const input1 = document.getElementById('numberer_transaction_input_transferred');
+            const input2 = document.getElementById('numberer_transaction_input_remaining');
+            if (input1 && input1.value.trim().length === 5 && input2 && input2.value.trim().length === 5) {
+                document.getElementById('numbererModalTDDisplay').innerText = input1.value.trim() + " (Transferred) & " + input2.value.trim() + " (Remaining)";
+                document.getElementById('numbererSubmitModal').style.display = 'flex';
+            } else {
+                if (!input1.checkValidity()) { input1.reportValidity(); }
+                else if (!input2.checkValidity()) { input2.reportValidity(); }
+            }
         } else {
-            input.reportValidity();
+            const input = document.getElementById('numberer_transaction_input');
+            if (input && input.value.trim().length === 5) {
+                document.getElementById('numbererModalTDDisplay').innerText = input.value.trim();
+                document.getElementById('numbererSubmitModal').style.display = 'flex';
+            } else {
+                input.reportValidity();
+            }
         }
     }
     function closeNumbererModal() {

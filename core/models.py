@@ -485,6 +485,9 @@ class Case(TimestampedModel):
         ("client_correction", "Client Correction (30 days)"),
         ("returned", "Returned (Legacy)"),
         ("withdrawn", "Withdrawn"),
+        ("closed", "Closed"),
+        ("cancelled", "Cancelled"),
+        ("active", "Active"),
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="not_received")
 
