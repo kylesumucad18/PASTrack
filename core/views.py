@@ -2819,7 +2819,8 @@ def _reset_case_uploads_and_checklist(*, case: Case) -> None:
 
 
 def _seed_case_checklist(*, case: Case) -> None:
-    requirements = ["Endorsement Letter", *_case_type_requirements(
+    legacy_req = ["Legacy Document Scan"] if getattr(case, "is_legacy_override", False) else []
+    requirements = ["Endorsement Letter", *legacy_req, *_case_type_requirements(
         getattr(case, "case_type", ""),
         title_type=getattr(case, "property_title_type", ""),
     )]
@@ -2886,6 +2887,15 @@ def submit_case(request):
                     _reset_case_uploads_and_checklist(case=case)
                     _seed_case_checklist(case=case)
 
+                legacy_file = request.FILES.get("legacy_document_scan")
+                if cleaned.get("is_legacy_override") and legacy_file:
+                    CaseDocument.objects.create(
+                        case=case,
+                        doc_type="Legacy Document Scan",
+                        file=legacy_file,
+                        uploaded_by=request.user
+                    )
+
                 AuditLog.objects.create(
                     actor=request.user,
                     action="case_update",
@@ -2911,6 +2921,15 @@ def submit_case(request):
             
             case.lgu_area_code = _municipality_area_code(effective_mun)
             case.save()
+            
+            legacy_file = request.FILES.get("legacy_document_scan")
+            if cleaned.get("is_legacy_override") and legacy_file:
+                CaseDocument.objects.create(
+                    case=case,
+                    doc_type="Legacy Document Scan",
+                    file=legacy_file,
+                    uploaded_by=request.user
+                )
 
             AuditLog.objects.create(
                 actor=request.user,
@@ -2920,7 +2939,8 @@ def submit_case(request):
             )
 
             # Seed checklist suggestions (uploads happen in Step 2 only).
-            requirements = ["Endorsement Letter", *_case_type_requirements(
+            legacy_req = ["Legacy Document Scan"] if getattr(case, "is_legacy_override", False) else []
+            requirements = ["Endorsement Letter", *legacy_req, *_case_type_requirements(
                 getattr(case, "case_type", ""),
                 title_type=getattr(case, "property_title_type", ""),
             )]
@@ -3003,6 +3023,15 @@ def case_wizard(request, tracking_id, step: int):
                 
                 updated.save()
                 
+                legacy_file = request.FILES.get("legacy_document_scan")
+                if form.cleaned_data.get("is_legacy_override") and legacy_file:
+                    CaseDocument.objects.create(
+                        case=updated,
+                        doc_type="Legacy Document Scan",
+                        file=legacy_file,
+                        uploaded_by=request.user
+                    )
+                
                 new_case_type = (updated.case_type or "").strip()
                 new_title_type = (updated.property_title_type or "").strip()
                 if (new_case_type != old_case_type) or (new_title_type != old_title_type):
@@ -3034,7 +3063,8 @@ def case_wizard(request, tracking_id, step: int):
             messages.error(request, "Document uploads can only be changed after the case is returned by Capitol Receiving.")
             return redirect("case_detail", tracking_id=case.tracking_id)
 
-        requirements = ["Endorsement Letter", *_case_type_requirements(
+        legacy_req = ["Legacy Document Scan"] if getattr(case, "is_legacy_override", False) else []
+        requirements = ["Endorsement Letter", *legacy_req, *_case_type_requirements(
             getattr(case, "case_type", ""),
             title_type=getattr(case, "property_title_type", ""),
         )]
@@ -3355,6 +3385,13 @@ def draft_wizard(request, draft_id, step: int):
             if form.is_valid():
                 case = form.save(commit=False)
                 
+                # Default case_type based on role...            
+                case.status = "draft"
+                case.lgu_submitted_at = None
+                if not (case.lgu_area_code or "").strip():
+                    case.lgu_area_code = _municipality_area_code(getattr(getattr(case, "submitted_by", None), "lgu_municipality", ""))
+                case.save()
+
                 # Check legacy document scan upload
                 legacy_file = request.FILES.get("legacy_document_scan")
                 if form.cleaned_data.get("is_legacy_override") and legacy_file:
@@ -3364,13 +3401,6 @@ def draft_wizard(request, draft_id, step: int):
                         file=legacy_file,
                         uploaded_by=request.user
                     )
-                
-                # Default case_type based on role...            
-                case.status = "draft"
-                case.lgu_submitted_at = None
-                if not (case.lgu_area_code or "").strip():
-                    case.lgu_area_code = _municipality_area_code(getattr(getattr(case, "submitted_by", None), "lgu_municipality", ""))
-                case.save()
                 new_case_type = (case.case_type or "").strip()
                 new_title_type = (case.property_title_type or "").strip()
                 if (new_case_type != old_case_type) or (new_title_type != old_title_type):
@@ -3404,7 +3434,8 @@ def draft_wizard(request, draft_id, step: int):
             messages.error(request, "Document uploads can only be changed after the case is returned by Capitol Receiving.")
             return redirect("draft_wizard", draft_id=case.draft_id, step=1)
 
-        requirements = ["Endorsement Letter", *_case_type_requirements(
+        legacy_req = ["Legacy Document Scan"] if getattr(case, "is_legacy_override", False) else []
+        requirements = ["Endorsement Letter", *legacy_req, *_case_type_requirements(
             getattr(case, "case_type", ""),
             title_type=getattr(case, "property_title_type", ""),
         )]

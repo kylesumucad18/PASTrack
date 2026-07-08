@@ -625,6 +625,11 @@ class Case(TimestampedModel):
             return self.original_area - self.transferred_area
         return None
 
+    @property
+    def legacy_document_scan(self):
+        doc = self.documents.filter(doc_type="Legacy Document Scan").first()
+        return doc.file if doc else None
+
     AREA_UNIT_CHOICES: ClassVar[list[tuple[str, str]]] = [
         ('sqm', 'Square Meters (sq.m.)'),
         ('ha',  'Hectares (ha.)'),

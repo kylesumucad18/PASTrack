@@ -997,9 +997,18 @@
                                     {{ form.is_legacy_override }}
                                     <label for="{{ form.is_legacy_override.id_for_label }}" style="margin: 0; font-weight: 500; color: #92400e;">Legacy Record Override (Pre-2000s)</label>
                                 </div>
-                                <div id="legacy_upload_wrapper" style="display: none;">
-                                    <label style="font-size: 0.85rem; color: #92400e; font-weight: 500;">Scanned Mother Lot Document <span class="text-danger">*</span></label>
-                                    {{ form.legacy_document_scan }}
+                                <div id="legacy_upload_wrapper" style="display: none; margin-top: 0.5rem;">
+                                    <label style="font-size: 0.85rem; color: #92400e; font-weight: 500; display: block; margin-bottom: 0.25rem;">Scanned Mother Lot Document <span class="text-danger">*</span></label>
+                                    <label for="legacy_document_scan_input" class="border-2 border-dashed border-gray-300 rounded-lg p-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors" style="border: 2px dashed #d1d5db; border-radius: 0.5rem; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background-color: #ffffff; transition: background-color 0.2s;">
+                                        <div class="flex flex-col" style="display: flex; flex-direction: column;">
+                                            <span id="legacy-file-name" class="text-sm font-semibold" style="font-size: 0.875rem; font-weight: 600; color: #1f2937;">Select a file or drag and drop here</span>
+                                            <span class="text-xs text-gray-500" style="font-size: 0.75rem; color: #6b7280; margin-top: 0.125rem;">JPG, PNG, WORD or PDF, max 25MB</span>
+                                        </div>
+                                        <div class="border border-gray-300 rounded-md px-3 py-1 text-sm font-medium text-blue-600 bg-white" style="border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.25rem 0.75rem; font-size: 0.875rem; font-weight: 500; color: #2563eb; background-color: #ffffff;">
+                                            Browse
+                                        </div>
+                                        <input type="file" name="legacy_document_scan" id="legacy_document_scan_input" class="hidden" accept=".jpg,.jpeg,.png,.doc,.docx,.pdf" style="display: none;">
+                                    </label>
                                     {% if form.legacy_document_scan.errors %}<span class="error-msg" style="display:block;">{{ form.legacy_document_scan.errors.0 }}</span>{% endif %}
                                 </div>
                             </div>
@@ -1972,6 +1981,19 @@
         const legacyOverrideCheckbox = document.getElementById('{{ form.is_legacy_override.id_for_label }}');
         const legacyUploadWrapper = document.getElementById('legacy_upload_wrapper');
         const legacyFileInput = document.querySelector('input[name="legacy_document_scan"]');
+        const legacyFileName = document.getElementById('legacy-file-name');
+        if (legacyFileInput && legacyFileName) {
+            legacyFileInput.addEventListener('change', function(e) {
+                if (this.files && this.files.length > 0) {
+                    legacyFileName.textContent = this.files[0].name;
+                    legacyFileName.style.color = '#2563eb';
+                } else {
+                    legacyFileName.textContent = 'Select a file or drag and drop here';
+                    legacyFileName.style.color = '#1f2937';
+                }
+            });
+        }
+        
         const lguOriginSelect = document.getElementById('{{ form.area.id_for_label }}');
 
         function updateAreaFieldsVisibility() {
@@ -1997,9 +2019,11 @@
                 if (isFullTransfer) {
                     if (propertyAreaLabel) propertyAreaLabel.innerHTML = 'Property Area (Total Transfer)<span class="text-danger">*</span>';
                     if (remainingAreaDisplay && remainingAreaDisplay.parentNode) remainingAreaDisplay.parentNode.style.display = 'none';
+                    if (transferredAreaInput) transferredAreaInput.readOnly = true;
                 } else {
                     if (propertyAreaLabel) propertyAreaLabel.innerHTML = 'Property Area (Segregation / Partial)<span class="text-danger">*</span>';
                     if (remainingAreaDisplay && remainingAreaDisplay.parentNode) remainingAreaDisplay.parentNode.style.display = 'block';
+                    if (transferredAreaInput) transferredAreaInput.readOnly = false;
                 }
                 
                 if (standardErrors) standardErrors.style.display = 'none';
@@ -2047,39 +2071,48 @@
             }
         }
 
-        if (legacyOverrideCheckbox) {
-            legacyOverrideCheckbox.addEventListener('change', function() {
-                if (this.checked) {
-                    legacyUploadWrapper.style.display = 'block';
-                    if (legacyFileInput) legacyFileInput.required = true;
-                    
-                    originalAreaInput.readOnly = false;
-                    
-                    // Unlock fields
-                    const classificationSelectEl = document.getElementById('{{ form.classification.id_for_label }}');
-                    if (classificationSelectEl) {
-                        classificationSelectEl.style.pointerEvents = 'auto';
-                        classificationSelectEl.style.backgroundColor = '';
-                        classificationSelectEl.setAttribute('name', 'classification');
-                        const hiddenCls = document.getElementById('hidden_classification_input');
-                        if (hiddenCls) hiddenCls.remove();
-                    }
-                    if (lguOriginSelect) {
-                        lguOriginSelect.style.pointerEvents = 'auto';
-                        lguOriginSelect.style.backgroundColor = '';
-                        lguOriginSelect.setAttribute('name', 'area');
-                        const hiddenLgu = document.getElementById('hidden_lgu_input');
-                        if (hiddenLgu) hiddenLgu.remove();
-                    }
-                } else {
-                    legacyUploadWrapper.style.display = 'none';
-                    if (legacyFileInput) legacyFileInput.required = false;
-                    originalAreaInput.readOnly = true;
-                    if (prevTdInput.value) {
-                        prevTdInput.dispatchEvent(new Event('blur')); // Retrigger validation lock
-                    }
+        function evaluateLegacyState() {
+            if (!legacyOverrideCheckbox) return;
+            if (legacyOverrideCheckbox.checked) {
+                if (legacyUploadWrapper) legacyUploadWrapper.style.display = 'block';
+                if (legacyFileInput) legacyFileInput.required = true;
+                
+                if (originalAreaInput) originalAreaInput.readOnly = false;
+                if (prevTdInput) prevTdInput.readOnly = false;
+                
+                const existingAjaxError = document.getElementById('td_ajax_error');
+                if (existingAjaxError) existingAjaxError.remove();
+                
+                // Unlock fields
+                const classificationSelectEl = document.getElementById('{{ form.classification.id_for_label }}');
+                if (classificationSelectEl) {
+                    classificationSelectEl.style.pointerEvents = 'auto';
+                    classificationSelectEl.style.backgroundColor = '';
+                    classificationSelectEl.setAttribute('name', 'classification');
+                    const hiddenCls = document.getElementById('hidden_classification_input');
+                    if (hiddenCls) hiddenCls.remove();
                 }
-            });
+                const localLguOriginSelect = document.getElementById('{{ form.area.id_for_label }}');
+                if (localLguOriginSelect) {
+                    localLguOriginSelect.style.pointerEvents = 'auto';
+                    localLguOriginSelect.style.backgroundColor = '';
+                    localLguOriginSelect.setAttribute('name', 'area');
+                    const hiddenLgu = document.getElementById('hidden_lgu_input');
+                    if (hiddenLgu) hiddenLgu.remove();
+                }
+            } else {
+                if (legacyUploadWrapper) legacyUploadWrapper.style.display = 'none';
+                if (legacyFileInput) legacyFileInput.required = false;
+                if (originalAreaInput) originalAreaInput.readOnly = true;
+                if (prevTdInput && prevTdInput.value) {
+                    prevTdInput.dispatchEvent(new Event('blur')); // Retrigger validation lock
+                }
+            }
+        }
+
+        if (legacyOverrideCheckbox) {
+            legacyOverrideCheckbox.addEventListener('change', evaluateLegacyState);
+            evaluateLegacyState(); // Call immediately on page load to sync state
         }
 
         function calculateRemainingArea() {
@@ -2139,6 +2172,7 @@
                 const isSegregation = caseTypeSelect.value === 'transfer_ownership_partial_segregation';
                 const isFullTransfer = caseTypeSelect.value === 'transfer_ownership_tax_decl';
                 if (!isSegregation && !isFullTransfer) return;
+                if (legacyOverrideCheckbox && legacyOverrideCheckbox.checked) return; // Disable AJAX for legacy
 
                 const tdNumber = prevTdInput.value.trim();
                 const continueBtn = document.querySelector('button[name="save_continue"]');
@@ -2254,11 +2288,25 @@
                 if (prevTdInput.value.trim().length === 5) {
                     handleTdChange();
                 }
+                
+                const continueBtn = document.querySelector('button[name="save_continue"]');
+                if (continueBtn && prevTdInput.value.trim() !== '' && (originalAreaInput.value || transferredAreaInput.value)) {
+                    continueBtn.disabled = false;
+                }
             });
         }
 
         if (originalAreaInput) {
-            originalAreaInput.addEventListener('input', calculateRemainingArea);
+            originalAreaInput.addEventListener('input', function() {
+                const isFullTransfer = caseTypeSelect && caseTypeSelect.value === 'transfer_ownership_tax_decl';
+                const isLegacy = legacyOverrideCheckbox && legacyOverrideCheckbox.checked;
+                if (isFullTransfer && isLegacy) {
+                    if (transferredAreaInput) {
+                        transferredAreaInput.value = originalAreaInput.value;
+                    }
+                }
+                calculateRemainingArea();
+            });
         }
 
         if (transferredAreaInput) {

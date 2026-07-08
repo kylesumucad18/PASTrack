@@ -252,10 +252,18 @@
                                 <span class="info-value" style="color: var(--text-muted); font-style: italic;">None</span>
                             {% else %}
                                 <span class="info-value">
-                                    {% if previous_case %}
+                                    {% if case.is_legacy_override %}
+                                        {{ case.previous_tax_dec_number }}
+                                    {% elif previous_case %}
                                         <a href="{% url 'case_detail' previous_case.tracking_id %}" class="text-primary text-decoration-underline">{{ case.previous_tax_dec_number }}</a>
                                     {% else %}
                                         {{ case.previous_tax_dec_number }}
+                                    {% endif %}
+                                    {% if case.is_legacy_override %}
+                                        <button id="openLegacyModal" onclick="openLegacyModal()" type="button" class="legacy-badge">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                            Legacy Record
+                                        </button>
                                     {% endif %}
                                 </span>
                             {% endif %}
@@ -1507,6 +1515,54 @@
     }
     function closeReleaserModal() {
         document.getElementById('releaserSubmitModal').style.display = 'none';
+    }
+</script>
+
+<style>
+    .legacy-badge {
+        display: inline-flex; align-items: center; padding: 0.125rem 0.5rem; 
+        border-radius: 0.25rem; font-size: 0.75rem; font-weight: 500; 
+        background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; 
+        cursor: pointer; margin-left: 0.5rem; vertical-align: middle; transition: background-color 0.2s;
+    }
+    .legacy-badge:hover { background-color: #fde68a; }
+    .legacy-badge svg { width: 0.85rem; height: 0.85rem; margin-right: 0.25rem; }
+</style>
+
+{% if case.is_legacy_override and case.legacy_document_scan %}
+    <div id="legacyDocumentModal" class="fixed inset-0 z-50 hidden bg-black/50 flex items-center justify-center p-4" onclick="closeLegacyModal()">
+        <div class="bg-white rounded-lg shadow-xl w-full md:w-3/4 lg:w-2/3 h-5/6 flex flex-col relative" onclick="event.stopPropagation()">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
+                <h3 class="text-lg font-semibold text-gray-800">Legacy Document Scan</h3>
+                <button type="button" onclick="closeLegacyModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="flex-1 p-0 overflow-hidden bg-gray-100 flex items-center justify-center relative h-full">
+                <iframe src="{{ case.legacy_document_scan.url }}" class="w-full h-full border-0"></iframe>
+            </div>
+        </div>
+    </div>
+{% endif %}
+
+<script>
+    const legacyModalBadge = document.getElementById('openLegacyModal');
+    if (legacyModalBadge) {
+        legacyModalBadge.addEventListener('click', openLegacyModal);
+    }
+    
+    function openLegacyModal() {
+        const modal = document.getElementById('legacyDocumentModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }
+    
+    function closeLegacyModal() {
+        const modal = document.getElementById('legacyDocumentModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
     }
 </script>
 

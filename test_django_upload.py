@@ -1,21 +1,32 @@
-import os
-import django
-from django.conf import settings
-from django.core.files.uploadedfile import SimpleUploadedFile
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "legaltrack.settings")
+import os, django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'legaltrack.settings')
 django.setup()
 
-from core.views import _maybe_convert_office_upload_to_pdf
+from django.core.files.uploadedfile import SimpleUploadedFile
+from core.forms import CaseDetailsForm
+from core.models import Case, CustomUser
 
-# Make a small docx file
-with open('test_valid.docx', 'rb') as f:
-    file_content = f.read()
+user = CustomUser.objects.first()
 
-uploaded_file = SimpleUploadedFile("test_valid.docx", file_content, content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+file_data = b'test file content'
+upload = SimpleUploadedFile('test.png', file_data, content_type='image/png')
 
-final_file, convert_info = _maybe_convert_office_upload_to_pdf(uploaded_file)
+data = {
+    'ownership_type': 'individual',
+    'client_first_name': 'Test',
+    'client_last_name': 'User',
+    'case_type': 'transfer_ownership_tax_decl',
+    'classification': 'residential',
+    'is_legacy_override': True,
+    'previous_tax_dec_number': '12345',
+}
+files = {'legacy_document_scan': upload}
 
-print("Convert info:", convert_info)
-if final_file and hasattr(final_file, "name"):
-    print("Final file name:", final_file.name)
+form = CaseDetailsForm(data=data, files=files, user=user)
+print('is_valid:', form.is_valid())
+if not form.is_valid():
+    print('Errors:', form.errors)
+else:
+    print('Cleaned legacy_document_scan:', form.cleaned_data.get('legacy_document_scan'))
+
