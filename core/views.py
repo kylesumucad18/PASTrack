@@ -3025,11 +3025,15 @@ def case_wizard(request, tracking_id, step: int):
                 
                 legacy_file = request.FILES.get("legacy_document_scan")
                 if form.cleaned_data.get("is_legacy_override") and legacy_file:
-                    CaseDocument.objects.create(
+                    final_legacy_file, convert_info = _maybe_convert_office_upload_to_pdf(legacy_file)
+                    CaseDocument.objects.update_or_create(
                         case=updated,
                         doc_type="Legacy Document Scan",
-                        file=legacy_file,
-                        uploaded_by=request.user
+                        defaults={
+                            "file": final_legacy_file,
+                            "uploaded_by": request.user,
+                            "converted_to_pdf": bool(convert_info.get("converted"))
+                        }
                     )
                 
                 new_case_type = (updated.case_type or "").strip()

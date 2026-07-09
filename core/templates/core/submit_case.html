@@ -997,6 +997,12 @@
                                     {{ form.is_legacy_override }}
                                     <label for="{{ form.is_legacy_override.id_for_label }}" style="margin: 0; font-weight: 500; color: #92400e;">Legacy Record Override (Pre-2000s)</label>
                                 </div>
+                                {% if case.legacy_document_scan %}
+                                <div style="margin-top: 0.5rem;">
+                                    <label style="font-size: 0.85rem; color: #92400e; font-weight: 500; display: block; margin-bottom: 0.25rem;">Scanned Mother Lot Document <span class="text-danger">*</span></label>
+                                    <p style="font-size: 0.8rem; color: #64748b; font-style: italic; margin-top: 0.25rem;">Document already uploaded. You can update or replace it in Step 2.</p>
+                                </div>
+                                {% else %}
                                 <div id="legacy_upload_wrapper" style="display: none; margin-top: 0.5rem;">
                                     <label style="font-size: 0.85rem; color: #92400e; font-weight: 500; display: block; margin-bottom: 0.25rem;">Scanned Mother Lot Document <span class="text-danger">*</span></label>
                                     <label for="legacy_document_scan_input" class="border-2 border-dashed border-gray-300 rounded-lg p-3 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors" style="border: 2px dashed #d1d5db; border-radius: 0.5rem; padding: 0.75rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background-color: #ffffff; transition: background-color 0.2s;">
@@ -1011,6 +1017,7 @@
                                     </label>
                                     {% if form.legacy_document_scan.errors %}<span class="error-msg" style="display:block;">{{ form.legacy_document_scan.errors.0 }}</span>{% endif %}
                                 </div>
+                                {% endif %}
                             </div>
                         </div>
 
@@ -1178,9 +1185,11 @@
                                     <button type="button" class="icon-btn edit-btn"
                                         onclick="document.getElementById('{{ row.form.file.id_for_label }}').click();" title="Replace File"><i
                                             class="ri-pencil-fill"></i></button>
+                                    {% if row.doc_type != 'Legacy Document Scan' %}
                                     <button type="button" class="icon-btn delete-btn"
                                         onclick="confirmDeleteDoc('row-{{ forloop.counter0 }}', '{{ row.form.file.id_for_label }}')" title="Remove"><i
                                             class="ri-delete-bin-fill"></i></button>
+                                    {% endif %}
                                 </div>
                             </div>
                             {% if row.form.file.errors %}<span class="error-msg" style="margin-top: 0.5rem;">{{ row.form.file.errors.0 }}</span>{% endif %}
