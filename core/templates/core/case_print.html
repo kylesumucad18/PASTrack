@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Case {{ case.tracking_id }}</title>
+<style>
+@page {
+    size: a4 portrait;
+    margin: 0.4in 0.5in 0.4in 0.5in;
+    @frame footer {
+        -pdf-frame-content: footer_content;
+        bottom: 0.4in;
+        margin-left: 0.5in;
+        margin-right: 0.5in;
+        height: 0.35in;
+    }
+    @frame header {
+        -pdf-frame-content: header_content;
+        top: 0.4in;
+        margin-left: 0.5in;
+        margin-right: 0.5in;
+        height: 0.3in;
+    }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Courier New', monospace;
+    font-size: 9pt;
+    color: #23231f;
+    background: #ffffff;
+}
+
+/* OUTER CARD */
+.card-outer {
+    border: 1.5pt solid #1c2b45;
+    background: #faf7f0;
+    width: 100%;
+}
+.card-inner {
+    border: 1pt solid #d9d2bf;
+    margin: 4pt;
+}
+
+/* HEADER */
+.hdr-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #1c2b45;
+    border-bottom: 2pt solid #a9822f;
+}
+.hdr-table td {
+    padding: 7pt 12pt;
+    vertical-align: middle;
+}
+.eyebrow {
+    font-size: 6.5pt;
+    letter-spacing: 2px;
+    color: #a9822f;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 2pt;
+}
+.office-title {
+    font-size: 12pt;
+    font-weight: bold;
+    color: #faf7f0;
+    font-family: Georgia, serif;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+.dtype {
+    font-size: 7pt;
+    letter-spacing: 2px;
+    color: #a9822f;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 3pt;
+}
+.docno {
+    font-size: 9pt;
+    color: #d9d2bf;
+    display: block;
+}
+
+/* BODY */
+.body-pad { padding: 8pt 12pt 0 12pt; }
+
+/* FIELD ROWS (UNIFIED) */
+.fields-section {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1pt solid #d9d2bf;
+    margin-bottom: 8pt;
+}
+.fields-section td {
+    padding: 3pt 6pt 4pt 6pt;
+    vertical-align: top;
+    border-right: 1pt solid #d9d2bf;
+    border-bottom: 1pt solid #d9d2bf;
+}
+.fields-section td:last-child {
+    border-right: none;
+}
+.fields-section tr:last-child td {
+    border-bottom: none;
+}
+.flabel {
+    display: block;
+    font-size: 5.5pt;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #a9822f;
+    margin-bottom: 1pt;
+}
+.fval {
+    display: block;
+    font-size: 9pt;
+    font-weight: bold;
+    color: #1c2b45;
+    line-height: 1.3;
+}
+.fval.reg {
+    font-weight: normal;
+    color: #23231f;
+    font-size: 8.5pt;
+}
+
+/* DIVIDER */
+.divider {
+    border-top: 1pt solid #d9d2bf;
+    margin: 9pt 0;
+}
+
+/* DOCUMENT CHECKLIST */
+.docs-section {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1pt solid #d9d2bf;
+    margin-bottom: 6pt;
+    font-size: 7.5pt;
+}
+.docs-header-row td {
+    background: #1c2b45;
+    color: #faf7f0;
+    font-size: 6pt;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4pt 8pt;
+    border-right: 1pt solid #2c3d5c;
+}
+.docs-section td {
+    padding: 2.5pt 6pt;
+    vertical-align: middle;
+    border-bottom: 1pt solid #ede9df;
+    border-right: 1pt solid #ede9df;
+}
+.docs-section td:last-child { border-right: none; }
+.docs-section tr:last-child td { border-bottom: none; }
+.doc-alt { background: #f5f2ea; }
+.doc-name-cell { font-size: 7pt; color: #23231f; }
+.digital-col {
+    text-align: center;
+    width: 40pt;
+    font-size: 9pt;
+}
+.uploaded-dot   { color: #2d6a2d; font-weight: bold; }
+.pending-dot    { color: #c0b8a8; }
+.checkbox-col {
+    text-align: center;
+    width: 44pt;
+}
+.manual-box {
+    display: inline-block;
+    width: 10pt;
+    height: 10pt;
+    border: 1pt solid #5a5750;
+    vertical-align: middle;
+}
+
+/* INFO BOX & BOTTOM GRID */
+.info-outer {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 12pt;
+}
+.info-outer td {
+    vertical-align: top;
+}
+.info-box { 
+    border: 1pt solid #1c2b45; 
+    border-collapse: collapse; 
+    width: 100%;
+    table-layout: fixed;
+}
+.info-box td { 
+    padding: 3pt 6pt; 
+    font-size: 7.5pt; 
+    border-bottom: 1pt solid #d9d2bf; 
+    vertical-align: middle;
+    word-wrap: break-word;
+}
+.info-box tr:last-child td { border-bottom: none; }
+.ilabel { 
+    background: #e8e4d8; 
+    color: #5a5750; 
+    font-size: 5.5pt;
+    letter-spacing: 0.8px; 
+    text-transform: uppercase; 
+    border-right: 1pt solid #d9d2bf; 
+    width: 45%;
+}
+.ival { color: #1c2b45; width: 55%; }
+.ival.bold { font-weight: bold; }
+
+/* SIGNATURE */
+.sign-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.sign-table td {
+    vertical-align: bottom;
+    padding-top: 4pt;
+}
+.sline {
+    border-bottom: 1pt solid #5a5750;
+    height: 16pt;
+    display: block;
+    margin-bottom: 3pt;
+}
+.sign-label {
+    font-size: 5.5pt;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #5a5750;
+    display: block;
+}
+
+/* FOOTER */
+.foot-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-top: 1pt solid #d9d2bf;
+}
+.foot-table td {
+    padding: 5pt 12pt;
+    font-size: 6.5pt;
+    letter-spacing: 0.5px;
+    color: #5a5750;
+    text-transform: uppercase;
+}
+</style>
+</head>
+<body>
+
+{% block content %}
+
+<div id="header_content">
+    PAStrack — Official Transaction Record
+</div>
+<div id="footer_content">
+    PAStrack &nbsp;|&nbsp; {{ case.tracking_id }} &nbsp;|&nbsp;
+    Generated: {{ current_datetime|date:"F d, Y h:i A" }}
+    &nbsp;|&nbsp; Province of Cebu
+</div>
+
+<div class="card-outer">
+<div class="card-inner">
+
+  <!-- HEADER -->
+  <table class="hdr-table">
+    <tr>
+      <td width="65%">
+        <span class="eyebrow">Office of the Capitol · Province of Cebu</span>
+        <span class="office-title">Transaction Receipt</span>
+        <span style="display:block;font-size:7pt;
+            color:#d9d2bf;letter-spacing:1px;
+            font-family:'Courier New',monospace;
+            margin-top:2pt;">
+            Province of Cebu · PAStrack System
+        </span>
+      </td>
+      <td width="35%" style="text-align:right; vertical-align:top; padding:9pt 14pt;">
+        <span class="dtype">Official Copy</span>
+        <span class="docno" style="margin-bottom:6pt;
+            display:block;">
+            No. ___________
+        </span>
+        <!-- Status block -->
+        <span style="display:block;font-size:6pt;
+            letter-spacing:1.5px;text-transform:uppercase;
+            color:#a9822f;margin-bottom:2pt;">
+            Current Status
+        </span>
+        <span style="display:block;font-size:11pt;
+            font-weight:bold;color:#faf7f0;
+            font-family:Georgia,serif;margin-bottom:5pt;">
+            {{ case.get_status_display }}
+        </span>
+        <span style="display:block;font-size:6pt;
+            letter-spacing:1.5px;text-transform:uppercase;
+            color:#a9822f;margin-bottom:2pt;">
+            Previous TD No.
+        </span>
+        <span style="display:block;font-size:9pt;
+            color:#d9d2bf;">
+            {{ case.previous_tax_dec_number|default:"—" }}
+        </span>
+      </td>
+    </tr>
+  </table>
+
+  <div class="body-pad">
+
+    <!-- UNIFIED FIELD ROWS -->
+    <table class="fields-section">
+      <tr>
+        <td width="55%">
+          <span class="flabel">Client Name</span>
+          <span class="fval">
+            {{ case.client_display_name|default:case.client_name|default:"—" }}
+          </span>
+        </td>
+        <td width="25%">
+          <span class="flabel">Date Submitted</span>
+          <span class="fval reg">
+            {{ case.created_at|date:"F d, Y"|default:"—" }}
+          </span>
+        </td>
+        <td width="20%">
+          <span class="flabel">Date Printed</span>
+          <span class="fval reg">
+            {{ current_datetime|date:"F d, Y" }}
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td width="40%">
+          <span class="flabel">Case No.</span>
+          <span class="fval">{{ case.tracking_id }}</span>
+        </td>
+        <td width="35%">
+          <span class="flabel">LGU Origin</span>
+          <span class="fval reg">
+            {{ case.submitted_by.lgu_municipality|default:case.area|default:"—" }}
+          </span>
+        </td>
+        <td width="25%">
+          <span class="flabel">Lot No.</span>
+          <span class="fval reg">
+            {{ case.lot_number|default:"—" }}
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td width="40%">
+          <span class="flabel">Transaction Type</span>
+          <span class="fval reg" style="font-size:8.5pt;">
+            {{ case.get_case_type_display }}
+          </span>
+        </td>
+        <td width="35%">
+          <span class="flabel">Classification</span>
+          <span class="fval reg">
+            {{ case.get_classification_display|default:case.classification|default:"—" }}
+          </span>
+        </td>
+        <td width="25%">
+          <span class="flabel">Property Area</span>
+          <span class="fval reg">
+            {% if case.area_value %}
+              {{ case.area_value }}
+              {{ case.get_area_unit_display|default:case.area_unit|default:"" }}
+            {% else %}—{% endif %}
+          </span>
+        </td>
+      </tr>
+    </table>
+
+    <div class="divider"></div>
+
+    <!-- DOCUMENT REQUIREMENTS SECTION -->
+    <table class="docs-section">
+      <!-- Header row -->
+      <tr class="docs-header-row">
+        <td width="66%">Document Requirement</td>
+        <td width="17%" style="text-align:center;">
+            Digital Upload
+        </td>
+        <td width="17%" style="text-align:center;">
+            Staff Verified
+        </td>
+      </tr>
+      {% for doc in checklist %}
+      <tr {% if forloop.counter|divisibleby:2 %}
+          class="doc-alt"{% endif %}>
+        <td class="doc-name-cell">{{ doc.doc_type }}</td>
+        <td class="digital-col">
+          {% if doc.uploaded %}
+            <span class="uploaded-dot">&#10003;</span>
+          {% else %}
+            <span class="pending-dot">&#9675;</span>
+          {% endif %}
+        </td>
+        <td class="checkbox-col">
+          <span class="manual-box">&nbsp;</span>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="3" style="color:#b0a898;
+            font-style:italic;text-align:center;
+            padding:5pt;">
+          No required documents found.
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+
+    <!-- BOTTOM: Info Box | Signatures -->
+    <table class="info-outer">
+      <tr>
+        <td width="190pt" style="padding-right:12pt;">
+
+          <!-- INFO BOX -->
+          <table class="info-box">
+            <tr>
+              <td class="ilabel">Ownership</td>
+              <td class="ival">
+                {{ case.get_ownership_type_display|default:"—" }}
+              </td>
+            </tr>
+            <tr>
+              <td class="ilabel">Title Type</td>
+              <td class="ival">
+                {{ case.get_property_title_type_display|default:"—" }}
+              </td>
+            </tr>
+            <tr>
+              <td class="ilabel">Docs</td>
+              <td class="ival">
+                {{ checklist_uploaded }} / {{ checklist_total }} uploaded
+              </td>
+            </tr>
+          </table>
+
+        </td>
+        <td style="vertical-align:bottom; padding-bottom:2pt;
+            border-top:1pt solid #d9d2bf;">
+
+          <!-- SIGNATURES -->
+          <table class="sign-table">
+            <tr>
+              <td width="50%" style="padding-right:12pt;">
+                <span class="sline">&nbsp;</span>
+                <span class="sign-label">Received By / Clerk</span>
+              </td>
+              <td width="50%">
+                <span class="sline">&nbsp;</span>
+                <span class="sign-label">Authorized Signature</span>
+              </td>
+            </tr>
+          </table>
+
+        </td>
+      </tr>
+    </table>
+
+  </div><!-- end body-pad -->
+
+  <!-- FOOTER -->
+  <table class="foot-table">
+    <tr>
+      <td>Retain for your records</td>
+      <td style="text-align:right;">
+        Provincial Assessor's Office — Province of Cebu
+      </td>
+    </tr>
+  </table>
+
+</div><!-- card-inner -->
+</div><!-- card-outer -->
+
+{% endblock %}
+
+</body>
+</html>

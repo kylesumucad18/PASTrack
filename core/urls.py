@@ -70,5 +70,5 @@ urlpatterns = [
     path("documents/<int:doc_id>/download/", views.download_case_document, name="download_case_document"),
     path("documents/archived/<int:archive_id>/download/", views.download_archived_case_document, name="download_archived_case_document"),
     path("documents/<int:doc_id>/review/", views.review_case_document, name="review_case_document"),
-    
+    path("case/<str:tracking_id>/pdf/", views.generate_case_pdf, name="case_pdf"),
 ]

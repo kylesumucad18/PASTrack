@@ -154,7 +154,8 @@
                 <h1>{{ case.tracking_id }}</h1>
                 <span class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</span>
             </div>
-            <div class="header-actions">
+            <div class="header-actions" style="display: flex; gap: 0.5rem; align-items: center;">
+                <a class="btn btn-outline" href="{% url 'case_pdf' case.tracking_id %}" target="_blank"><i class="ri-printer-line"></i> Print Case Details</a>
                 {% if can_edit %}
                     <a class="btn btn-outline" href="{% url 'case_wizard' case.tracking_id 1 %}"><i class="ri-edit-line"></i> Edit Data</a>
                 {% endif %}

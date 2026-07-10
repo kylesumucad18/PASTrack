@@ -5733,4 +5733,55 @@ def get_td_area(request, td_number):
     return JsonResponse({
         "success": False,
         "message": "Tax Dec Number not found or has no available area."
-    })
+    })
+
+
+def generate_case_pdf(request, tracking_id):
+    from django.template.loader import get_template
+    from django.http import HttpResponse
+    from django.shortcuts import get_object_or_404
+    from django.utils import timezone
+    from xhtml2pdf import pisa
+    from .models import Case
+
+    case = get_object_or_404(Case, tracking_id=tracking_id)
+    template = get_template('core/case_print.html')
+    
+    uploaded_docs = list(case.documents.all())
+    uploaded_dict = {doc.doc_type: doc.file.name.split('/')[-1] for doc in uploaded_docs}
+    
+    checklist = []
+    if case.checklist:
+        for item in case.checklist:
+            doc_type = item.get("doc_type")
+            is_uploaded = item.get("uploaded", False)
+            filename = uploaded_dict.get(doc_type, "Pending Upload")
+            checklist.append({
+                "doc_type": doc_type,
+                "uploaded": is_uploaded,
+                "filename": filename
+            })
+    else:
+        for doc in uploaded_docs:
+            checklist.append({
+                "doc_type": doc.doc_type,
+                "uploaded": True,
+                "filename": doc.file.name.split('/')[-1]
+            })
+
+    context = {
+        'case': case,
+        'checklist': checklist,
+        'checklist_uploaded': sum(1 for item in checklist if item.get('uploaded')),
+        'checklist_total': len(checklist),
+        'current_datetime': timezone.now()
+    }
+    html = template.render(context)
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Case_{case.tracking_id}_Details.pdf"'
+    
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    if pisa_status.err:
+        return HttpResponse('We had some errors <pre>' + html + '</pre>')
+    return response
