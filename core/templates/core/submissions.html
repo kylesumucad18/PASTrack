@@ -198,17 +198,17 @@
 
     <!-- FILTER TOOLBAR -->
     <div class="panel" style="padding: 1rem 1.5rem;">
-        <form id="filter-form" method="GET" action="" class="filter-toolbar">
+        <form id="filter-form" method="GET" action="" class="filter-toolbar flex flex-row items-center gap-3 w-full">
             <!-- Preserve tab and scope state when searching -->
             <input type="hidden" name="tab" value="{{ tab }}">
             <input type="hidden" name="scope" value="{{ scope }}">
             
-            <div class="search-bar">
+            <div class="search-bar flex-1">
                 <i class="ri-search-line"></i>
                 <input type="text" name="search" value="{{ selected_search }}" placeholder="Search tracking no, client name, or email...">
             </div>
 
-            <select name="time_range" class="filter-select" title="Sort/Filter by Date">
+            <select name="time_range" class="filter-select w-48" title="Sort/Filter by Date">
                 <option value="all" {% if selected_time_range == 'all' %}selected{% endif %}>All Time</option>
                 <option value="today" {% if selected_time_range == 'today' %}selected{% endif %}>Today</option>
                 <option value="this_week" {% if selected_time_range == 'this_week' %}selected{% endif %}>This Week</option>
@@ -218,36 +218,33 @@
 
             <!-- Only show advanced filters for Global Transactions -->
             {% if scope == 'all' %}
-                <select name="lgu" class="filter-select">
+                <select name="lgu" class="filter-select w-48">
                     <option value="all">All LGUs</option>
                     {% for item in lgu_list %}
                         <option value="{{ item }}" {% if selected_lgu == item %}selected{% endif %}>{{ item }}</option>
                     {% endfor %}
                 </select>
 
-                <select name="transaction_type" class="filter-select">
+                <select name="transaction_type" class="filter-select w-48">
                     <option value="all">All Transaction Types</option>
                     {% for key, val in type_list %}
                         <option value="{{ key }}" {% if selected_transaction_type == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
 
-                <select name="ownership_type" class="filter-select">
+                <select name="ownership_type" class="filter-select w-48">
                     <option value="all">All Ownership Types</option>
                     {% for key, val in ownership_list %}
                         <option value="{{ key }}" {% if selected_ownership_type == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
 
-                <select name="examiner" class="filter-select">
+                <select name="examiner" class="filter-select w-48">
                     <option value="all">All Examiners</option>
                     {% for ex in all_examiners %}
                         <option value="{{ ex.id }}" {% if selected_examiner == ex.id|stringformat:"s" %}selected{% endif %}>Examined by: {{ ex.full_name|default:ex.email }}</option>
                     {% endfor %}
                 </select>
-
-                <input type="date" name="date_from" class="filter-date" value="{{ selected_date_from }}" title="Date From">
-                <input type="date" name="date_to" class="filter-date" value="{{ selected_date_to }}" title="Date To">
             {% endif %}
 
             <!-- Clear Filters Button -->
@@ -261,7 +258,7 @@
     <div class="panel">
         
         <!-- Status Tabs -->
-        <div class="tabs">
+        <div class="tabs flex w-full justify-between">
             {% for key, label in tabs %}
                 <!-- Note: qs_params_no_tab preserves your current search/date filters while swapping tabs -->
                 <a href="?tab={{ key }}{% if qs_params_no_tab %}&{{ qs_params_no_tab }}{% endif %}" class="tab {% if tab == key %}active{% endif %}">
@@ -372,6 +369,15 @@
 </tbody>
 </table>
             {% else %}
+                <div style="padding: 4rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.95rem;">
+                    <i class="ri-inbox-line" style="font-size: 2.5rem; color: var(--border); display: block; margin-bottom: 0.5rem;"></i>
+                    There are no Cases 
+                    <strong>
+                    {% for key, label in tabs %}
+                        {% if key == tab %}{{ label }}{% endif %}
+                    {% endfor %}
+                    </strong>
+                </div>
             {% endif %}
 
         <!-- Pagination -->

@@ -2093,16 +2093,16 @@ def user_management(request):
 
 @login_required
 def export_audit_logs_csv(request):
-    # Security Gate: Allow Super Admins and LGU Admins
-    if request.user.role not in ['super_admin', 'lgu_admin']:
+    # Security Gate: Allow Super Admins, LGU Admins, AND Capitol Staff
+    if request.user.role not in ['super_admin', 'lgu_admin'] and not getattr(request.user, 'role', '').startswith('capitol_'):
         messages.error(request, "Not authorized.")
         return redirect("dashboard")
 
-    # Filter logs so LGU Admins only export their own actions
-    if request.user.role == 'lgu_admin':
-        qs = AuditLog.objects.filter(actor=request.user).select_related("actor", "target_user")
-    else:
+    # Super Admins see everything. Everyone else sees ONLY their own activity.
+    if request.user.role == 'super_admin':
         qs = AuditLog.objects.select_related("actor", "target_user").all()
+    else:
+        qs = AuditLog.objects.filter(actor=request.user).select_related("actor", "target_user")
 
     action = (request.GET.get("action") or "").strip()
     q = (request.GET.get("q") or "").strip()
@@ -2116,21 +2116,59 @@ def export_audit_logs_csv(request):
             Q(target_user__email__icontains=q)
         )
 
-    import csv
-    response = HttpResponse(content_type="text/csv")
-    response["Content-Disposition"] = 'attachment; filename="audit_logs.csv"'
-    writer = csv.writer(response)
-    writer.writerow(["created_at", "action", "actor_email", "target_user_email", "target_object", "ip_address"])
+    import openpyxl
+    from openpyxl.styles import PatternFill, Font
+    from openpyxl.utils import get_column_letter
+
+    date_str = timezone.now().strftime('%Y%m%d')
+    role_name = request.user.get_role_display().replace(" ", "")
+    first_name = request.user.first_name.strip() or "User"
+    filename = f"{role_name}-{first_name}-auditlogs-{date_str}.xlsx"
+    
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Audit Logs"
+    
+    headers = ["Timestamp", "Action Event", "Initiated By", "Target User", "System Object"]
+    ws.append(headers)
+    
+    # Style the headers with green background (like the image) and bold text
+    header_fill = PatternFill(start_color="D9EAD3", end_color="D9EAD3", fill_type="solid")
+    header_font = Font(bold=True)
+    
+    for col_num in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.fill = header_fill
+        cell.font = header_font
     
     for row in qs.order_by("-created_at"):
-        writer.writerow([
-            row.created_at.isoformat(),
-            row.action,
+        timestamp = timezone.localtime(row.created_at).strftime('%b %d, %Y %I:%M %p')
+        action_display = row.get_action_display()
+        ws.append([
+            timestamp,
+            action_display,
             getattr(row.actor, "email", "") if row.actor else "",
             getattr(row.target_user, "email", "") if row.target_user else "",
-            row.target_object,
-            row.ip_address or "",
+            row.target_object or "",
         ])
+
+    # Auto-fit columns (equivalent to ALT + H + O + I)
+    for col in ws.columns:
+        max_length = 0
+        col_letter = get_column_letter(col[0].column)
+        for cell in col:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[col_letter].width = adjusted_width
+
+    wb.save(response)
     return response
 
 @login_required
@@ -4359,6 +4397,7 @@ def submissions(request):
 
     else:
         # GLOBAL TRANSACTIONS SCOPE
+        scope = "all"
         page_title = "All Transactions"
         page_subtitle = "Global view of all submitted cases."
         

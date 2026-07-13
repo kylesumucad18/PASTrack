@@ -1495,11 +1495,11 @@
             {% csrf_token %}
             <div style="margin-bottom: 1rem;">
                 <label style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--text);">Claimed By (Full Name) <span style="color:red;">*</span></label>
-                <input type="text" name="claimed_by_name" class="form-control" required placeholder="e.g. Juan Dela Cruz" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                <input type="text" name="claimed_by_name" class="form-control" required placeholder="e.g. Juan Dela Cruz" pattern="^[a-zA-ZñÑ\s\-\.]+$" title="Please enter a valid name (letters only)" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\-\.]/g, '')" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
             </div>
             <div style="margin-bottom: 1.5rem;">
                 <label style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--text);">Contact Number <span style="color:red;">*</span></label>
-                <input type="text" name="claimed_by_contact" class="form-control" required placeholder="e.g. 09123456789" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                <input type="text" name="claimed_by_contact" class="form-control" required placeholder="e.g. 09123456789" inputmode="numeric" pattern="^[0-9]+$" title="Please enter numbers only" oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
             </div>
             
             <div style="display: flex; gap: 0.5rem;">

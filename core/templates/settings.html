@@ -177,9 +177,10 @@
                         <div class="avatar-upload">
                             <div class="avatar-preview">
                                 {% if request.user.photo %}
-                                    <img src="{{ request.user.photo.url }}" alt="Avatar">
+                                    <img src="{{ request.user.photo.url }}" alt="Avatar" id="avatar-img">
                                 {% else %}
-                                    <div class="avatar-fallback">
+                                    <img src="" alt="Avatar" id="avatar-img" style="display: none;">
+                                    <div class="avatar-fallback" id="avatar-fallback">
                                         {{ request.user.first_name|slice:":1"|upper|default:"U" }}{{ request.user.last_name|slice:":1"|upper|default:"" }}
                                     </div>
                                 {% endif %}
@@ -431,8 +432,20 @@
         }
         if (input) {
             input.addEventListener("change", function () {
-                if (input.files && input.files.length) {
-                    input.form.submit();
+                if (input.files && input.files[0]) {
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        var img = document.getElementById("avatar-img");
+                        var fallback = document.getElementById("avatar-fallback");
+                        if (img) {
+                            img.src = e.target.result;
+                            img.style.display = "block";
+                        }
+                        if (fallback) {
+                            fallback.style.display = "none";
+                        }
+                    }
+                    reader.readAsDataURL(input.files[0]);
                 }
             });
         }
