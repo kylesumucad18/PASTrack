@@ -1313,7 +1313,7 @@ def dashboard(request):
         # 1. KPIs
         total_users_count = CustomUser.objects.exclude(id=user.id).count()
         total_lgus_count = CustomUser.objects.filter(role="lgu_admin").values("lgu_municipality").distinct().count()
-        active_cases_count = Case.objects.exclude(status__in=["released", "withdrawn", "returned", "draft"]).count()
+        active_cases_count = Case.objects.filter(lgu_submitted_at__isnull=False).exclude(status__in=["released", "withdrawn", "returned", "draft"]).count()
         
         seven_days_ago = timezone.now() - timedelta(days=7)
         new_users_count = CustomUser.objects.exclude(id=user.id).filter(date_joined__gte=seven_days_ago).count()
@@ -4479,8 +4479,7 @@ def submissions(request):
     db_type_list = Case.objects.exclude(case_type='').values_list('case_type', flat=True).distinct().order_by('case_type')
     type_list = [(t, dict(Case.CASE_TYPE_CHOICES).get(t, t)) for t in db_type_list]
 
-    db_ownership_list = Case.objects.exclude(ownership_type='').values_list('ownership_type', flat=True).distinct().order_by('ownership_type')
-    ownership_list = [(t, dict(Case.OWNERSHIP_TYPE_CHOICES).get(t, t)) for t in db_ownership_list]
+    ownership_list = Case.OWNERSHIP_TYPE_CHOICES
 
     all_examiners = CustomUser.objects.filter(role="capitol_examiner", is_active=True).order_by("full_name", "email")
 

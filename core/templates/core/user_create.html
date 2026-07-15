@@ -10,9 +10,21 @@
         margin: 0 auto;
     }
 
-    .page-header { margin-bottom: 1.5rem; }
-    .page-title { font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; }
-    .page-subtitle { font-size: 0.875rem; color: var(--text-muted); }
+    .page-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 0.5rem;
+    }
+
+    .page-subtitle {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
 
     /* ===== TWO-COLUMN LAYOUT ===== */
     .content-layout {
@@ -37,9 +49,15 @@
         gap: 1.25rem;
     }
 
-    .span-2 { grid-column: span 2; }
+    .span-2 {
+        grid-column: span 2;
+    }
 
-    .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
 
     .form-group label {
         font-size: 0.875rem;
@@ -47,7 +65,10 @@
         color: var(--text-main);
     }
 
-    .form-group label .required { color: var(--danger-text); margin-left: 2px; }
+    .form-group label .required {
+        color: var(--danger-text);
+        margin-left: 2px;
+    }
 
     /* Targeting default Django rendered inputs */
     .form-group input[type="text"],
@@ -83,35 +104,72 @@
     }
 
     .form-group .errorlist {
-        list-style: none; padding: 0; margin: 0;
-        color: var(--danger-text); font-size: 0.75rem; margin-top: 0.2rem;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        color: var(--danger-text);
+        font-size: 0.75rem;
+        margin-top: 0.2rem;
     }
-    
+
     .msg.error {
-        background-color: var(--danger-bg); color: var(--danger-text);
-        padding: 1rem; border-radius: var(--radius-md); font-size: 0.875rem;
-        margin-bottom: 1.5rem; font-weight: 500; border: 1px solid #fca5a5;
+        background-color: var(--danger-bg);
+        color: var(--danger-text);
+        padding: 1rem;
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        margin-bottom: 1.5rem;
+        font-weight: 500;
+        border: 1px solid #fca5a5;
     }
 
     /* ===== BUTTONS ===== */
     .form-actions {
-        display: flex; gap: 1rem; margin-top: 2rem;
-        border-top: 1px solid var(--border); padding-top: 1.5rem;
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        border-top: 1px solid var(--border);
+        padding-top: 1.5rem;
         justify-content: flex-end;
     }
 
     .btn {
-        padding: 0.6rem 1.5rem; border-radius: var(--radius-md);
-        font-size: 0.875rem; font-weight: 600; cursor: pointer;
-        transition: var(--transition); display: inline-flex;
-        align-items: center; justify-content: center; text-decoration: none;
+        padding: 0.6rem 1.5rem;
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
     }
 
-    .btn-primary { background: var(--primary); color: white; border: 1px solid var(--primary); box-shadow: var(--shadow-sm); }
-    .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); transform: translateY(-1px); box-shadow: var(--shadow-md); }
-    
-    .btn-secondary { background: transparent; color: var(--text-main); border: 1px solid var(--border); }
-    .btn-secondary:hover { background: var(--bg-body); border-color: var(--border-hover); }
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+        border: 1px solid var(--primary);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-hover);
+        border-color: var(--primary-hover);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+        background: transparent;
+        color: var(--text-main);
+        border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+        background: var(--bg-body);
+        border-color: var(--border-hover);
+    }
 
     /* ===== INFO BOX (sidebar style) ===== */
     .info-box {
@@ -135,10 +193,17 @@
     }
 
     .info-icon {
-        color: var(--info-text); font-size: 1.25rem;
-        background: white; width: 36px; height: 36px;
-        border-radius: 50%; display: flex; align-items: center;
-        justify-content: center; box-shadow: var(--shadow-sm); flex-shrink: 0;
+        color: var(--info-text);
+        font-size: 1.25rem;
+        background: white;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--shadow-sm);
+        flex-shrink: 0;
     }
 
     .info-box-title {
@@ -153,7 +218,14 @@
         margin-top: 0.1rem;
     }
 
-    .info-content ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 1rem; }
+    .info-content ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
 
     .info-content li {
         font-size: 0.8rem;
@@ -207,7 +279,7 @@
 
 {% block content %}
 <div class="page-container">
-    
+
     <!-- Header -->
     <div class="page-header">
         <h1 class="page-title">Create New Account</h1>
@@ -223,20 +295,21 @@
                 {% csrf_token %}
 
                 {% if form.non_field_errors %}
-                    <div class="msg error">
-                        <i class="ri-error-warning-line" style="vertical-align: middle; margin-right: 5px;"></i>
-                        {{ form.non_field_errors }}
-                    </div>
+                <div class="msg error">
+                    <i class="ri-error-warning-line" style="vertical-align: middle; margin-right: 5px;"></i>
+                    {{ form.non_field_errors }}
+                </div>
                 {% endif %}
 
                 <div class="form-grid">
                     <!-- Row 1: Name -->
                     <div class="form-group">
-                        <label for="{{ form.first_name.id_for_label }}">First Name<span class="required">*</span></label>
+                        <label for="{{ form.first_name.id_for_label }}">First Name<span
+                                class="required">*</span></label>
                         {{ form.first_name }}
                         {{ form.first_name.errors }}
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="{{ form.last_name.id_for_label }}">Last Name<span class="required">*</span></label>
                         {{ form.last_name }}
@@ -252,24 +325,27 @@
 
                     <!-- Row 3: Role -->
                     <div class="form-group span-2">
-                        <label for="{{ form.account_type.id_for_label }}">System Role<span class="required">*</span></label>
+                        <label for="{{ form.account_type.id_for_label }}">System Role<span
+                                class="required">*</span></label>
                         {{ form.account_type }}
                         {{ form.account_type.errors }}
                     </div>
 
                     <!-- Row 4: Dynamic Designation Fields -->
                     <div id="capitol-fields" class="form-group span-2">
-                        <label for="{{ form.capitol_role.id_for_label }}">Capitol Designation<span class="required">*</span></label>
+                        <label for="{{ form.capitol_role.id_for_label }}">Capitol Designation<span
+                                class="required">*</span></label>
                         {{ form.capitol_role }}
                         {{ form.capitol_role.errors }}
                     </div>
-                    
+
                     <div id="lgu-fields" class="form-group span-2" style="display:none;">
                         <!-- LGU specific roles/fields can go here -->
                     </div>
 
                     <div id="lgu-assignment-wrap" class="form-group span-2">
-                        <label for="{{ form.lgu_municipality.id_for_label }}">LGU Assigned Location<span class="required">*</span></label>
+                        <label for="{{ form.lgu_municipality.id_for_label }}">LGU Assigned Location<span
+                                class="required">*</span></label>
                         {{ form.lgu_municipality }}
                         {{ form.lgu_municipality.errors }}
                     </div>
@@ -300,30 +376,33 @@
                         <i class="ri-checkbox-circle-line info-item-icon"></i>
                         <div class="info-item-body">
                             <strong>Account Status</strong>
-                            <span>New accounts are created as Pending Activation and cannot log in until verified.</span>
+                            <span>New accounts are created as Pending Activation and cannot log in until
+                                verified.</span>
                         </div>
                     </li>
                     <li>
                         <i class="ri-time-line info-item-icon"></i>
                         <div class="info-item-body">
                             <strong>Activation Link</strong>
-                            <span>Expires in 1 hour. In local development, the link is shown on the success screen.</span>
+                            <span>Expires in 1 hour. In local development, the link is shown on the success
+                                screen.</span>
                         </div>
                     </li>
                     <li>
                         <i class="ri-lock-password-line info-item-icon"></i>
                         <div class="info-item-body">
                             <strong>Temporary Password</strong>
-                            <span>Shown once on the next screen and expires in 7 days. Minimum 12 characters with uppercase, lowercase, number, and special character required.</span>
+                            <span>Shown once on the next screen and expires in 7 days. Minimum 12 characters with
+                                uppercase, lowercase, number, and special character required.</span>
                         </div>
                     </li>
-                    <li>
+                    <!-- <li>
                         <i class="ri-mail-send-line info-item-icon"></i>
                         {% comment %} <div class="info-item-body">
                             <strong>Resend Access</strong>
                             <span>Activation resend is available directly from the User Management dashboard.</span>
                         </div> {% endcomment %}
-                    </li>
+                    </li> -->
                 </ul>
             </div>
         </div>
@@ -340,13 +419,13 @@
         var capitol = document.getElementById("capitol-fields");
         var lgu = document.getElementById("lgu-fields");
         var lguAssignWrap = document.getElementById("lgu-assignment-wrap");
-        
+
         function sync() {
             var v = roleSelect ? roleSelect.value : "capitol";
-            
+
             if (v === "lgu") {
                 if (capitol) capitol.style.display = "none";
-                if (lgu) lgu.style.display = "flex"; 
+                if (lgu) lgu.style.display = "flex";
                 if (lguAssignWrap) lguAssignWrap.style.display = "flex";
             } else {
                 if (capitol) capitol.style.display = "flex";
@@ -354,7 +433,7 @@
                 if (lguAssignWrap) lguAssignWrap.style.display = "none";
             }
         }
-        
+
         if (roleSelect) {
             roleSelect.addEventListener("change", sync);
             sync(); // Run on initial load
