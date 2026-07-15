@@ -397,19 +397,6 @@
                 </div>
             </div>
 
-            <!-- Temporary Password -->
-            <p class="card-section-title">Temporary Password</p>
-            <div class="password-box">
-                <div class="password-box-label">
-                    <i class="ri-eye-off-line"></i>
-                    Share this password once — it will not be shown again
-                </div>
-                <div class="password-value">{{ temp_password }}</div>
-                <div class="password-warning">
-                    <i class="ri-time-line"></i>
-                    Expires in 7 days. The user sets a new strong password during activation.
-                </div>
-            </div>
 
             <!-- Activation Link -->
             {% if activation_sent %}
@@ -420,7 +407,7 @@
                     </div>
                     <div class="activation-notice">
                         <i class="ri-time-line"></i>
-                        The verification link was sent to the staff member's email and expires in <strong>&nbsp;1 hour</strong>.
+                        The verification link was sent to the staff member's email and expires in <strong>&nbsp;24 hours</strong>.
                     </div>
                     {% comment %} {% if show_activation_link %}
                         <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--info-border);">

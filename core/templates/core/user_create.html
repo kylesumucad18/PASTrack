@@ -303,17 +303,27 @@
 
                 <div class="form-grid">
                     <!-- Row 1: Name -->
-                    <div class="form-group">
-                        <label for="{{ form.first_name.id_for_label }}">First Name<span
-                                class="required">*</span></label>
-                        {{ form.first_name }}
-                        {{ form.first_name.errors }}
-                    </div>
-
-                    <div class="form-group">
-                        <label for="{{ form.last_name.id_for_label }}">Last Name<span class="required">*</span></label>
-                        {{ form.last_name }}
-                        {{ form.last_name.errors }}
+                    <div class="span-2" style="display: flex; flex-direction: row; gap: 1rem; width: 100%;">
+                        <div class="form-group" style="flex: 3;">
+                            <label for="{{ form.first_name.id_for_label }}">First Name<span class="required">*</span></label>
+                            {{ form.first_name }}
+                            {{ form.first_name.errors }}
+                        </div>
+                        <div class="form-group" style="flex: 2;">
+                            <label for="{{ form.middle_initial.id_for_label }}">Middle Initial</label>
+                            {{ form.middle_initial }}
+                            {{ form.middle_initial.errors }}
+                        </div>
+                        <div class="form-group" style="flex: 3;">
+                            <label for="{{ form.last_name.id_for_label }}">Last Name<span class="required">*</span></label>
+                            {{ form.last_name }}
+                            {{ form.last_name.errors }}
+                        </div>
+                        <div class="form-group" style="flex: 2;">
+                            <label for="{{ form.suffix.id_for_label }}">Suffix</label>
+                            {{ form.suffix }}
+                            {{ form.suffix.errors }}
+                        </div>
                     </div>
 
                     <!-- Row 2: Email -->

@@ -198,7 +198,7 @@
 
     <!-- FILTER TOOLBAR -->
     <div class="panel" style="padding: 1rem 1.5rem;">
-        <form id="filter-form" method="GET" action="" class="filter-toolbar flex flex-row items-center gap-3 w-full">
+        <form id="filter-form" method="GET" action="" class="filter-toolbar flex flex-row flex-nowrap items-center gap-2 w-full overflow-x-auto">
             <!-- Preserve tab and scope state when searching -->
             <input type="hidden" name="tab" value="{{ tab }}">
             <input type="hidden" name="scope" value="{{ scope }}">
@@ -208,7 +208,7 @@
                 <input type="text" name="search" value="{{ selected_search }}" placeholder="Search tracking no, client name, or email...">
             </div>
 
-            <select name="time_range" class="filter-select w-48" title="Sort/Filter by Date">
+            <select name="time_range" class="filter-select flex-1 min-w-0 text-sm" title="Sort/Filter by Date">
                 <option value="all" {% if selected_time_range == 'all' %}selected{% endif %}>All Time</option>
                 <option value="today" {% if selected_time_range == 'today' %}selected{% endif %}>Today</option>
                 <option value="this_week" {% if selected_time_range == 'this_week' %}selected{% endif %}>This Week</option>
@@ -218,31 +218,31 @@
 
             <!-- Only show advanced filters for Global Transactions -->
             {% if scope == 'all' %}
-                <select name="lgu" class="filter-select w-48">
+                <select name="lgu" class="filter-select flex-1 min-w-0 text-sm">
                     <option value="all">All LGUs</option>
                     {% for item in lgu_list %}
                         <option value="{{ item }}" {% if selected_lgu == item %}selected{% endif %}>{{ item }}</option>
                     {% endfor %}
                 </select>
 
-                <select name="transaction_type" class="filter-select w-48">
+                <select name="transaction_type" class="filter-select flex-1 min-w-0 text-sm">
                     <option value="all">All Transaction Types</option>
                     {% for key, val in type_list %}
                         <option value="{{ key }}" {% if selected_transaction_type == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
 
-                <select name="ownership_type" class="filter-select w-48">
+                <select name="ownership_type" class="filter-select flex-1 min-w-0 text-sm">
                     <option value="all">All Ownership Types</option>
                     {% for key, val in ownership_list %}
                         <option value="{{ key }}" {% if selected_ownership_type == key %}selected{% endif %}>{{ val }}</option>
                     {% endfor %}
                 </select>
 
-                <select name="examiner" class="filter-select w-48">
-                    <option value="all">All Examiners</option>
+                <select name="examiner" class="filter-select flex-1 min-w-0 text-sm">
+                    <option value="all">Examined By: All</option>
                     {% for ex in all_examiners %}
-                        <option value="{{ ex.id }}" {% if selected_examiner == ex.id|stringformat:"s" %}selected{% endif %}>Examined by: {{ ex.full_name|default:ex.email }}</option>
+                        <option value="{{ ex.id }}" {% if selected_examiner == ex.id|stringformat:"s" %}selected{% endif %}>{{ ex.full_name|default:ex.email }}</option>
                     {% endfor %}
                 </select>
             {% endif %}
@@ -259,10 +259,13 @@
         
         <!-- Status Tabs -->
         <div class="tabs flex w-full justify-between">
-            {% for key, label in tabs %}
+            {% for tab_item in tabs %}
                 <!-- Note: qs_params_no_tab preserves your current search/date filters while swapping tabs -->
-                <a href="?tab={{ key }}{% if qs_params_no_tab %}&{{ qs_params_no_tab }}{% endif %}" class="tab {% if tab == key %}active{% endif %}">
-                    {{ label }}
+                <a href="?tab={{ tab_item.0 }}{% if qs_params_no_tab %}&{{ qs_params_no_tab }}{% endif %}" class="tab flex items-center gap-2 {% if tab == tab_item.0 %}active{% endif %}">
+                    <span style="white-space: nowrap;">{{ tab_item.1 }}</span>
+                    {% if tab_item|length > 2 %}
+                        <span style="display: inline-flex; align-items: center; justify-content: center; background-color: {% if tab == tab_item.0 %}var(--primary){% else %}#e2e8f0{% endif %}; color: {% if tab == tab_item.0 %}white{% else %}#64748b{% endif %}; border-radius: 9999px; padding: 0.1rem 0.5rem; font-size: 0.75rem; font-weight: 600;">{{ tab_item.2 }}</span>
+                    {% endif %}
                 </a>
             {% endfor %}
         </div>
@@ -373,8 +376,8 @@
                     <i class="ri-inbox-line" style="font-size: 2.5rem; color: var(--border); display: block; margin-bottom: 0.5rem;"></i>
                     There are no Cases 
                     <strong>
-                    {% for key, label in tabs %}
-                        {% if key == tab %}{{ label }}{% endif %}
+                    {% for tab_item in tabs %}
+                        {% if tab_item.0 == tab %}{{ tab_item.1 }}{% endif %}
                     {% endfor %}
                     </strong>
                 </div>

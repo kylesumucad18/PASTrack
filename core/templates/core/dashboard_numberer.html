@@ -4,6 +4,10 @@
 
 {% block extra_css %}
 <style>
+    .main-content { padding: 0 !important; }
+</style>
+
+<style>
     /* ===== GRADIENT BACKGROUND ===== */
     .dashboard-bg {
         padding: 2.5rem;
@@ -262,9 +266,7 @@
             </p>
         </div>
         <div class="hero-actions">
-            <button onclick="window.location.reload();" class="btn-outline">
-                <i class="ri-refresh-line"></i> Refresh Queue
-            </button>
+            <!-- Removed refresh button -->
         </div>
     </div>
 
@@ -290,7 +292,7 @@
             </div>
             <div class="kpi-value" {% if stats_numbered_today > 0 %}style="color:#15803d;"{% endif %}>{{ stats_numbered_today|default:"0" }}</div>
             <div class="kpi-meta" {% if stats_numbered_today > 0 %}style="color:#16a34a;"{% endif %}><i class="ri-calendar-line"></i>&nbsp;<span>Successfully assigned</span></div>
-            <a href="{% url 'submissions' %}?scope=me&tab=numbered" class="kpi-cta">View Numbered <i class="ri-arrow-right-line"></i></a>
+            <a href="{% url 'submissions' %}?scope=me&tab=numbered&time_range=today" class="kpi-cta">View Numbered <i class="ri-arrow-right-line"></i></a>
         </div>
 
         <!-- 3. Total Numbered -->
@@ -301,7 +303,7 @@
             </div>
             <div class="kpi-value">{{ stats_numbered_total|default:"0" }}</div>
             <div class="kpi-meta" style="color:#4338ca;"><i class="ri-arrow-up-line"></i>&nbsp;<span>All time assigned</span></div>
-            <a href="{% url 'submissions' %}?scope=me&tab=all_assigned" class="kpi-cta">View History <i class="ri-arrow-right-line"></i></a>
+            <a href="{% url 'submissions' %}?scope=me&tab=numbered" class="kpi-cta">View History <i class="ri-arrow-right-line"></i></a>
         </div>
 
         <!-- 4. Avg Numbering Time -->
@@ -312,7 +314,7 @@
             </div>
             <div class="kpi-value">{{ stats_avg_time|default:"3" }}m</div>
             <div class="kpi-meta" style="color:#b45309;"><i class="ri-bar-chart-2-line"></i>&nbsp;<span>Average turnaround</span></div>
-            <a href="?tab=numbered" class="kpi-cta">View Metrics <i class="ri-arrow-right-line"></i></a>
+            <div class="kpi-cta" style="color: transparent; user-select: none;">&nbsp;</div>
         </div>
 
         <!-- 5. Weekly Target -->
@@ -323,7 +325,7 @@
             </div>
             <div class="kpi-value">{{ stats_weekly_target|default:"0" }}%</div>
             <div class="kpi-meta" style="color:#d97706;"><i class="ri-progress-2-line"></i>&nbsp;<span>This week progress</span></div>
-            <a href="?tab=not_numbered" class="kpi-cta">View Queue <i class="ri-arrow-right-line"></i></a>
+            <div class="kpi-cta" style="color: transparent; user-select: none;">&nbsp;</div>
         </div>
 
     </div>
@@ -430,7 +432,7 @@
                             <span class="t-main">{{ case.client_display_name|default:case.client_name }}</span>
                             <span class="t-sub">{{ case.get_case_type_display }}</span>
                         </td>
-                        <td style="color:#64748b; font-size:0.875rem;">{{ case.submitted_by.lgu_municipality|default:"—" }}</td>
+                        <td style="color:#64748b; font-size:0.875rem;">{{ case.area|default:"—" }}</td>
                         {% if tab == 'numbered' %}
                             <td><span style="font-weight:700; color:var(--text-main,#0f172a); font-family:monospace;">{{ case.td_number|default:"—" }}</span></td>
                         {% endif %}
@@ -507,10 +509,7 @@ document.addEventListener("DOMContentLoaded", function () {
     volGrad.addColorStop(0, 'rgba(59, 130, 246, 0.22)');
     volGrad.addColorStop(1, 'rgba(59, 130, 246, 0)');
 
-    const volumeData = {
-        weekly:  { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], data: [12, 18, 14, 22, 16, 8, 4],  max: 30  },
-        monthly: { labels: ['Week 1','Week 2','Week 3','Week 4'],       data: [68, 82, 75, 88],            max: 120 }
-    };
+    const volumeData = JSON.parse('{{ volume_chart_data_json|escapejs }}');
 
     const volChart = new Chart(ctxVol, {
         type: 'line',
@@ -565,26 +564,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // ==========================================
     // 2. NUMBERING BREAKDOWN DOUGHNUT
     // ==========================================
-    const breakdownData = {
-        all: {
-            labels: ['Consolidation', 'Subdivision', 'Transfer', 'Annotation'],
-            data: [84, 56, 92, 68],
-            colors: ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981'],
-            total: 300, centerLabel: 'Total Cases'
-        },
-        by_lgu: {
-            labels: ['Cebu City', 'Consolacion', 'Liloan', 'Others'],
-            data: [120, 65, 55, 60],
-            colors: ['#0ea5e9', '#8b5cf6', '#f97316', '#94a3b8'],
-            total: 300, centerLabel: 'By LGU'
-        },
-        by_status: {
-            labels: ['Numbered', 'Pending', 'In Progress'],
-            data: [210, 45, 45],
-            colors: ['#10b981', '#f59e0b', '#3b82f6'],
-            total: 300, centerLabel: 'By Status'
-        }
-    };
+    const breakdownData = JSON.parse('{{ breakdown_chart_data_json|escapejs }}');
 
     const ctxBreak = document.getElementById('breakdownChart').getContext('2d');
     const breakChart = new Chart(ctxBreak, {

@@ -192,17 +192,29 @@
                             </div>
                         </div>
 
-                        <div class="form-grid">
+                        <div style="display: grid; grid-template-columns: 3fr 1.5fr 3fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
                             <div class="form-group">
                                 <label>First Name</label>
                                 {{ profile_form.first_name }}
                                 {{ profile_form.first_name.errors }}
                             </div>
                             <div class="form-group">
+                                <label>Middle Name</label>
+                                {{ profile_form.middle_initial }}
+                                {{ profile_form.middle_initial.errors }}
+                            </div>
+                            <div class="form-group">
                                 <label>Last Name</label>
                                 {{ profile_form.last_name }}
                                 {{ profile_form.last_name.errors }}
                             </div>
+                            <div class="form-group">
+                                <label>Suffix</label>
+                                {{ profile_form.suffix }}
+                                {{ profile_form.suffix.errors }}
+                            </div>
+                        </div>
+                        <div class="form-grid">
                             <div class="form-group">
                                 <label>Staff ID</label>
                                 <input type="text" class="form-control" value="{{ request.user.username }}" disabled>

@@ -4,6 +4,10 @@
 
 {% block extra_css %}
 <style>
+    .main-content { padding: 0 !important; }
+</style>
+
+<style>
     /* ===== GRADIENT BACKGROUND ===== */
     .dashboard-bg {
         padding: 2.5rem;
@@ -275,9 +279,6 @@
             </p>
         </div>
         <div class="hero-actions">
-            <button onclick="window.location.reload();" class="btn-outline">
-                <i class="ri-refresh-line"></i> Refresh Queue
-            </button>
         </div>
     </div>
 
@@ -317,15 +318,15 @@
             <a href="/submissions/?scope=me&tab=returned" class="kpi-cta">View Returned <i class="ri-arrow-right-line"></i></a>
         </div>
 
-        <!-- 4. Total Handled -->
+        <!-- 4. All Assigned -->
         <div class="bento-card">
             <div class="card-header">
-                <span class="card-title">Total Handled</span>
-                <div class="kpi-icon-box" style="background:#dcfce7; color:#16a34a;"><i class="ri-check-double-line"></i></div>
+                <span class="card-title">All Assigned</span>
+                <div class="kpi-icon-box" style="background:#dcfce7; color:#16a34a;"><i class="ri-folders-line"></i></div>
             </div>
-            <div class="kpi-value">{{ stats_total_handled|default:"0" }}</div>
-            <div class="kpi-meta" style="color:#059669;"><i class="ri-arrow-up-line"></i>&nbsp;<span>All time completed</span></div>
-            <a href="/submissions/?scope=me&tab=all_assigned" class="kpi-cta">View History <i class="ri-arrow-right-line"></i></a>
+            <div class="kpi-value">{{ stats_all_assigned|default:"0" }}</div>
+            <div class="kpi-meta" style="color:#059669;"><i class="ri-pulse-line"></i>&nbsp;<span>Active cases</span></div>
+            <a href="/submissions/?scope=me&tab=all_assigned" class="kpi-cta">View Cases <i class="ri-arrow-right-line"></i></a>
         </div>
 
         <!-- 5. Assigned Today -->
@@ -336,7 +337,7 @@
             </div>
             <div class="kpi-value">{{ stats_assigned_today|default:"0" }}</div>
             <div class="kpi-meta" style="color:#475569;"><i class="ri-stack-line"></i>&nbsp;<span>New cases today</span></div>
-            <a href="/submissions/?scope=me&tab=all_assigned" class="kpi-cta">View Assigned <i class="ri-arrow-right-line"></i></a>
+            <a href="/submissions/?scope=me&tab=all_assigned&time_range=today" class="kpi-cta">View Assigned <i class="ri-arrow-right-line"></i></a>
         </div>
 
     </div>
@@ -427,7 +428,7 @@
                             <span class="t-main">{{ case.client_display_name|default:case.client_name }}</span>
                             <span class="t-sub">{{ case.get_case_type_display }}</span>
                         </td>
-                        <td style="color:#64748b; font-size:0.875rem;">{{ case.submitted_by.lgu_municipality|default:"—" }}</td>
+                        <td style="color:#64748b; font-size:0.875rem;">{{ case.area|default:"—" }}</td>
                         <td style="color:#64748b; font-size:0.875rem;">{{ case.assigned_at|date:"M d, Y"|default:"—" }}</td>
                         <td><span class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</span></td>
                         <td>
@@ -589,7 +590,7 @@ document.addEventListener("DOMContentLoaded", function () {
     volGrad.addColorStop(0, 'rgba(59, 130, 246, 0.22)');
     volGrad.addColorStop(1, 'rgba(59, 130, 246, 0)');
 
-    const volumeData = {{ volume_chart_data|safe }};
+    const volumeData = JSON.parse('{{ volume_chart_data_json|escapejs }}');
 
     const volChart = new Chart(ctxVol, {
         type: 'line',
@@ -620,7 +621,7 @@ document.addEventListener("DOMContentLoaded", function () {
             },
             scales: {
                 y: {
-                    beginAtZero: true, suggestedMax: 25,
+                    beginAtZero: true, suggestedMax: volumeData.weekly.max,
                     ticks: { color: '#64748b', font: { family: "'Inter', sans-serif", size: 11 } },
                     border: { display: false }, grid: { color: 'rgba(226,232,240,0.5)' }
                 },
@@ -644,7 +645,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // ==========================================
     // 2. MY WORKLOAD DOUGHNUT
     // ==========================================
-    const workloadData = {{ workload_chart_data|safe }};
+    const workloadData = JSON.parse('{{ workload_chart_data_json|escapejs }}');
 
     const ctxWork = document.getElementById('workloadChart').getContext('2d');
     const workChart = new Chart(ctxWork, {

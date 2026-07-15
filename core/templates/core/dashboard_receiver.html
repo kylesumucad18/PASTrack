@@ -4,6 +4,10 @@
 
 {% block extra_css %}
 <style>
+    .main-content { padding: 0 !important; }
+</style>
+
+<style>
     /* ===== GRADIENT BACKGROUND ===== */
     .dashboard-bg {
         padding: 2.5rem;
@@ -721,7 +725,7 @@
             <div class="kpi-value">{{ stats_ready_assign|default:"0" }}</div>
             <div class="kpi-meta" style="color:#6b21a8;"><i class="ri-arrow-up-line"></i>&nbsp;<span>Needs
                     assignment</span></div>
-            <a href="/submissions/?scope=me&tab=received" class="kpi-cta">Assign Cases <i
+            <a href="/submissions/?scope=me&tab=to_assign" class="kpi-cta">Assign Cases <i
                     class="ri-arrow-right-line"></i></a>
         </div>
 
@@ -734,7 +738,7 @@
             <div class="kpi-value">{{ stats_returned_from_examiner|default:"0" }}</div>
             <div class="kpi-meta" style="color:#dc2626;"><i class="ri-arrow-up-line"></i>&nbsp;<span>Returned
                     cases</span></div>
-            <a href="/submissions/?scope=me&tab=received" class="kpi-cta">View Returned <i
+            <a href="/submissions/?scope=me&tab=returned_from_examiner" class="kpi-cta">View Returned <i
                     class="ri-arrow-right-line"></i></a>
         </div>
 
@@ -806,7 +810,7 @@
                                 <span class="t-main">{{ case.client_name }}</span>
                                 <span class="t-sub">{{ case.get_case_type_display }}</span>
                             </td>
-                            <td style="color:#64748b; font-size:0.875rem;">{% if case.submitted_by.lgu_municipality %}{{ case.submitted_by.lgu_municipality }}{% else %}—{% endif %}</td>
+                            <td style="color:#64748b; font-size:0.875rem;">{{ case.area|default:"—" }}</td>
                             <td>
                                 <span class="badge
                                 {% if case.status == 'not_received' %}badge-pending

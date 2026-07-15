@@ -110,7 +110,7 @@ def lgu_submissions_view(request):
             | Q(client_suffix__icontains=query)
         )
 
-    paginator = Paginator(qs, 15)
+    paginator = Paginator(qs, 10)
     page_obj = paginator.get_page(request.GET.get("page") or 1)
 
     context = {
@@ -1313,7 +1313,7 @@ def dashboard(request):
         # 1. KPIs
         total_users_count = CustomUser.objects.exclude(id=user.id).count()
         total_lgus_count = CustomUser.objects.filter(role="lgu_admin").values("lgu_municipality").distinct().count()
-        active_cases_count = Case.objects.filter(lgu_submitted_at__isnull=False).exclude(status__in=["released", "withdrawn", "returned", "draft"]).count()
+        active_cases_count = Case.objects.filter(lgu_submitted_at__isnull=False).exclude(status__in=["released", "withdrawn", "returned", "draft", "cancelled", "closed"]).count()
         
         seven_days_ago = timezone.now() - timedelta(days=7)
         new_users_count = CustomUser.objects.exclude(id=user.id).filter(date_joined__gte=seven_days_ago).count()
@@ -1465,8 +1465,16 @@ def dashboard(request):
 
         recent_logs = AuditLog.objects.filter(actor=user).order_by("-created_at")[:5]
 
+        # Query unsubmitted drafts explicitly since they are excluded from base_qs
+        draft_qs = Case.objects.filter(status="draft", lgu_submitted_at__isnull=True)
+        if mun:
+            draft_qs = draft_qs.filter(submitted_by__lgu_municipality=mun)
+        else:
+            draft_qs = draft_qs.filter(submitted_by=user)
+        actual_draft_count = draft_qs.count()
+
         status_counts_dict = {r["status"]: r["count"] for r in raw}
-        drafts = status_counts_dict.get("draft", 0) + status_counts_dict.get("client_correction", 0)
+        drafts = actual_draft_count + status_counts_dict.get("client_correction", 0)
         not_received = status_counts_dict.get("not_received", 0)
         received = status_counts_dict.get("received", 0)
         in_review = sum(status_counts_dict.get(s, 0) for s in ["to_examine", "in_review", "for_taxmapping"])
@@ -1480,7 +1488,7 @@ def dashboard(request):
                 "labels": ["Draft/Correction", "Not Received", "Processing", "Released", "Withdrawn/Returned"],
                 "data": [drafts, not_received, (received + in_review + for_approval + for_numbering), released, others],
                 "colors": ["#64748b", "#f59e0b", "#3b82f6", "#059669", "#ef4444"],
-                "total": total_cases_count,
+                "total": total_cases_count + actual_draft_count,
                 "centerLabel": "Total Cases"
             },
             "pending": {
@@ -1786,7 +1794,7 @@ def dashboard(request):
         stats_pending_intake = base_qs.filter(status="to_examine").count()
         stats_under_review = base_qs.filter(status="in_review").count()
         stats_returned = base_qs.filter(status="in_review", returned_by__role="capitol_approver").count()
-        stats_total_handled = AuditLog.objects.filter(actor=user, action="case_status_change", details__new_status="for_approval").count()
+        stats_all_assigned = base_qs.exclude(status="cancelled").count()
 
         # Volume Chart Data
         week_start = today - timedelta(days=today.weekday())
@@ -1817,15 +1825,15 @@ def dashboard(request):
         # Workload Chart Data
         total_active_all = active_qs.count()
         workload_all = {
-            "labels": ['Pending Review', 'Under Review', 'Returned to LGU', 'Completed'],
+            "labels": ['Pending Review', 'Under Review', 'Returned to LGU', 'Active'],
             "data": [
                 stats_pending_intake,
                 stats_under_review,
                 base_qs.filter(status="client_correction").count(),
-                stats_total_handled
+                stats_all_assigned
             ],
             "colors": ['#f59e0b', '#6366f1', '#ef4444', '#22c55e'],
-            "total": total_active_all + stats_total_handled,
+            "total": total_active_all + stats_all_assigned,
             "centerLabel": 'All Cases'
         }
         
@@ -1877,12 +1885,12 @@ def dashboard(request):
             "stats_pending_intake": stats_pending_intake,
             "stats_under_review": stats_under_review,
             "stats_returned": stats_returned,
-            "stats_total_handled": stats_total_handled,
+            "stats_all_assigned": stats_all_assigned,
             "page_obj": page_obj,
             "under_review_cases": under_review_cases,
             "recent_logs": recent_logs,
-            "volume_chart_data": volume_chart_data,
-            "workload_chart_data": workload_chart_data,
+            "volume_chart_data_json": json.dumps(volume_chart_data),
+            "workload_chart_data_json": json.dumps(workload_chart_data),
             "filter_q": q,
             "filter_case_type": case_type_filter,
             "filter_lgu": lgu_filter,
@@ -1896,8 +1904,21 @@ def dashboard(request):
 
         stats_pending_approval = Case.objects.filter(status="for_approval").count()
         stats_approved_today = AuditLog.objects.filter(actor=user, action="case_approval", created_at__date=today).count()
-        stats_total_signed = AuditLog.objects.filter(actor=user, action="case_approval").count()
-        stats_cases_denied = AuditLog.objects.filter(actor=user, action="case_status_change", details__new_status="in_review").count()
+        
+        from django.db.models.functions import Replace
+        from django.db.models import Value
+        approved_tids_sq = AuditLog.objects.filter(
+            actor=user,
+            action="case_approval"
+        ).annotate(
+            tid=Replace("target_object", Value("Case: "), Value(""))
+        ).values("tid")
+
+        approved_qs = Case.objects.filter(tracking_id__in=approved_tids_sq)
+        to_approve_qs = Case.objects.filter(status="for_approval")
+        
+        stats_all_assigned = (to_approve_qs | approved_qs).distinct().exclude(status="cancelled").count()
+        stats_cases_denied = Case.objects.filter(status="in_review", returned_by=user).exclude(status="cancelled").count()
 
         qs = Case.objects.filter(status="for_approval").select_related("assigned_to", "submitted_by").order_by("updated_at")
         paginator = Paginator(qs, 10)
@@ -1915,15 +1936,80 @@ def dashboard(request):
             action__in=["case_status_change", "case_receipt", "case_assignment"]
         ).exclude(actor=user).order_by("-created_at")[:6]
 
+        # 1. Approval Volume Graph
+        week_start = today - timedelta(days=today.weekday())
+        weekly_labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        weekly_data = [0]*7
+        for i in range(7):
+            day = week_start + timedelta(days=i)
+            weekly_data[i] = AuditLog.objects.filter(actor=user, action__in=["case_approval", "case_status_change"], created_at__date=day).count()
+        weekly_max = max(weekly_data + [15])
+        
+        month_start = today.replace(day=1)
+        monthly_labels = ['Week 1','Week 2','Week 3','Week 4']
+        monthly_data = [0]*4
+        for week_num in range(4):
+            week_start_date = month_start + timedelta(weeks=week_num)
+            week_end_date = week_start_date + timedelta(days=6)
+            monthly_data[week_num] = AuditLog.objects.filter(actor=user, action__in=["case_approval", "case_status_change"], created_at__date__gte=week_start_date, created_at__date__lte=week_end_date).count()
+        monthly_max = max(monthly_data + [50])
+        
+        volume_chart_data = {
+            "weekly": {"labels": weekly_labels, "data": weekly_data, "max": weekly_max},
+            "monthly": {"labels": monthly_labels, "data": monthly_data, "max": monthly_max}
+        }
+
+        # 2. Approval Breakdown Graph
+        base_breakdown_qs = (to_approve_qs | approved_qs | Case.objects.filter(status="in_review", returned_by=user)).distinct().exclude(status="cancelled")
+        
+        count_pending = base_breakdown_qs.filter(status="for_approval").count()
+        count_returned = base_breakdown_qs.filter(status="in_review").count()
+        # Cases that are no longer pending approval or returned for edits have moved forward (approved)
+        count_approved = base_breakdown_qs.exclude(status__in=["for_approval", "in_review"]).count()
+        
+        breakdown_all = {
+            "labels": ['Approved', 'Returned for Edits', 'Pending Review'],
+            "data": [count_approved, count_returned, count_pending],
+            "colors": ['#22c55e', '#ef4444', '#3b82f6'],
+            "total": count_approved + count_returned + count_pending,
+            "centerLabel": 'Total Cases'
+        }
+        
+        type_counts = list(base_breakdown_qs.values('case_type').annotate(count=Count('id')).order_by('-count'))
+        breakdown_type = {
+            "labels": [dict(Case.CASE_TYPE_CHOICES).get(t['case_type'], t['case_type']) for t in type_counts] or ["No Data"],
+            "data": [t['count'] for t in type_counts] or [1],
+            "colors": ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#06b6d4'][:max(len(type_counts), 1)],
+            "total": sum(t['count'] for t in type_counts),
+            "centerLabel": 'By Type'
+        }
+        
+        examiner_counts = list(base_breakdown_qs.exclude(assigned_to__isnull=True).values('assigned_to__first_name', 'assigned_to__last_name').annotate(count=Count('id')).order_by('-count'))
+        breakdown_examiner = {
+            "labels": [f"{e['assigned_to__first_name']} {e['assigned_to__last_name']}".strip() for e in examiner_counts] or ["No Data"],
+            "data": [e['count'] for e in examiner_counts] or [1],
+            "colors": ['#0ea5e9', '#8b5cf6', '#f97316', '#94a3b8', '#10b981', '#f59e0b'][:max(len(examiner_counts), 1)],
+            "total": sum(e['count'] for e in examiner_counts),
+            "centerLabel": 'By Examiner'
+        }
+        
+        breakdown_chart_data = {
+            "all": breakdown_all,
+            "by_type": breakdown_type,
+            "by_examiner": breakdown_examiner
+        }
+
         context.update({
             "section": "capitol_approver",
             "stats_pending_approval": stats_pending_approval,
             "stats_approved_today": stats_approved_today,
-            "stats_total_signed": stats_total_signed,
+            "stats_all_assigned": stats_all_assigned,
             "stats_cases_denied": stats_cases_denied,
             "page_obj": page_obj,
             "approved_today_cases": approved_today_cases,
             "staff_activity": staff_activity,
+            "volume_chart_data_json": json.dumps(volume_chart_data),
+            "breakdown_chart_data_json": json.dumps(breakdown_chart_data),
         })
         template = "core/dashboard_approver.html"
 
@@ -1966,26 +2052,66 @@ def dashboard(request):
         today = timezone.localdate()
 
         tab = (request.GET.get("tab") or "not_numbered").strip().lower()
+        time_range = (request.GET.get("time_range") or "").strip().lower()
+        q = request.GET.get("q", "").strip()
+        case_type_filter = request.GET.get("case_type", "").strip()
+        lgu_filter = request.GET.get("lgu", "").strip()
 
         qs_pending = Case.objects.filter(status="for_numbering").select_related("assigned_to", "submitted_by").order_by("updated_at")
-        qs_numbered = (
-            Case.objects.exclude(td_number__isnull=True)
-            .exclude(td_number="")
-            .select_related("assigned_to", "submitted_by")
-            .order_by("-updated_at")
-        )
+        
+        from django.db.models.functions import Replace
+        from django.db.models import Value
+        
+        # All cases numbered by this user
+        numbered_tids_sq_all = AuditLog.objects.filter(
+            actor=user,
+            action="case_numbered"
+        ).annotate(
+            tid=Replace("target_object", Value("Case: "), Value(""))
+        ).values("tid")
+        
+        qs_numbered_all = Case.objects.filter(tracking_id__in=numbered_tids_sq_all).exclude(td_number__isnull=True).exclude(td_number="").select_related("assigned_to", "submitted_by").order_by("-updated_at")
+
+        # Cases numbered by this user today
+        numbered_tids_sq_today = AuditLog.objects.filter(
+            actor=user,
+            action="case_numbered",
+            created_at__date=today
+        ).annotate(
+            tid=Replace("target_object", Value("Case: "), Value(""))
+        ).values("tid")
+        
+        qs_numbered_today = Case.objects.filter(tracking_id__in=numbered_tids_sq_today).exclude(td_number__isnull=True).exclude(td_number="").select_related("assigned_to", "submitted_by").order_by("-updated_at")
+
+        # Apply Table Filters
+        def apply_table_filters(queryset):
+            if q:
+                queryset = queryset.filter(Q(tracking_id__icontains=q) | Q(client_name__icontains=q) | Q(client_display_name__icontains=q))
+            if case_type_filter:
+                queryset = queryset.filter(case_type=case_type_filter)
+            if lgu_filter:
+                queryset = queryset.filter(area=lgu_filter)
+            return queryset
+            
+        qs_pending = apply_table_filters(qs_pending)
+        qs_numbered_all = apply_table_filters(qs_numbered_all)
+        qs_numbered_today = apply_table_filters(qs_numbered_today)
 
         if tab == "numbered":
-            paginator = Paginator(qs_numbered, 10)
+            if time_range == "today":
+                qs_numbered_active = qs_numbered_today
+            else:
+                qs_numbered_active = qs_numbered_all
+            paginator = Paginator(qs_numbered_active, 10)
             page_obj = paginator.get_page(request.GET.get("page") or 1)
         else:
             tab = "not_numbered"
             paginator = Paginator(qs_pending, 10)
             page_obj = paginator.get_page(request.GET.get("page") or 1)
 
-        stats_pending = qs_pending.count()
-        stats_numbered_total = qs_numbered.count()
-        stats_numbered_today = AuditLog.objects.filter(actor=user, action="case_numbered", created_at__date=today).count()
+        stats_pending = Case.objects.filter(status="for_numbering").count()
+        stats_numbered_total = Case.objects.filter(tracking_id__in=numbered_tids_sq_all).exclude(td_number__isnull=True).exclude(td_number="").count()
+        stats_numbered_today = Case.objects.filter(tracking_id__in=numbered_tids_sq_today).exclude(td_number__isnull=True).exclude(td_number="").count()
 
         sequences = list(LGUTaxDeclarationSequence.objects.all())
         featured_sequence = random.choice(sequences) if sequences else None
@@ -1994,6 +2120,70 @@ def dashboard(request):
             actor=user,
             action__in=["login", "logout", "case_numbered"]
         ).order_by("-created_at")[:3]
+        
+        # 1. Numbering Volume Graph
+        week_start = today - timedelta(days=today.weekday())
+        weekly_labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        weekly_data = [0]*7
+        for i in range(7):
+            day = week_start + timedelta(days=i)
+            weekly_data[i] = AuditLog.objects.filter(actor=user, action="case_numbered", created_at__date=day).count()
+        weekly_max = max(weekly_data + [15])
+        
+        month_start = today.replace(day=1)
+        monthly_labels = ['Week 1','Week 2','Week 3','Week 4']
+        monthly_data = [0]*4
+        for week_num in range(4):
+            week_start_date = month_start + timedelta(weeks=week_num)
+            week_end_date = week_start_date + timedelta(days=6)
+            monthly_data[week_num] = AuditLog.objects.filter(actor=user, action="case_numbered", created_at__date__gte=week_start_date, created_at__date__lte=week_end_date).count()
+        monthly_max = max(monthly_data + [50])
+        
+        volume_chart_data = {
+            "weekly": {"labels": weekly_labels, "data": weekly_data, "max": weekly_max},
+            "monthly": {"labels": monthly_labels, "data": monthly_data, "max": monthly_max}
+        }
+        
+        # 2. Numbering Breakdown Graph
+        unfiltered_numbered = Case.objects.filter(tracking_id__in=numbered_tids_sq_all).exclude(td_number__isnull=True).exclude(td_number="")
+        base_breakdown_qs = (Case.objects.filter(status="for_numbering") | unfiltered_numbered).distinct().exclude(status="cancelled")
+        
+        # By Type
+        type_counts = list(base_breakdown_qs.values('case_type').annotate(count=Count('id')).order_by('-count'))
+        breakdown_all = {
+            "labels": [dict(Case.CASE_TYPE_CHOICES).get(t['case_type'], t['case_type']) for t in type_counts] or ["No Data"],
+            "data": [t['count'] for t in type_counts] or [1],
+            "colors": ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#06b6d4'][:max(len(type_counts), 1)],
+            "total": sum(t['count'] for t in type_counts),
+            "centerLabel": 'Total Cases'
+        }
+        
+        # By LGU
+        lgu_counts = list(base_breakdown_qs.values('area').annotate(count=Count('id')).order_by('-count'))
+        breakdown_lgu = {
+            "labels": [l['area'] or 'Others' for l in lgu_counts] or ["No Data"],
+            "data": [l['count'] for l in lgu_counts] or [1],
+            "colors": ['#0ea5e9', '#8b5cf6', '#f97316', '#94a3b8', '#10b981', '#f59e0b'][:max(len(lgu_counts), 1)],
+            "total": sum(l['count'] for l in lgu_counts),
+            "centerLabel": 'By LGU'
+        }
+        
+        # By Status
+        count_pending = base_breakdown_qs.filter(status="for_numbering").count()
+        count_numbered = base_breakdown_qs.exclude(status="for_numbering").count()
+        breakdown_status = {
+            "labels": ['Numbered', 'Pending'],
+            "data": [count_numbered, count_pending],
+            "colors": ['#10b981', '#f59e0b'],
+            "total": count_numbered + count_pending,
+            "centerLabel": 'By Status'
+        }
+        
+        breakdown_chart_data = {
+            "all": breakdown_all,
+            "by_lgu": breakdown_lgu,
+            "by_status": breakdown_status
+        }
 
         context.update({
             "section": "capitol_numberer",
@@ -2004,10 +2194,20 @@ def dashboard(request):
             "featured_sequence": featured_sequence,
             "tab": tab,
             "stats_numbered_total": stats_numbered_total,
+            "filter_q": q,
+            "filter_case_type": case_type_filter,
+            "filter_lgu": lgu_filter,
+            "lgu_choices": [(a, a) for a in base_breakdown_qs.exclude(area__isnull=True).exclude(area="").values_list('area', flat=True).distinct().order_by('area')],
+            "case_type_choices": [(t, dict(Case.CASE_TYPE_CHOICES).get(t, t)) for t in base_breakdown_qs.exclude(case_type__isnull=True).exclude(case_type="").values_list('case_type', flat=True).distinct().order_by('case_type')],
+            "volume_chart_data_json": json.dumps(volume_chart_data),
+            "breakdown_chart_data_json": json.dumps(breakdown_chart_data),
         })
         template = "core/dashboard_numberer.html"
 
     elif user.role == "capitol_releaser":
+        from django.db.models.functions import Replace
+        from django.db.models import Value
+        
         today = timezone.localdate()
         start_of_week = today - timedelta(days=today.weekday())
 
@@ -2016,14 +2216,80 @@ def dashboard(request):
         page_obj = paginator.get_page(request.GET.get("page") or 1)
 
         stats_pending = qs.count()
-        stats_released_today = AuditLog.objects.filter(actor=user, action="case_released", created_at__date=today).count()
-        stats_released_week = AuditLog.objects.filter(actor=user, action="case_released", created_at__date__gte=start_of_week).count()
-        stats_total_released = AuditLog.objects.filter(actor=user, action="case_released").count()
+        
+        released_logs = AuditLog.objects.filter(actor=user, action="case_release")
+        released_tids_sq_all = released_logs.annotate(
+            tid=Replace("target_object", Value("Case: "), Value(""))
+        ).values("tid").distinct()
+        
+        stats_total_released = Case.objects.filter(tracking_id__in=released_tids_sq_all, status="released").count()
+        
+        released_tids_sq_today = released_logs.filter(created_at__date=today).annotate(
+            tid=Replace("target_object", Value("Case: "), Value(""))
+        ).values("tid").distinct()
+        stats_released_today = Case.objects.filter(tracking_id__in=released_tids_sq_today, status="released").count()
+        
+        released_tids_sq_week = released_logs.filter(created_at__date__gte=start_of_week).annotate(
+            tid=Replace("target_object", Value("Case: "), Value(""))
+        ).values("tid").distinct()
+        stats_released_week = Case.objects.filter(tracking_id__in=released_tids_sq_week, status="released").count()
 
         recent_activity = AuditLog.objects.filter(
             actor=user,
-            action__in=["login", "logout", "case_released"]
+            action__in=["login", "logout", "case_release"]
         ).order_by("-created_at")[:4]
+        
+        # 1. Release Volume Graph
+        week_start = today - timedelta(days=today.weekday())
+        weekly_labels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
+        weekly_data = [0]*7
+        for i in range(7):
+            day = week_start + timedelta(days=i)
+            weekly_data[i] = AuditLog.objects.filter(actor=user, action="case_release", created_at__date=day).values('target_object').distinct().count()
+        weekly_max = max(weekly_data + [25])
+        
+        month_start = today.replace(day=1)
+        monthly_labels = ['Week 1','Week 2','Week 3','Week 4']
+        monthly_data = [0]*4
+        for week_num in range(4):
+            week_start_date = month_start + timedelta(weeks=week_num)
+            week_end_date = week_start_date + timedelta(days=6)
+            monthly_data[week_num] = AuditLog.objects.filter(actor=user, action="case_release", created_at__date__gte=week_start_date, created_at__date__lte=week_end_date).values('target_object').distinct().count()
+        monthly_max = max(monthly_data + [90])
+        
+        volume_chart_data = {
+            "weekly": {"labels": weekly_labels, "data": weekly_data, "max": weekly_max},
+            "monthly": {"labels": monthly_labels, "data": monthly_data, "max": monthly_max}
+        }
+        
+        # 2. Dispatch Breakdown Chart
+        qs_for_release = Case.objects.filter(status="for_release")
+        qs_released_today = Case.objects.filter(tracking_id__in=released_tids_sq_today, status="released")
+        qs_released_week = Case.objects.filter(tracking_id__in=released_tids_sq_week, status="released")
+        qs_released_all = Case.objects.filter(tracking_id__in=released_tids_sq_all, status="released")
+        
+        def get_breakdown_by_case_type(queryset, center_label):
+            type_counts = list(queryset.values('case_type').annotate(count=Count('id')).order_by('-count'))
+            return {
+                "labels": [dict(Case.CASE_TYPE_CHOICES).get(t['case_type'], t['case_type']) for t in type_counts] or ["No Data"],
+                "data": [t['count'] for t in type_counts] or [1],
+                "colors": ['#f59e0b', '#fbbf24', '#fcd34d', '#fef3c7', '#34d399', '#0ea5e9'][:max(len(type_counts), 1)],
+                "total": sum(t['count'] for t in type_counts),
+                "centerLabel": center_label
+            }
+
+        breakdown_chart_data = {
+            "all": {
+                "labels": ['For Release', 'Released Today', 'Released This Week', 'Total Dispatched'],
+                "data": [qs_for_release.count(), qs_released_today.count(), qs_released_week.count(), qs_released_all.count()],
+                "colors": ['#f59e0b', '#059669', '#6366f1', '#0ea5e9'],
+                "total": qs_for_release.count() + qs_released_all.count(),
+                "centerLabel": 'Total Active'
+            },
+            "for_release": get_breakdown_by_case_type(qs_for_release, 'For Release'),
+            "released_today": get_breakdown_by_case_type(qs_released_today, 'Released Today'),
+            "released_week": get_breakdown_by_case_type(qs_released_week, 'This Week')
+        }
 
         context.update({
             "section": "capitol_releaser",
@@ -2033,6 +2299,8 @@ def dashboard(request):
             "stats_released_week": stats_released_week,
             "stats_total_released": stats_total_released,
             "recent_activity": recent_activity,
+            "volume_chart_data_json": json.dumps(volume_chart_data),
+            "breakdown_chart_data_json": json.dumps(breakdown_chart_data),
         })
         template = "core/dashboard_releaser.html"
         
@@ -2181,8 +2449,6 @@ def create_staff_account(request):
         form = StaffAccountCreateForm(request.POST)
         if form.is_valid():
             user = form.save(commit=False)
-            temp_password = user.generate_temp_password()
-            user.set_password(temp_password)
             # Pending Activation until the user activates and sets a new password.
             user.must_change_password = False
             user.account_status = "pending"
@@ -2191,7 +2457,6 @@ def create_staff_account(request):
             try:
                 activation_link = user.issue_activation(
                     request=request,
-                    temp_password=temp_password,
                     send_email=getattr(settings, "LEGALTRACK_SEND_EMAILS", True),
                 )
             except Exception as e:
@@ -2216,7 +2481,6 @@ def create_staff_account(request):
             return render(request, "core/user_created.html", {
                 "role_display": request.user.get_role_display(),
                 "created_user": user,
-                "temp_password": temp_password,
                 "activation_sent": activation_sent,
                 "activation_link": activation_link,
                 "show_activation_link": show_activation_link,
@@ -2371,15 +2635,9 @@ def resend_activation(request, user_id):
         messages.info(request, "Activation can only be resent for Pending Activation accounts.")
         return redirect("user_management")
 
-    temp_password = target.generate_temp_password()
-    target.set_password(temp_password)
-    target.temp_password_created_at = timezone.now()
-    target.save(update_fields=["password", "temp_password_created_at"])
-
     try:
         activation_link = target.issue_activation(
             request=request,
-            temp_password=temp_password,
             send_email=getattr(settings, "LEGALTRACK_SEND_EMAILS", True),
         )
     except Exception as e:
@@ -4241,14 +4499,13 @@ def submissions(request):
             )
 
             tabs = [
-                ("all_assigned", f"All Assigned ({active_assigned_qs.count()})"),
-                ("pending", f"Pending ({pending_intake_qs.count()})"),
-                ("received", f"Received ({received_qs.count()})"),
-                ("to_assign", f"To Assign ({to_assign_qs.count()})"),
-                ("correction", f"Under Correction ({correction_qs.count()})"),
-                ("returned_from_examiner", f"Returned from Examiner ({returned_from_examiner_qs.count()})"),
+                ("pending", "Pending", pending_intake_qs.count()),
+                ("received", "Received Today", received_qs.count()),
+                ("to_assign", "To Assign", to_assign_qs.count()),
+                ("returned_from_examiner", "Returned from Examiner", returned_from_examiner_qs.count()),
+                ("correction", "Under Correction", correction_qs.count()),
             ]
-            if not tab: tab = "all_assigned"
+            if not tab or tab == "all_assigned": tab = "pending"
 
             # Fetch examiners to populate the Assign modal
             examiners = (
@@ -4276,14 +4533,14 @@ def submissions(request):
             under_review_qs = qs.filter(assigned_to=request.user, status="in_review")
             returned_qs = qs.filter(assigned_to=request.user, returned_by__role="capitol_approver")
             
-            # Show all handled Cases by the Examiner (any status, if assigned to them)
-            active_assigned_qs = qs.filter(assigned_to=request.user)
+            # Show all handled Cases by the Examiner (any status except cancelled, if assigned to them)
+            active_assigned_qs = qs.filter(assigned_to=request.user).exclude(status="cancelled")
 
             tabs = [
-                ("all_assigned", f"All Assigned ({active_assigned_qs.count()})"), 
-                ("to_examine", f"To Examine ({to_examine_qs.count()})"), 
-                ("under_review", f"Under Review ({under_review_qs.count()})"), 
-                ("returned", f"Returned ({returned_qs.count()})")
+                ("all_assigned", "All Assigned", active_assigned_qs.count()), 
+                ("to_examine", "To Examine", to_examine_qs.count()), 
+                ("under_review", "Under Review", under_review_qs.count()), 
+                ("returned", "Returned from Approver", returned_qs.count())
             ]
             if not tab: tab = "all_assigned"
             
@@ -4298,30 +4555,43 @@ def submissions(request):
                 qs = active_assigned_qs
                 
         elif request.user.role == "capitol_approver":
-            to_approve_qs = qs.filter(status="for_approval")
+            to_approve_qs = qs.filter(status="for_approval").exclude(status="cancelled")
             
             from django.db.models.functions import Replace
             from django.db.models import Value
-            approved_tids_sq = AuditLog.objects.filter(
+            
+            approval_logs = AuditLog.objects.filter(
                 actor=request.user,
                 action="case_approval"
-            ).annotate(
+            )
+            
+            approved_tids_sq_all = approval_logs.annotate(
                 tid=Replace("target_object", Value("Case: "), Value(""))
             ).values("tid")
-
-            approved_qs = qs.filter(tracking_id__in=approved_tids_sq)
-            returned_to_examiner_qs = qs.filter(status="in_review", returned_by=request.user)
+            approved_qs_all = qs.filter(tracking_id__in=approved_tids_sq_all).exclude(status="cancelled")
+            returned_to_examiner_qs = qs.filter(status="in_review", returned_by=request.user).exclude(status="cancelled")
             
-            # Approvers share a queue for 'to_approve', and their own approved cases
-            active_assigned_qs = (to_approve_qs | approved_qs).distinct()
+            active_assigned_qs_all = (to_approve_qs | approved_qs_all | returned_to_examiner_qs).distinct().exclude(status="cancelled")
 
             tabs = [
-                ("all_assigned", f"All Assigned ({active_assigned_qs.count()})"),
-                ("to_approve", f"To Approve ({to_approve_qs.count()})"),
-                ("approved", f"Approved ({approved_qs.count()})"),
-                ("returned_to_examiner", f"Returned to Examiner ({returned_to_examiner_qs.count()})"),
+                ("all_assigned", "All Assigned", active_assigned_qs_all.count()),
+                ("to_approve", "To Approve", to_approve_qs.count()),
+                ("approved", "Approved", approved_qs_all.count()),
+                ("returned_to_examiner", "Returned to Examiner", returned_to_examiner_qs.count()),
             ]
             if not tab: tab = "all_assigned"
+
+            if tab == "approved" and time_range == "today":
+                today_date = timezone.localtime(timezone.now()).date()
+                approval_logs = approval_logs.filter(created_at__date=today_date)
+                approved_tids_sq = approval_logs.annotate(
+                    tid=Replace("target_object", Value("Case: "), Value(""))
+                ).values("tid")
+                approved_qs = qs.filter(tracking_id__in=approved_tids_sq).exclude(status="cancelled")
+            else:
+                approved_qs = approved_qs_all
+                
+            active_assigned_qs = (to_approve_qs | approved_qs | returned_to_examiner_qs).distinct().exclude(status="cancelled")
 
             if tab == "to_approve":
                 qs = to_approve_qs
@@ -4330,7 +4600,6 @@ def submissions(request):
             elif tab == "returned_to_examiner":
                 qs = returned_to_examiner_qs
             else:
-                # For Approvers, All Assigned shows everything pending approval
                 qs = active_assigned_qs
             
         elif request.user.role == "capitol_taxmapper":
@@ -4340,8 +4609,8 @@ def submissions(request):
             active_assigned_qs = qs.filter(taxmapper_assigned_to=request.user, status="for_taxmapping")
 
             tabs = [
-                ("all_assigned", f"All Assigned ({active_assigned_qs.count()})"),
-                ("pending_taxmapping", f"Pending Taxmapping ({pending_taxmapping_qs.count()})")
+                ("all_assigned", "All Assigned", active_assigned_qs.count()),
+                ("pending_taxmapping", "Pending Taxmapping", pending_taxmapping_qs.count())
             ]
             if not tab: tab = "all_assigned"
             
@@ -4352,47 +4621,92 @@ def submissions(request):
                 qs = active_assigned_qs
 
         elif request.user.role == "capitol_numberer":
-            pending_numbering_qs = qs.filter(status="for_numbering")
-            numbered_qs = qs.exclude(td_number__isnull=True).exclude(td_number="")
+            from django.db.models.functions import Replace
+            from django.db.models import Value
             
-            # Numberers share a queue for numbering
-            active_assigned_qs = pending_numbering_qs
+            pending_numbering_qs = qs.filter(status="for_numbering")
+            
+            numbered_logs = AuditLog.objects.filter(actor=request.user, action="case_numbered")
+            numbered_tids_sq_all = numbered_logs.annotate(
+                tid=Replace("target_object", Value("Case: "), Value(""))
+            ).values("tid")
+            
+            numbered_qs_all = qs.filter(tracking_id__in=numbered_tids_sq_all).exclude(td_number__isnull=True).exclude(td_number="")
+            
+            active_assigned_qs_all = (pending_numbering_qs | numbered_qs_all).distinct().exclude(status="cancelled")
 
             tabs = [
-                ("all_assigned", f"All Assigned ({active_assigned_qs.count()})"),
-                ("pending_numbering", f"Pending Numbering ({pending_numbering_qs.count()})"),
-                ("numbered", f"Numbered ({numbered_qs.count()})")
+                ("all_assigned", "All Assigned", active_assigned_qs_all.count()),
+                ("pending_numbering", "Pending Numbering", pending_numbering_qs.count()),
+                ("numbered", "Numbered", numbered_qs_all.count())
             ]
             if not tab: tab = "all_assigned"
-            
+
+            if tab == "numbered" and time_range == "today":
+                today_date = timezone.localtime(timezone.now()).date()
+                logs_today = numbered_logs.filter(created_at__date=today_date)
+                tids_today = logs_today.annotate(
+                    tid=Replace("target_object", Value("Case: "), Value(""))
+                ).values("tid")
+                numbered_qs = qs.filter(tracking_id__in=tids_today).exclude(td_number__isnull=True).exclude(td_number="")
+            else:
+                numbered_qs = numbered_qs_all
+
+            active_assigned_qs = (pending_numbering_qs | numbered_qs).distinct().exclude(status="cancelled")
+
             if tab == "pending_numbering":
                 qs = pending_numbering_qs
             elif tab == "numbered":
                 qs = numbered_qs
             else:
-                # For Numberers, All Assigned shows everything pending numbering
                 qs = active_assigned_qs
                 
+
         elif request.user.role == "capitol_releaser":
-            pending_release_qs = qs.filter(status="for_release")
-            released_qs = qs.filter(status="released")
+            from django.db.models.functions import Replace
+            from django.db.models import Value
             
-            # Releasers share a queue for release
-            active_assigned_qs = pending_release_qs
+            pending_release_qs = qs.filter(status="for_release")
+            
+            released_logs = AuditLog.objects.filter(actor=request.user, action="case_release")
+            released_tids_sq_all = released_logs.annotate(
+                tid=Replace("target_object", Value("Case: "), Value(""))
+            ).values("tid")
+            
+            released_qs_all = qs.filter(tracking_id__in=released_tids_sq_all, status="released")
+            
+            active_assigned_qs_all = (pending_release_qs | released_qs_all).distinct().exclude(status="cancelled")
 
             tabs = [
-                ("all_assigned", f"All Assigned ({active_assigned_qs.count()})"),
-                ("pending_release", f"Pending Release ({pending_release_qs.count()})"),
-                ("released", f"Released ({released_qs.count()})")
+                ("all_assigned", "All Assigned", active_assigned_qs_all.count()),
+                ("pending_release", "Pending Release", pending_release_qs.count()),
+                ("released", "Released", released_qs_all.count())
             ]
             if not tab: tab = "all_assigned"
-            
+
+            if tab == "released" and time_range in ["today", "this_week"]:
+                today_date = timezone.localtime(timezone.now()).date()
+                
+                if time_range == "today":
+                    logs_filtered = released_logs.filter(created_at__date=today_date)
+                else:
+                    start_of_week = today_date - timedelta(days=today_date.weekday())
+                    logs_filtered = released_logs.filter(created_at__date__gte=start_of_week)
+                    
+                tids_filtered = logs_filtered.annotate(
+                    tid=Replace("target_object", Value("Case: "), Value(""))
+                ).values("tid")
+                released_qs = qs.filter(tracking_id__in=tids_filtered, status="released")
+            else:
+                released_qs = released_qs_all
+
+            active_assigned_qs = (pending_release_qs | released_qs).distinct().exclude(status="cancelled")
+
             if tab == "pending_release":
                 qs = pending_release_qs
             elif tab == "released":
                 qs = released_qs
             else:
-                # For Releasers, All Assigned shows everything pending release
                 qs = active_assigned_qs
 
     else:
@@ -4402,10 +4716,15 @@ def submissions(request):
         page_subtitle = "Global view of all submitted cases."
         
         tabs = [
-            ("all", "All"), ("pending", "Pending"), ("received", "Received"),
-            ("to_examine", "To Examine"), ("for_taxmapping", "For Taxmapping"),
-            ("for_approval", "For Approval"), ("for_numbering", "For Numbering"),
-            ("for_release", "For Release"), ("released", "Released"),
+            ("all", "All", qs.count()),
+            ("pending", "Pending", qs.filter(status__in=["not_received", "client_correction"]).count()),
+            ("received", "Received", qs.filter(status="received", assigned_to__isnull=True).count()),
+            ("to_examine", "To Examine", qs.filter(status__in=["to_examine", "in_review"]).count()),
+            ("for_taxmapping", "For Taxmapping", qs.filter(status="for_taxmapping").count()),
+            ("for_approval", "For Approval", qs.filter(status="for_approval").count()),
+            ("for_numbering", "For Numbering", qs.filter(status="for_numbering").count()),
+            ("for_release", "For Release", qs.filter(status="for_release").count()),
+            ("released", "Released", qs.filter(status="released").count()),
         ]
         
         tab_map = {
@@ -4440,18 +4759,30 @@ def submissions(request):
         )
 
     today = timezone.localtime(timezone.now()).date()
-    if time_range == 'today':
-        qs = qs.filter(created_at__date=today)
-    elif time_range == 'this_week':
-        start = today - timedelta(days=today.weekday())
-        qs = qs.filter(created_at__date__gte=start)
-    elif time_range == 'this_month':
-        qs = qs.filter(
-            created_at__year=today.year,
-            created_at__month=today.month
-        )
-    elif time_range == 'this_year':
-        qs = qs.filter(created_at__year=today.year)
+    
+    date_field = "created_at"
+    if scope == "me" and request.user.role == "capitol_examiner":
+        date_field = "assigned_at"
+
+    if scope == "me" and request.user.role == "capitol_approver" and tab == "approved":
+        pass  # Bypass global date filter since we already filtered AuditLog
+    elif scope == "me" and request.user.role == "capitol_numberer" and tab == "numbered":
+        pass
+    elif scope == "me" and request.user.role == "capitol_releaser" and tab == "released":
+        pass
+    else:
+        if time_range == 'today':
+            qs = qs.filter(**{f"{date_field}__date": today})
+        elif time_range == 'this_week':
+            start = today - timedelta(days=today.weekday())
+            qs = qs.filter(**{f"{date_field}__date__gte": start})
+        elif time_range == 'this_month':
+            qs = qs.filter(**{
+                f"{date_field}__year": today.year,
+                f"{date_field}__month": today.month
+            })
+        elif time_range == 'this_year':
+            qs = qs.filter(**{f"{date_field}__year": today.year})
 
     if lgu and lgu != 'all':
         qs = qs.filter(area__iexact=lgu)
@@ -4466,9 +4797,10 @@ def submissions(request):
         qs = qs.filter(assigned_to_id=examiner_filter_id)
 
     if date_from:
-        qs = qs.filter(created_at__date__gte=date_from)
+        qs = qs.filter(**{f"{date_field}__date__gte": date_from})
     if date_to:
-        qs = qs.filter(created_at__date__lte=date_to)
+        qs = qs.filter(**{f"{date_field}__date__lte": date_to})
+
 
     number_q = (request.GET.get("number") or "").strip()
     if number_q:
@@ -4499,7 +4831,7 @@ def submissions(request):
     query_no_tab = query.copy()
     with contextlib.suppress(Exception): query_no_tab.pop("tab")
 
-    paginator = Paginator(qs, 15)
+    paginator = Paginator(qs, 10)
     page_obj = paginator.get_page(request.GET.get("page") or 1)
 
     return render(request, "core/submissions.html", {
@@ -5822,4 +6154,4 @@ def generate_case_pdf(request, tracking_id):
     pisa_status = pisa.CreatePDF(html, dest=response)
     if pisa_status.err:
         return HttpResponse('We had some errors <pre>' + html + '</pre>')
-    return response
+    return response

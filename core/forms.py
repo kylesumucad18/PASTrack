@@ -370,7 +370,13 @@ class StaffAccountCreateForm(forms.ModelForm):
 
     class Meta:
         model = CustomUser
-        fields: ClassVar[list[str]] = ["email", "first_name", "last_name"]
+        fields: ClassVar[list[str]] = ["email", "first_name", "middle_initial", "last_name", "suffix"]
+        widgets = {
+            "first_name": forms.TextInput(attrs={"placeholder": "First name"}),
+            "middle_initial": forms.TextInput(attrs={"placeholder": "Middle name"}),
+            "last_name": forms.TextInput(attrs={"placeholder": "Last name"}),
+            "suffix": forms.TextInput(attrs={"placeholder": "Suffix (optional)"}),
+        }
 
     def clean_email(self):
         cleaned = self.cleaned_data or {}
@@ -413,8 +419,18 @@ class StaffAccountCreateForm(forms.ModelForm):
 
         # Keep legacy full_name populated for existing templates.
         first_name = (cleaned.get("first_name") or "").strip()
+        middle_initial = (cleaned.get("middle_initial") or "").strip()
         last_name = (cleaned.get("last_name") or "").strip()
-        full_name = f"{first_name} {last_name}".strip()
+        suffix = (cleaned.get("suffix") or "").strip()
+
+        name_parts = [first_name]
+        if middle_initial:
+            name_parts.append(middle_initial)
+        name_parts.append(last_name)
+        if suffix:
+            name_parts.append(suffix)
+            
+        full_name = " ".join(name_parts).strip()
         if full_name:
             user.full_name = full_name
 
@@ -475,7 +491,7 @@ class ProfileUpdateForm(forms.ModelForm):
 class SettingsProfileForm(forms.ModelForm):
     class Meta:
         model = CustomUser
-        fields: ClassVar[list[str]] = ["photo", "first_name", "last_name"]
+        fields: ClassVar[list[str]] = ["photo", "first_name", "middle_initial", "last_name", "suffix"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -552,10 +568,6 @@ class StaffSearchForm(forms.Form):
 
 
 class AccountActivationForm(forms.Form):
-    temp_password = forms.CharField(
-        label="Temporary Password",
-        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
-    )
     new_password1 = forms.CharField(
         label="New Password",
         widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
@@ -571,19 +583,9 @@ class AccountActivationForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.user = user
 
-    def clean_temp_password(self):
-        cleaned = self.cleaned_data or {}
-        temp_password = cleaned.get("temp_password") or ""
+    def clean(self):
         if self.user.account_status != "pending":
             raise ValidationError("This account is not pending activation.")
-        if self.user.temp_password_created_at:
-            if timezone.now() - self.user.temp_password_created_at > timedelta(days=7):
-                raise ValidationError("Temporary password expired. Contact the Super Admin for a resend.")
-        if not self.user.check_password(temp_password):
-            raise ValidationError("Temporary password is incorrect.")
-        return temp_password
-
-    def clean(self):
         cleaned = super().clean() or {}
         pw1 = cleaned.get("new_password1")
         pw2 = cleaned.get("new_password2")

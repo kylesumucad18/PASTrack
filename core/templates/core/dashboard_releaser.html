@@ -4,6 +4,10 @@
 
 {% block extra_css %}
 <style>
+    .main-content { padding: 0 !important; }
+</style>
+
+<style>
     /* ===== GRADIENT BACKGROUND ===== */
     .dashboard-bg {
         padding: 2.5rem;
@@ -263,7 +267,7 @@
             </div>
             <div class="kpi-value">{{ stats_released_today|default:"0" }}</div>
             <div class="kpi-meta" style="color:#16a34a;"><i class="ri-calendar-line"></i>&nbsp;<span>Documents released</span></div>
-            <a href="{% url 'submissions' %}?scope=me&tab=released" class="kpi-cta">View Releases <i class="ri-arrow-right-line"></i></a>
+            <a href="{% url 'submissions' %}?scope=me&tab=released&time_range=today" class="kpi-cta">View Releases <i class="ri-arrow-right-line"></i></a>
         </div>
 
         <!-- 3. Released This Week -->
@@ -274,7 +278,7 @@
             </div>
             <div class="kpi-value">{{ stats_released_week|default:"0" }}</div>
             <div class="kpi-meta" style="color:#4f46e5;"><i class="ri-time-line"></i>&nbsp;<span>Weekly total</span></div>
-            <a href="{% url 'submissions' %}?scope=me&tab=released" class="kpi-cta">View Details <i class="ri-arrow-right-line"></i></a>
+            <a href="{% url 'submissions' %}?scope=me&tab=released&time_range=this_week" class="kpi-cta">View Details <i class="ri-arrow-right-line"></i></a>
         </div>
 
         <!-- 4. Total Dispatched -->
@@ -285,7 +289,7 @@
             </div>
             <div class="kpi-value">{{ stats_total_released|default:"0" }}</div>
             <div class="kpi-meta" style="color:#475569;"><i class="ri-arrow-up-line"></i>&nbsp;<span>All time released</span></div>
-            <a href="{% url 'submissions' %}?scope=me&tab=all_assigned" class="kpi-cta">View History <i class="ri-arrow-right-line"></i></a>
+            <a href="{% url 'submissions' %}?scope=me&tab=released" class="kpi-cta">View History <i class="ri-arrow-right-line"></i></a>
         </div>
 
     </div>
@@ -363,7 +367,7 @@
                             </td>
                             <td>
                                 <span class="t-main">{{ case.client_name }}</span>
-                                <span class="t-sub">{{ case.submitted_by.lgu_municipality }}</span>
+                                <span class="t-sub">{{ case.area|default:"—" }}</span>
                             </td>
                             <td>
                                 <span class="t-main">{{ case.td_number|default:"-" }}</span>
@@ -426,10 +430,7 @@ document.addEventListener("DOMContentLoaded", function () {
     volGrad.addColorStop(0, 'rgba(5, 150, 105, 0.22)');
     volGrad.addColorStop(1, 'rgba(5, 150, 105, 0)');
 
-    const volumeData = {
-        weekly:  { labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'], data: [9, 15, 12, 20, 17, 6, 3],  max: 25  },
-        monthly: { labels: ['Week 1','Week 2','Week 3','Week 4'],       data: [48, 62, 55, 74],            max: 90  }
-    };
+    const volumeData = JSON.parse('{{ volume_chart_data_json|escapejs }}');
 
     const volChart = new Chart(ctxVol, {
         type: 'line',
@@ -488,32 +489,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // ==========================================
     // 3. DISPATCH BREAKDOWN DOUGHNUT
     // ==========================================
-    const pipelineData = {
-        all: {
-            labels: ['For Release','Released Today','Released This Week','Total Dispatched'],
-            data:   [18, 9, 55, 247],
-            colors: ['#f59e0b','#059669','#6366f1','#0ea5e9'],
-            total: 329, centerLabel: 'Total Active'
-        },
-        for_release: {
-            labels: ['Counter 1','Counter 2','Counter 3'],
-            data:   [7, 6, 5],
-            colors: ['#f59e0b','#fbbf24','#fcd34d'],
-            total: 18, centerLabel: 'For Release'
-        },
-        released_today: {
-            labels: ['Morning','Afternoon'],
-            data:   [5, 4],
-            colors: ['#059669','#34d399'],
-            total: 9, centerLabel: 'Released Today'
-        },
-        released_week: {
-            labels: ['Mon','Tue','Wed','Thu','Fri'],
-            data:   [9, 15, 12, 20, 17],
-            colors: ['#6366f1','#818cf8','#a5b4fc','#c7d2fe','#e0e7ff'],
-            total: 73, centerLabel: 'This Week'
-        }
-    };
+    const pipelineData = JSON.parse('{{ breakdown_chart_data_json|escapejs }}');
 
     const ctxPipe = document.getElementById('pipelineChart').getContext('2d');
     const pipeChart = new Chart(ctxPipe, {

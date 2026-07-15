@@ -17,7 +17,7 @@ from .models import AuditLog, CustomUser, PasswordResetRequest
 from .signals import get_client_ip
 
 
-ACTIVATION_LINK_MAX_AGE_SECONDS = 60 * 30  # 30 minutes
+ACTIVATION_LINK_MAX_AGE_SECONDS = 60 * 60 * 24  # 24 hours
 
 LOCKOUT_AFTER_FAILED_ATTEMPTS = 5
 LOCKOUT_DURATION = timedelta(minutes=30)

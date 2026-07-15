@@ -174,6 +174,31 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return f"{self.full_name} ({self.email}) - {self.get_role_display()}"
 
+    @property
+    def custom_role_display(self) -> str:
+        if self.role == "lgu_admin" and self.lgu_municipality:
+            LGU_CODE_MAP = {
+                "Alcantara": "ALC", "Alcoy": "ALY", "Alegria": "ALE", "Aloguinsan": "ALO",
+                "Argao": "ARG", "Asturias": "AST", "Badian": "BAD", "Balamban": "BAL",
+                "Bantayan": "BAN", "Barili": "BAR", "Bogo City": "BOG", "Boljoon": "BOL",
+                "Borbon": "BOR", "Carcar City": "CAR", "Carmen": "CRM", "Catmon": "CAT",
+                "Compostela": "COM", "Consolacion": "CON", "Cordova": "COR", "Daanbantayan": "DBY",
+                "Dalaguete": "DAL", "Danao City": "DAN", "Dumanjug": "DUM", "Ginatilan": "GIN",
+                "Liloan": "LIL", "Madridejos": "MAD", "Malabuyoc": "MAL", "Medellin": "MED",
+                "Minglanilla": "MIN", "Moalboal": "MOA", "Naga City": "NAG", "Oslob": "OSL",
+                "Pilar (Camotes)": "PIL", "Pilar": "PIL", "Pinamungajan": "PIN", "Poro (Camotes)": "POR",
+                "Poro": "POR", "Ronda": "RON", "Samboan": "SAM", "San Fernando": "SFD",
+                "San Francisco (Camotes)": "SFR", "San Francisco": "SFR", "San Remigio": "SRE",
+                "Santa Fe (Bantayan Island)": "STF", "Santa Fe": "STF", "Santander": "SAN",
+                "Sibonga": "SIB", "Sogod": "SOG", "Tabogon": "TBG", "Tabuelan": "TBL",
+                "Talisay City": "TAL", "Toledo City": "TOL", "Tuburan": "TUB",
+                "Tudela (Camotes)": "TUD", "Tudela": "TUD",
+            }
+            area_name = self.lgu_municipality.strip()
+            lgu_code = LGU_CODE_MAP.get(area_name, area_name[:3].upper())
+            return f"LGU - {lgu_code} Admin"
+        return self.get_role_display()
+
     class Meta:
         verbose_name = "User"
         verbose_name_plural = "Users"
@@ -198,17 +223,11 @@ class CustomUser(AbstractUser):
         ).order_by("id").last()
         seq = (last_user.id + 1) if last_user else 1
         return f"{yy}-{prefix}-{seq:04d}"
-
-    def generate_temp_password(self):
-        return "123456"
-
-    def issue_activation(self, *, request, temp_password: str, send_email: bool | None = None) -> str:
+    def issue_activation(self, *, request, send_email: bool | None = None) -> str:
         """Issue a 1-hour activation link and record activation metadata.
 
         When email sending is disabled (common in local/dev), the activation link
         is returned so the caller can display it on-screen.
-
-        The temp password itself expires after 7 days.
         """
         from django.core import signing
         from django.urls import reverse
@@ -218,9 +237,7 @@ class CustomUser(AbstractUser):
         self.is_active = False
         self.activation_sent_at = now
         self.activation_nonce = secrets.token_urlsafe(24)
-        if not self.temp_password_created_at:
-            self.temp_password_created_at = now
-        self.save(update_fields=["account_status", "is_active", "activation_sent_at", "activation_nonce", "temp_password_created_at"])
+        self.save(update_fields=["account_status", "is_active", "activation_sent_at", "activation_nonce"])
 
         token = signing.dumps(
             {"uid": self.pk, "nonce": self.activation_nonce},
@@ -241,15 +258,13 @@ class CustomUser(AbstractUser):
             "from submission to final release.\n\n"
             "Your Account Details\n"
             f"Staff ID: {self.username}\n"
-            f"Email Address: {self.email}\n"
-            f"Temporary Password: {temp_password}\n\n"
+            f"Email Address: {self.email}\n\n"
             "Activate Your Account\n"
             "Use the secure link below to activate your account and set your personal password:\n\n"
             f"{activation_link}\n\n"
             "Security Notes\n"
-            "- This activation link will expire in 1 hour.\n"
+            "- This activation link will expire in 24 hours.\n"
             "- You will be required to create a new strong password during activation.\n"
-            "- Your temporary password remains valid for up to 7 days.\n"
             "- If the link expires or you encounter any issues, please contact the "
             "Super Administrator to request a new activation email.\n\n"
             "We look forward to having you use PAStrack to support more efficient and "
@@ -280,7 +295,6 @@ class CustomUser(AbstractUser):
         created_by = kwargs.pop("created_by", None)
         is_new = self.pk is None
 
-        temp_password: str | None = None
 
         last_name = (self.last_name or "").strip()
         first_name = (self.first_name or "").strip()
@@ -304,17 +318,14 @@ class CustomUser(AbstractUser):
                 self.is_active = True
                 self.must_change_password = False
             else:
-                # If password was already set by the creator workflow, keep it.
-                # Otherwise, generate a temp password.
+                # Set unusable password initially until they activate
                 if not self.password:
-                    temp_password = self.generate_temp_password()
-                    self.set_password(temp_password)
+                    self.set_unusable_password()
                     self.must_change_password = True
 
                 # Module 1: new accounts start in Pending Activation
                 self.account_status = "pending"
                 self.is_active = False
-                self.temp_password_created_at = self.temp_password_created_at or timezone.now()
 
         # Keep is_active consistent with account_status when not pending.
         if self.account_status == "active":
@@ -325,12 +336,11 @@ class CustomUser(AbstractUser):
         super().save(*args, **kwargs)
 
         if is_new:
-            # Optional: Log password in console for dev
-            if settings.DEBUG and temp_password:
+            # Optional: Log in console for dev
+            if settings.DEBUG:
                 print("\n=== NEW USER CREATED ===")
                 print(f"Email: {self.email}")
                 print(f"Staff ID: {self.username}")
-                print(f"Password: {temp_password}")
                 print("Login: http://127.0.0.1:8000/login/")
                 print("========================\n")
 
@@ -800,8 +810,66 @@ class Case(TimestampedModel):
         
         prefix = "PAS"
         if self.submitted_by and self.submitted_by.role == "lgu_admin" and self.area:
-            lgu_code = self.area[:3].upper()
-            prefix = f"LGU{lgu_code}-PAS"
+            LGU_CODE_MAP = {
+                "Alcantara": "ALC",
+                "Alcoy": "ALY",
+                "Alegria": "ALE",
+                "Aloguinsan": "ALO",
+                "Argao": "ARG",
+                "Asturias": "AST",
+                "Badian": "BAD",
+                "Balamban": "BAL",
+                "Bantayan": "BAN",
+                "Barili": "BAR",
+                "Bogo City": "BOG",
+                "Boljoon": "BOL",
+                "Borbon": "BOR",
+                "Carcar City": "CAR",
+                "Carmen": "CRM",
+                "Catmon": "CAT",
+                "Compostela": "COM",
+                "Consolacion": "CON",
+                "Cordova": "COR",
+                "Daanbantayan": "DBY",
+                "Dalaguete": "DAL",
+                "Danao City": "DAN",
+                "Dumanjug": "DUM",
+                "Ginatilan": "GIN",
+                "Liloan": "LIL",
+                "Madridejos": "MAD",
+                "Malabuyoc": "MAL",
+                "Medellin": "MED",
+                "Minglanilla": "MIN",
+                "Moalboal": "MOA",
+                "Naga City": "NAG",
+                "Oslob": "OSL",
+                "Pilar (Camotes)": "PIL",
+                "Pilar": "PIL",
+                "Pinamungajan": "PIN",
+                "Poro (Camotes)": "POR",
+                "Poro": "POR",
+                "Ronda": "RON",
+                "Samboan": "SAM",
+                "San Fernando": "SFD",
+                "San Francisco (Camotes)": "SFR",
+                "San Francisco": "SFR",
+                "San Remigio": "SRE",
+                "Santa Fe (Bantayan Island)": "STF",
+                "Santa Fe": "STF",
+                "Santander": "SAN",
+                "Sibonga": "SIB",
+                "Sogod": "SOG",
+                "Tabogon": "TBG",
+                "Tabuelan": "TBL",
+                "Talisay City": "TAL",
+                "Toledo City": "TOL",
+                "Tuburan": "TUB",
+                "Tudela (Camotes)": "TUD",
+                "Tudela": "TUD",
+            }
+            area_name = self.area.strip()
+            lgu_code = LGU_CODE_MAP.get(area_name, area_name[:3].upper())
+            prefix = f"L{lgu_code}-PAS"
             
         # PAS + YY + 6 random alphanumeric characters
         chars = string.ascii_uppercase + string.digits

@@ -464,7 +464,7 @@
                 </div>
                 <div class="user-info-nav hide-text">
                     <strong>{{ request.user.first_name|default:"User" }}</strong>
-                    <span>{{ request.user.get_role_display|default:"System User" }}</span>
+                    <span>{{ request.user.custom_role_display|default:"System User" }}</span>
                 </div>
             </div>
             
