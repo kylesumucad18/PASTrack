@@ -706,6 +706,10 @@ class Case(TimestampedModel):
         related_name="assigned_cases"
     )
     assigned_at = models.DateTimeField(null=True, blank=True)
+    
+    # ---------- Approval ----------
+    for_approval_at = models.DateTimeField(null=True, blank=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
 
     # ---------- Tax Mapping ----------
     needs_taxmapping = models.BooleanField(default=False)

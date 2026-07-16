@@ -475,15 +475,61 @@ def _public_status_label(case: Case) -> str:
 
 def _build_public_timeline(case: Case) -> list[dict[str, object]]:
     """Public timeline (no internal remarks / no actor identities)."""
+    STATUS_DESCRIPTIONS = {
+        'Application Submitted': 'The LGU has successfully submitted the case and forwarded it to the Capitol for processing.',
+        'Received': 'The Capitol Receiver staff has formally intaken the case into the provincial workflow.',
+        'Under Examination': 'The Examiner is currently reviewing the property details and validating the documents.',
+        'For Approval': 'The Examiner has completed the review and forwarded the case for final authorization.',
+        'Approved': 'The Approver has signed off and authorized the transaction.',
+        'For Numbering': 'The approved transaction is with the numbering staff to be assigned a formal Tax Declaration number.',
+        'For Releasing': 'The final documents have been prepared and are currently queued for release.',
+        'Released and Claimed': 'The process is complete, and the official documents have been released.',
+        'Returned to Examiner': 'The Approver has flagged the case for corrections and returned it to the Examiner.',
+        'Returned to Receiver': 'The Examiner has identified issues with the submission and returned it to the Capitol Receiver.',
+        'Returned to Client': 'The Capitol Receiver has rejected the application and returned it to the client/LGU for necessary corrections.'
+    }
+
     events: list[dict[str, object]] = []
 
     def add(label: str, when):
         if when:
-            events.append({"label": label, "when": when})
+            desc = STATUS_DESCRIPTIONS.get(label, 'Status updated.')
+            events.append({"label": label, "when": when, "desc": desc})
 
     # Initial creation
-    add("Submitted", case.created_at)
-    
+    add("Application Submitted", case.created_at)
+
+    if case.lgu_submitted_at:
+        pass # Removed redundant "Forwarded to Capitol" update as it's the same as Submitted from a user's perspective
+        
+    if getattr(case, "received_at", None):
+        add("Received", case.received_at)
+        
+    if getattr(case, "assigned_at", None):
+        add("Under Examination", case.assigned_at)
+        
+    if getattr(case, "for_approval_at", None):
+        add("For Approval", case.for_approval_at)
+        
+    if getattr(case, "numberer_assigned_at", None):
+        add("For Numbering", case.numberer_assigned_at)
+        
+    if getattr(case, "released_at", None):
+        add("Released and Claimed", case.released_at)
+        
+    if getattr(case, "returned_at", None) and getattr(case, "returned_by", None):
+        role = getattr(case.returned_by, "role", "")
+        if role == "capitol_receiving":
+            add("Returned to Client", case.returned_at)
+        elif role == "capitol_examiner":
+            add("Returned to Receiver", case.returned_at)
+        elif role == "capitol_approver":
+            add("Returned to Examiner", case.returned_at)
+        else:
+            add("Returned", case.returned_at)
+    elif getattr(case, "returned_at", None):
+        add("Returned", case.returned_at)
+
     # Key transitions from audit logs
     from core.models import AuditLog
     history_qs = (
@@ -492,16 +538,33 @@ def _build_public_timeline(case: Case) -> list[dict[str, object]]:
         .only("action", "created_at", "details")
     )
 
-    physically_received_added = False
+    public_status_labels = {
+        "received": "Received",
+        "to_examine": "Under Examination",
+        "in_review": "Under Examination",
+        "for_approval": "For Approval",
+        "returned": "Returned",
+        "client_correction": "Returned",
+        "for_numbering": "For Numbering",
+        "for_release": "For Releasing",
+        "released": "Released and Claimed",
+    }
+    
+    action_mapping = {
+        "case_receipt": "Received",
+        "case_assignment": "Under Examination",
+        "case_document_review": "Under Examination",
+        "case_rejection": "Returned",
+        "case_numbered": "For Numbering",
+        "case_release": "Released and Claimed",
+    }
 
     for h in history_qs:
         action = getattr(h, "action", "")
-        if action == "case_receipt":
-            if not physically_received_added:
-                add("Received", h.created_at)
-                physically_received_added = True
+        if action == "case_remark":
             continue
-        if action in {"case_status_change", "case_approval", "case_rejection", "case_release"}:
+
+        if action == "case_status_change":
             details = getattr(h, "details", {}) or {}
             new_status = None
             if isinstance(details, dict):
@@ -509,36 +572,46 @@ def _build_public_timeline(case: Case) -> list[dict[str, object]]:
             
             if new_status:
                 if isinstance(details, dict) and "returned_to" in details:
-                    returned_to = details["returned_to"]
-                    label = f"Returned - to {returned_to}"
+                    rt = details["returned_to"]
+                    if rt == "Client":
+                        add("Returned to Client", h.created_at)
+                    elif rt == "Examiner":
+                        add("Returned to Examiner", h.created_at)
+                    elif rt == "Receiver":
+                        add("Returned to Receiver", h.created_at)
+                    else:
+                        add("Returned", h.created_at)
+                    continue
+
+                label = public_status_labels.get(new_status)
+                if label:
                     add(label, h.created_at)
-                    continue
-
-                # If the status change is 'received', handle it carefully to avoid duplicates
-                if new_status == "received":
-                    if not physically_received_added:
-                        add("Received", h.created_at)
-                        physically_received_added = True
-                    continue
-                
-                label = _public_status_label(type("obj", (), {"status": new_status})())
-                add(label, h.created_at)
             continue
+            
+        label = action_mapping.get(action)
+        if label:
+            add(label, h.created_at)
 
-    # Add current status if not already reflected (though audit logs should cover it)
-    # But for a cleaner timeline, we trust the audit logs for transitions.
-
-    # De-dup by (label, when) - also handle cases where multiple logs happen at same second
+    # De-dup by (label, date) to merge fallback case fields and AuditLogs that happened on the same day
+    # But keep distinct actions if they happened on different days (e.g. multiple Returns)
     seen = set()
     uniq = []
+    
+    # Sort events by time ascending first so that we keep the earliest exact time for a given day/label combination
+    events.sort(key=lambda x: x["when"])
+    
     for e in events:
-        # Use a window for "same time" de-duplication if needed, 
-        # but here we'll just de-dup exact label+time
-        key = (e["label"], getattr(e["when"], "isoformat", lambda: str(e["when"]))())
+        # De-duplicate if the same label happens on the same calendar day (e.g. Case.received_at and AuditLog 'Received' on the same day)
+        date_str = getattr(e["when"], "date", lambda: e["when"])()
+        key = (e["label"], str(date_str))
+        
         if key in seen:
             continue
         seen.add(key)
         uniq.append(e)
+
+    # Sort descending (newest at the top)
+    uniq.sort(key=lambda x: x["when"], reverse=True)
     return uniq
 
 
@@ -4346,7 +4419,8 @@ def forward_for_approval(request, tracking_id):
 
     old_status = case.status
     case.status = "for_approval"
-    update_fields = ["status", "updated_at"]
+    case.for_approval_at = timezone.now()
+    update_fields = ["status", "updated_at", "for_approval_at"]
     returned_by_role = getattr(getattr(case, "returned_by", None), "role", "") or ""
     if returned_by_role == "capitol_approver":
         case.return_reason = ""
@@ -5292,7 +5366,8 @@ def submit_for_approval(request, tracking_id):
 
     old_status = case.status
     case.status = "for_approval"
-    update_fields = ["status", "updated_at"]
+    case.for_approval_at = timezone.now()
+    update_fields = ["status", "updated_at", "for_approval_at"]
     returned_by_role = getattr(getattr(case, "returned_by", None), "role", "") or ""
     if returned_by_role == "capitol_approver":
         case.return_reason = ""
@@ -5339,7 +5414,8 @@ def approve_case(request, tracking_id):
 
     old_status = case.status
     case.status = "for_numbering"
-    case.save(update_fields=["status", "updated_at"])
+    case.approved_at = timezone.now()
+    case.save(update_fields=["status", "updated_at", "approved_at"])
 
     AuditLog.objects.create(
         actor=request.user,

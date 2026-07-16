@@ -193,7 +193,7 @@
                                 <span class="text-slate-400 font-bold step-icon">4</span>
                             </div>
                             <div class="mt-4 text-center">
-                                <h4 class="text-xs font-extrabold text-slate-800 mb-1 step-name">Approval</h4>
+                                <h4 class="text-xs font-extrabold text-slate-800 mb-1 step-name">For Approval</h4>
                                 <span
                                     class="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-100 text-slate-400 step-badge">Pending</span>
                             </div>
@@ -360,11 +360,9 @@
                                         {{ e.label }}</h4>
                                     <span
                                         class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white px-2 py-1 rounded-md shadow-sm border border-slate-100"><i
-                                            class="ri-calendar-event-line mr-1"></i> {{ e.when|date:"d.m.Y H:i"
-                                        }}</span>
+                                            class="ri-calendar-event-line mr-1"></i> {{ e.when|date:"d.m.Y h:i A" }}</span>
                                 </div>
-                                <p class="text-xs font-medium text-slate-500">The application and forms have
-                                    successfully processed through this stage.</p>
+                                <p class="text-xs font-medium text-slate-500">{{ e.desc }}</p>
                             </div>
                         </div>
                         {% empty %}
@@ -402,7 +400,7 @@
                     { num: 1, name: 'Submitted', estDays: 0 },
                     { num: 2, name: 'Received', estDays: 1 },
                     { num: 3, name: 'To Examine', estDays: 3 },
-                    { num: 4, name: 'Approval', estDays: 3 },
+                    { num: 4, name: 'For Approval', estDays: 3 },
                     { num: 5, name: 'Numbering', estDays: 2 },
                     { num: 6, name: 'Release', estDays: 1 }
                 ];
@@ -411,7 +409,7 @@
 
                 const timelineEvents = [
                     {% for e in timeline %}
-        { label: "{{ e.label|escapejs|lower }}", dateStr: "{{ e.when|date:'d.m.Y H:i' }}" } {% if not forloop.last %}, {% endif %}
+        { label: "{{ e.label|escapejs|lower }}", dateStr: "{{ e.when|date:'d.m.Y h:i A' }}" } {% if not forloop.last %}, {% endif %}
         {% endfor %}
       ];
 
