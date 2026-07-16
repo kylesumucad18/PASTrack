@@ -305,7 +305,8 @@
                     <!-- Row 1: Name -->
                     <div class="span-2" style="display: flex; flex-direction: row; gap: 1rem; width: 100%;">
                         <div class="form-group" style="flex: 3;">
-                            <label for="{{ form.first_name.id_for_label }}">First Name<span class="required">*</span></label>
+                            <label for="{{ form.first_name.id_for_label }}">First Name<span
+                                    class="required">*</span></label>
                             {{ form.first_name }}
                             {{ form.first_name.errors }}
                         </div>
@@ -315,7 +316,8 @@
                             {{ form.middle_initial.errors }}
                         </div>
                         <div class="form-group" style="flex: 3;">
-                            <label for="{{ form.last_name.id_for_label }}">Last Name<span class="required">*</span></label>
+                            <label for="{{ form.last_name.id_for_label }}">Last Name<span
+                                    class="required">*</span></label>
                             {{ form.last_name }}
                             {{ form.last_name.errors }}
                         </div>
@@ -398,14 +400,14 @@
                                 screen.</span>
                         </div>
                     </li>
-                    <li>
+                    <!-- <li>
                         <i class="ri-lock-password-line info-item-icon"></i>
                         <div class="info-item-body">
                             <strong>Temporary Password</strong>
                             <span>Shown once on the next screen and expires in 7 days. Minimum 12 characters with
                                 uppercase, lowercase, number, and special character required.</span>
                         </div>
-                    </li>
+                    </li> -->
                     <!-- <li>
                         <i class="ri-mail-send-line info-item-icon"></i>
                         {% comment %} <div class="info-item-body">
