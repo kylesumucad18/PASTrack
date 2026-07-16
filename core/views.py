@@ -4597,7 +4597,7 @@ def submissions(request):
 
             tabs = [
                 ("pending", "Pending", pending_intake_qs.count()),
-                ("received", "Received Today", received_qs.count()),
+                ("received", "Received", received_qs.count()),
                 ("to_assign", "To Assign", to_assign_qs.count()),
                 ("returned_from_examiner", "Returned from Examiner", returned_from_examiner_qs.count()),
                 ("correction", "Under Correction", correction_qs.count()),
@@ -4614,7 +4614,11 @@ def submissions(request):
             if tab == "pending":
                 qs = pending_intake_qs
             elif tab == "received":
-                qs = received_qs
+                if time_range == "today":
+                    today_date = timezone.localtime(timezone.now()).date()
+                    qs = received_qs.filter(received_at__date=today_date)
+                else:
+                    qs = received_qs
             elif tab == "to_assign":
                 qs = to_assign_qs
             elif tab == "correction":
