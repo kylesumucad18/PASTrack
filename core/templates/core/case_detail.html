@@ -868,7 +868,7 @@
                         {% endif %}
 
                         {% if is_numberer and can_number %}
-                            <form id="numbererForm" method="post" action="{% url 'mark_numbered' case.tracking_id %}" class="btn-block">
+                            <form id="numbererForm" method="post" action="{% url 'mark_numbered' case.tracking_id %}" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
                                 {% csrf_token %}
                                 {% if case.case_type == 'transfer_ownership_partial_segregation' %}
                                     <input
@@ -881,10 +881,10 @@
                                         name="transaction_number_transferred"
                                         placeholder="New TD Number (Transferred)"
                                         class="form-control"
-                                        style="margin-bottom: 0.5rem;"
                                         required
                                         title="Please enter exactly 5 digits"
                                         oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
+                                        style="padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);"
                                     >
                                     <input
                                         type="text"
@@ -896,10 +896,10 @@
                                         name="transaction_number_remaining"
                                         placeholder="New TD Number (Remaining)"
                                         class="form-control"
-                                        style="margin-bottom: 0.5rem;"
                                         required
                                         title="Please enter exactly 5 digits"
                                         oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
+                                        style="padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);"
                                     >
                                 {% else %}
                                     <input
@@ -912,13 +912,13 @@
                                         name="transaction_number"
                                         placeholder="Enter 5-digit TD Number"
                                         class="form-control"
-                                        style="margin-bottom: 0.5rem;"
                                         required
                                         title="Please enter exactly 5 digits"
                                         oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
+                                        style="padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);"
                                     >
                                 {% endif %}
-                                <button class="btn btn-primary" type="button" onclick="openNumbererModal()" style="width:100%;">
+                                <button class="btn btn-primary" type="button" onclick="openNumbererModal()" style="width:100%; padding: 0.6rem; border-radius: 6px;">
                                     <i class="ri-hashtag"></i> Submit TD Number
                                 </button>
                             </form>
@@ -994,7 +994,7 @@
 
                 <!-- UNIFIED REMARKS & TIMELINE -->
                 <div class="panel">
-                    <div class="panel-header"><h2 class="panel-title">Activity Timeline</h2></div>
+                    <div class="panel-header"><h2 class="panel-title">Internal Timeline Note</h2></div>
                     <div class="panel-body">
                         
                         <form method="post" action="{% url 'add_case_remark' case.tracking_id %}" style="margin-bottom: 1.5rem;">
@@ -1004,51 +1004,123 @@
                             
                             <button class="btn-submit-note" type="submit" {% if not can_remark %}disabled style="opacity:0.6; cursor:not-allowed;"{% endif %}>Add Internal Note</button>
                         </form>
+                    </div>
+                </div>
 
-                        <script>
-                        const textarea = document.getElementById("noteBox");
+                <div class="panel" style="margin-top: 1.5rem;">
+                    <div class="panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 class="panel-title" style="margin: 0;">Activity Logs</h2>
+                        <select id="timeline-staff-filter" class="form-select text-sm" autocomplete="off" style="padding: 0.25rem 0.5rem; border: 1px solid var(--border); border-radius: 4px; width: auto; font-weight: normal; font-size: 0.875rem;">
+                            <option value="all" selected>All Staff</option>
+                            <option value="capitol_receiving">Receiver</option>
+                            <option value="capitol_examiner">Examiner</option>
+                            <option value="capitol_numberer">Numberer</option>
+                            <option value="capitol_taxmapper">Taxmapper</option>
+                            <option value="capitol_approver">Approver</option>
+                            <option value="capitol_releaser">Releaser</option>
+                        </select>
+                    </div>
+                    <div class="panel-body">
+                        <div id="timeline-container" style="max-height: 550px; overflow-y: auto; padding-right: 0.5rem;">
+                            <ul class="timeline" id="timeline-list">
+                                <!-- Logs injected via JS -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
 
-                        if (textarea && !textarea.disabled) {
-                            textarea.addEventListener("keydown", function (event) {
-                                if (event.key === "Enter" && !event.shiftKey) {
-                                    event.preventDefault();
-                                    this.form.submit();
+                <script>
+                        let currentTimelinePage = 1;
+                        let hasNextPage = true;
+                        let isFetching = false;
+                        
+                        function fetchTimelineData(page = 1, append = false) {
+                            if (isFetching) return;
+                            isFetching = true;
+                            
+                            currentTimelinePage = page;
+                            const staffVal = document.getElementById('timeline-staff-filter').value;
+                            const trackingId = "{{ case.tracking_id }}";
+                            
+                            const url = `/case/${trackingId}/timeline/?page=${page}&staff_role=${staffVal}`;
+                            
+                            fetch(url)
+                                .then(response => response.json())
+                                .then(data => {
+                                    isFetching = false;
+                                    if (data.error) return;
+                                    
+                                    const timelineList = document.getElementById('timeline-list');
+                                    if (!append) {
+                                        timelineList.innerHTML = '';
+                                    }
+                                    
+                                    if (data.logs.length === 0 && !append) {
+                                        timelineList.innerHTML = '<div style="color: var(--text-muted); text-align: center; font-size: 0.85rem;">No activity recorded yet.</div>';
+                                    } else {
+                                        data.logs.forEach(log => {
+                                            const li = document.createElement('li');
+                                            li.className = 'timeline-item';
+                                            
+                                            let actorText = `<strong>${log.actor_display}`;
+                                            if (log.actor_id) {
+                                                actorText += ` (Staff ID: ${log.actor_id})`;
+                                            }
+                                            actorText += `</strong>`;
+                                            
+                                            let detailsHtml = '';
+                                            if (log.remark) {
+                                                detailsHtml += `<p style="margin-top: 0.5rem; font-style: italic; color: var(--text-main); border-left: 2px solid var(--border); padding-left: 0.75rem;">"${log.remark}"</p>`;
+                                            }
+                                            if (log.details_display) {
+                                                detailsHtml += `<pre style="margin: 0.5rem 0 0 0; white-space: pre-wrap; font-size: 0.8rem; color: var(--text-muted); border-left: 2px solid var(--border); padding-left: 0.75rem;">${log.details_display}</pre>`;
+                                            }
+                                            
+                                            li.innerHTML = `
+                                                <div class="timeline-icon"></div>
+                                                <span class="timeline-time">${log.created_at}</span>
+                                                <div class="timeline-content">
+                                                    ${actorText}
+                                                    <p style="margin: 0.25rem 0 0 0;">${log.action_text}</p>
+                                                    ${detailsHtml}
+                                                </div>
+                                            `;
+                                            timelineList.appendChild(li);
+                                        });
+                                    }
+                                    
+                                    hasNextPage = data.has_next;
+                                })
+                                .catch(() => {
+                                    isFetching = false;
+                                });
+                        }
+                        
+                        document.addEventListener("DOMContentLoaded", function() {
+                            const textarea = document.getElementById("noteBox");
+                            if (textarea && !textarea.disabled) {
+                                textarea.addEventListener("keydown", function (event) {
+                                    if (event.key === "Enter" && !event.shiftKey) {
+                                        event.preventDefault();
+                                        this.form.submit();
+                                    }
+                                });
+                            }
+
+                            document.getElementById('timeline-staff-filter').addEventListener('change', () => fetchTimelineData(1, false));
+                            
+                            const container = document.getElementById('timeline-container');
+                            container.addEventListener('scroll', () => {
+                                if (container.scrollTop + container.clientHeight >= container.scrollHeight - 20) {
+                                    if (hasNextPage && !isFetching) {
+                                        fetchTimelineData(currentTimelinePage + 1, true);
+                                    }
                                 }
                             });
-                        }
+                            
+                            fetchTimelineData(1, false);
+                        });
                         </script>
-
-                        <ul class="timeline">
-                            {% for log in history %}
-                            <li class="timeline-item">
-                                <div class="timeline-icon"></div>
-                                <span class="timeline-time">{{ log.created_at|date:"M d, g:i A" }}</span>
-                                <div class="timeline-content">
-                                    <strong>{{ log.actor.get_role_display|default:"System" }}{% if log.actor and log.actor.username %} (Staff ID: {{ log.actor.username }}){% endif %}</strong>
-                                    <p style="margin: 0.25rem 0 0 0;">
-                                        {% if log.action == "case_remark" %}
-                                            Added a note
-                                        {% else %}
-                                            {{ log.get_action_display }}
-                                        {% endif %}
-                                    </p>
-                                    
-                                    <!-- This part pulls the actual text from the AuditLog details -->
-                                    {% if log.details.remark %}
-                                        <p style="margin-top: 0.5rem; font-style: italic; color: var(--text-main); border-left: 2px solid var(--border); padding-left: 0.75rem;">
-                                            "{{ log.details.remark }}"
-                                        </p>
-                                    {% endif %}
-
-                                    {% if log.details_display and log.details_display != "—" and not log.details.remark %}
-                                        <pre style="margin: 0.5rem 0 0 0; white-space: pre-wrap; font-size: 0.8rem; color: var(--text-muted); border-left: 2px solid var(--border); padding-left: 0.75rem;">{{ log.details_display }}</pre>
-                                    {% endif %}
-                                </div>
-                            </li>
-                            {% empty %}
-                            <div style="color: var(--text-muted); text-align: center; font-size: 0.85rem;">No activity recorded yet.</div>
-                            {% endfor %}
-                        </ul>
 
                     </div>
                 </div>
@@ -1059,24 +1131,28 @@
 
 <!-- Assign Modal (Receiver) -->
 <div id="assignModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 420px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1rem;">Assign to Examiner</h3>
+    <div class="panel" style="width: 440px; padding: 2rem;">
+        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Assign to Examiner</h3>
         <form id="assignForm" method="post" action="">
             {% csrf_token %}
-            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-                Target: <strong id="modalClientName" style="color: var(--text-main);"></strong>
-                <span style="margin-left: 0.5rem; color: var(--text-light);" id="modalTrackingId"></span>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+                <div style="margin-bottom: 0.25rem;">Client Name: <strong id="modalClientName" style="color: var(--text-main);"></strong></div>
+                <div>Tracking Number : <strong style="color: var(--text-main);" id="modalTrackingId"></strong></div>
             </div>
-            <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; display:block;">Select Examiner</label>
-            <select name="assigned_to" required class="form-control">
-                <option value="" disabled selected>Select from active staff...</option>
-                {% for ex in examiners %}
-                    <option value="{{ ex.id }}">{{ ex.full_name|default:ex.email }} ({{ ex.active_load|default:0 }})</option>
-                {% endfor %}
-            </select>
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button type="button" class="btn btn-outline" style="flex:1" onclick="closeAssignModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1;">Confirm</button>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Select Examiner</label>
+                <select name="assigned_to" required class="form-select" style="padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 0.9rem;">
+                    <option value="" disabled selected>Select from active staff...</option>
+                    {% for ex in examiners %}
+                        <option value="{{ ex.id }}">{{ ex.full_name|default:ex.email }} (Pending: {{ ex.active_load|default:0 }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 0.75rem; margin-top: 2rem;">
+                <button type="button" class="btn btn-outline" style="flex:1; padding: 0.6rem;" onclick="closeAssignModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="flex:1; padding: 0.6rem;">Confirm</button>
             </div>
         </form>
     </div>
@@ -1181,16 +1257,23 @@
 </script>
 
 <div id="receiveModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 400px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1rem;">Receive transaction</h3>
-        <div style="font-size: 0.9rem; color: var(--text-muted);">
+    <div class="panel" style="width: 440px; padding: 2rem;">
+        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Receive transaction</h3>
+        
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0.25rem;">Client Name: <strong style="color: var(--text-main);">{{ case.client_name }}</strong></div>
+            <div>Tracking Number : <strong style="color: var(--text-main);">{{ case.tracking_id }}</strong></div>
+        </div>
+        
+        <div style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1rem;">
             Are you sure you want to mark this transaction as <strong style="color: var(--text-main);">Received</strong>?
         </div>
-        <form method="post" action="{% url 'receive_case' case.tracking_id %}" style="margin-top: 1rem;">
+        
+        <form method="post" action="{% url 'receive_case' case.tracking_id %}">
             {% csrf_token %}
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button type="button" class="btn btn-outline" style="flex:1" onclick="closeReceiveModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1;">Confirm</button>
+            <div style="display: flex; gap: 0.75rem;">
+                <button type="button" class="btn btn-outline" style="flex:1; padding: 0.6rem;" onclick="closeReceiveModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="flex:1; padding: 0.6rem;">Confirm</button>
             </div>
         </form>
     </div>
@@ -1288,34 +1371,50 @@
 </script>
 
 <div id="approveModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 400px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1rem;">Approve Transaction</h3>
-        <div style="font-size: 0.9rem; color: var(--text-muted);">
-            Confirm approval for <strong style="color: var(--text-main);">{{ case.tracking_id }}</strong>?
+    <div class="panel" style="width: 440px; padding: 2rem;">
+        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Approve Transaction</h3>
+        
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0.25rem;">Client Name: <strong style="color: var(--text-main);">{{ case.client_name }}</strong></div>
+            <div>Tracking Number : <strong style="color: var(--text-main);">{{ case.tracking_id }}</strong></div>
         </div>
-        <div style="display: flex; gap: 0.5rem; margin-top: 1.5rem;">
-            <button type="button" class="btn btn-outline" style="flex:1" onclick="closeApproveModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" style="flex:1;" onclick="proceedToAssignNumberer()">Confirm</button>
+        
+        <div style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Are you sure you want to <strong style="color: var(--text-main);">approve</strong> this transaction?
+        </div>
+        
+        <div style="display: flex; gap: 0.75rem;">
+            <button type="button" class="btn btn-outline" style="flex:1; padding: 0.6rem;" onclick="closeApproveModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" style="flex:1; padding: 0.6rem;" onclick="proceedToAssignNumberer()">Confirm</button>
         </div>
     </div>
 </div>
 
 <div id="assignNumbererModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 420px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1rem;">Assign to Numberer</h3>
+    <div class="panel" style="width: 440px; padding: 2rem;">
+        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Assign to Numberer</h3>
         <form method="post" action="{% url 'assign_numberer' case.tracking_id %}">
             {% csrf_token %}
             <input type="hidden" name="confirm_approve" value="1">
-            <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; display:block;">Select Numberer</label>
-            <select name="assigned_to" required class="form-control">
-                <option value="" disabled selected>Select from active staff...</option>
-                {% for nm in numberers %}
-                    <option value="{{ nm.id }}">{{ nm.full_name|default:nm.email }} [ {{ nm.pending_cases_count }} ]</option>
-                {% endfor %}
-            </select>
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button type="button" class="btn btn-outline" style="flex:1" onclick="closeAssignNumbererModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1;">Submit</button>
+            
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+                <div style="margin-bottom: 0.25rem;">Client Name: <strong style="color: var(--text-main);">{{ case.client_name }}</strong></div>
+                <div>Tracking Number : <strong style="color: var(--text-main);">{{ case.tracking_id }}</strong></div>
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Select Numberer</label>
+                <select name="assigned_to" required class="form-select" style="padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 0.9rem;">
+                    <option value="" disabled selected>Select from active staff...</option>
+                    {% for nm in numberers %}
+                        <option value="{{ nm.id }}">{{ nm.full_name|default:nm.email }} (Pending: {{ nm.pending_cases_count|default:0 }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 0.75rem; margin-top: 2rem;">
+                <button type="button" class="btn btn-outline" style="flex:1; padding: 0.6rem;" onclick="closeAssignNumbererModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="flex:1; padding: 0.6rem;">Confirm</button>
             </div>
         </form>
     </div>
@@ -1338,20 +1437,29 @@
 </script>
 
 <div id="taxmapperAssignModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 420px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1rem;">Assign to Tax Mapper</h3>
+    <div class="panel" style="width: 440px; padding: 2rem;">
+        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Assign to Tax Mapper</h3>
         <form method="post" action="{% url 'assign_taxmapper' case.tracking_id %}">
             {% csrf_token %}
-            <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; display:block;">Select Tax Mapper</label>
-            <select name="taxmapper_id" required class="form-control">
-                <option value="" disabled selected>Select from active staff...</option>
-                {% for tm in taxmappers %}
-                    <option value="{{ tm.id }}">{{ tm.full_name|default:tm.email }}</option>
-                {% endfor %}
-            </select>
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button type="button" class="btn btn-outline" style="flex:1" onclick="closeTaxmapperAssignModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1;">Confirm</button>
+            
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+                <div style="margin-bottom: 0.25rem;">Client Name: <strong style="color: var(--text-main);">{{ case.client_name }}</strong></div>
+                <div>Tracking Number : <strong style="color: var(--text-main);">{{ case.tracking_id }}</strong></div>
+            </div>
+            
+            <div style="margin-bottom: 1.5rem;">
+                <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Select Tax Mapper</label>
+                <select name="taxmapper_id" required class="form-select" style="padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 0.9rem;">
+                    <option value="" disabled selected>Select from active staff...</option>
+                    {% for tm in taxmappers %}
+                        <option value="{{ tm.id }}">{{ tm.full_name|default:tm.email }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div style="display: flex; gap: 0.75rem; margin-top: 2rem;">
+                <button type="button" class="btn btn-outline" style="flex:1; padding: 0.6rem;" onclick="closeTaxmapperAssignModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="flex:1; padding: 0.6rem;">Confirm</button>
             </div>
         </form>
     </div>
@@ -1420,12 +1528,21 @@
 
 <!-- Examiner Forward Modal -->
 <div id="examinerForwardModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 400px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1rem; text-align: center;">Confirm Forwarding</h3>
-        <p style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Are you sure you want to forward this case to the Approver?</p>
-        <div style="display: flex; gap: 0.5rem;">
-            <button type="button" class="btn btn-outline" style="flex:1" onclick="closeExaminerForwardModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" style="flex:1;" onclick="document.getElementById('examinerForwardForm').submit()">Confirm</button>
+    <div class="panel" style="width: 440px; padding: 2rem;">
+        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Confirm Forwarding</h3>
+        
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0.25rem;">Client Name: <strong style="color: var(--text-main);">{{ case.client_name }}</strong></div>
+            <div>Tracking Number : <strong style="color: var(--text-main);">{{ case.tracking_id }}</strong></div>
+        </div>
+        
+        <div style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Are you sure you want to forward this case to the <strong style="color: var(--text-main);">Approver</strong>?
+        </div>
+        
+        <div style="display: flex; gap: 0.75rem;">
+            <button type="button" class="btn btn-outline" style="flex:1; padding: 0.6rem;" onclick="closeExaminerForwardModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" style="flex:1; padding: 0.6rem;" onclick="document.getElementById('examinerForwardForm').submit()">Confirm</button>
         </div>
     </div>
 </div>
@@ -1482,15 +1599,31 @@
 
 <!-- Releaser Modal -->
 <div id="releaserSubmitModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 450px; padding: 2rem;">
+    <div class="panel" style="width: 500px; padding: 2rem;">
         <h3 class="panel-title" style="margin-bottom: 1rem; text-align: center;">Confirm Release</h3>
         <p style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Please enter the details of the person claiming these documents.</p>
         
         <form method="post" action="{% url 'release_case' case.tracking_id %}">
             {% csrf_token %}
             <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--text);">Claimed By (Full Name) <span style="color:red;">*</span></label>
-                <input type="text" name="claimed_by_name" class="form-control" required placeholder="e.g. Juan Dela Cruz" pattern="^[a-zA-ZñÑ\s\-\.]+$" title="Please enter a valid name (letters only)" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\-\.]/g, '')" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                <label style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--text);">Claimed By <span style="color:red;">*</span></label>
+                <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                    <input type="text" name="claimed_by_fname" class="form-control" required placeholder="Firstname" pattern="^[a-zA-ZñÑ\s\-\.]+$" title="Please enter a valid first name" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\-\.]/g, '')" style="flex: 2; min-width: 0; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                    
+                    <input type="text" name="claimed_by_mi" class="form-control" placeholder="MI" maxlength="1" pattern="^[a-zA-ZñÑ]$" title="Single letter only" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ]/g, '')" style="flex: 1; max-width: 60px; min-width: 0; padding: 0.75rem; text-align: center; border: 1px solid var(--border); border-radius: 8px; text-transform: uppercase;">
+                    
+                    <input type="text" name="claimed_by_lname" class="form-control" required placeholder="Lastname" pattern="^[a-zA-ZñÑ\s\-\.]+$" title="Please enter a valid last name" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\-\.]/g, '')" style="flex: 2; min-width: 0; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                    
+                    <select name="claimed_by_suffix" class="form-select" style="flex: 1; max-width: 85px; min-width: 0; padding: 0.75rem 0.25rem; border: 1px solid var(--border); border-radius: 8px; appearance: auto; background-color: white;">
+                        <option value="" selected>Suffix</option>
+                        <option value="Jr.">Jr.</option>
+                        <option value="Sr.">Sr.</option>
+                        <option value="II">II</option>
+                        <option value="III">III</option>
+                        <option value="IV">IV</option>
+                        <option value="V">V</option>
+                    </select>
+                </div>
             </div>
             <div style="margin-bottom: 1.5rem;">
                 <label style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--text);">Contact Number <span style="color:red;">*</span></label>

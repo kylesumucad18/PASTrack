@@ -5959,12 +5959,24 @@ def release_case(request, tracking_id):
         messages.error(request, "Review all uploaded documents and mark them as checked before releasing.")
         return redirect("case_detail", tracking_id=case.tracking_id)
 
-    claimed_by_name = request.POST.get("claimed_by_name", "").strip()
+    claimed_by_fname = request.POST.get("claimed_by_fname", "").strip()
+    claimed_by_mi = request.POST.get("claimed_by_mi", "").strip()
+    claimed_by_lname = request.POST.get("claimed_by_lname", "").strip()
+    claimed_by_suffix = request.POST.get("claimed_by_suffix", "").strip()
     claimed_by_contact = request.POST.get("claimed_by_contact", "").strip()
 
-    if not claimed_by_name or not claimed_by_contact:
-        messages.error(request, "Both Claimant Name and Contact Number are required.")
+    if not claimed_by_fname or not claimed_by_lname or not claimed_by_contact:
+        messages.error(request, "First Name, Last Name, and Contact Number are required.")
         return redirect("case_detail", tracking_id=case.tracking_id)
+
+    name_parts = [claimed_by_fname]
+    if claimed_by_mi:
+        name_parts.append(f"{claimed_by_mi}.")
+    name_parts.append(claimed_by_lname)
+    if claimed_by_suffix:
+        name_parts.append(claimed_by_suffix)
+        
+    claimed_by_name = " ".join(name_parts)
 
     old_status = case.status
     case.status = "released"
@@ -6164,3 +6176,58 @@ def generate_case_pdf(request, tracking_id):
     if pisa_status.err:
         return HttpResponse('We had some errors <pre>' + html + '</pre>')
     return response
+
+from django.core.paginator import Paginator
+from django.http import JsonResponse
+from datetime import datetime
+from django.db.models import Q
+
+@login_required
+def get_timeline_updates(request, tracking_id):
+    case = get_object_or_404(Case, tracking_id=tracking_id)
+    if not _user_can_view_case(request.user, case):
+        return JsonResponse({"error": "Not authorized"}, status=403)
+        
+    logs = AuditLog.objects.filter(
+        Q(target_object=f"Case: {case.tracking_id}") | 
+        Q(target_object=f"Draft: {case.draft_id}")
+    ).order_by("-created_at")
+    
+    staff_role = request.GET.get('staff_role')
+    if staff_role and staff_role != 'all':
+        logs = logs.filter(actor__role=staff_role)
+            
+    paginator = Paginator(logs, 10)
+    page_num = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_num)
+    
+    data = []
+    for log in page_obj:
+        role_display = log.actor.get_role_display() if log.actor else "System"
+        actor_id = log.actor.username if log.actor and log.actor.username else ""
+        
+        if log.action == "case_remark":
+            action_text = "Added a note"
+        else:
+            action_text = log.get_action_display()
+            
+        details_remark = log.details.get("remark") if isinstance(log.details, dict) else ""
+        raw_details_display = _format_case_history_details(getattr(log, "action", "") or "", getattr(log, "details", None))
+        details_display = raw_details_display if raw_details_display != "—" and not details_remark else ""
+        
+        data.append({
+            "created_at": log.created_at.strftime("%b %d, %I:%M %p").replace(' 0', ' '),
+            "actor_display": role_display,
+            "actor_id": actor_id,
+            "action_text": action_text,
+            "remark": details_remark,
+            "details_display": details_display,
+        })
+        
+    return JsonResponse({
+        "logs": data,
+        "has_next": page_obj.has_next(),
+        "has_previous": page_obj.has_previous(),
+        "current_page": page_obj.number,
+        "num_pages": paginator.num_pages
+    })
