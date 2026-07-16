@@ -362,8 +362,7 @@
 
         <!-- Pagination Controls -->
         <div class="pagination-container">
-            <span>Page <strong>{{ page_obj.number }}</strong> of <strong>{{ page_obj.paginator.num_pages
-                    }}</strong></span>
+            <span>Page <strong>{{ page_obj.number }}</strong> of <strong>{{ page_obj.paginator.num_pages }}</strong></span>
 
             <div class="pagination-controls">
                 {% if page_obj.number|default:1|add:"0" > 1 %}
