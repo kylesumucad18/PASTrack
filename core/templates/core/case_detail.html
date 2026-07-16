@@ -1090,6 +1090,13 @@
                                     }
                                     
                                     hasNextPage = data.has_next;
+                                    
+                                    setTimeout(() => {
+                                        const container = document.getElementById('timeline-container');
+                                        if (hasNextPage && container.scrollHeight <= container.clientHeight + 10) {
+                                            fetchTimelineData(currentTimelinePage + 1, true);
+                                        }
+                                    }, 100);
                                 })
                                 .catch(() => {
                                     isFetching = false;
