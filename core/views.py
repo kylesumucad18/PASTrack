@@ -6296,7 +6296,7 @@ def get_timeline_updates(request, tracking_id):
     if staff_role and staff_role != 'all':
         logs = logs.filter(actor__role=staff_role)
             
-    paginator = Paginator(logs, 10)
+    paginator = Paginator(logs, 5)
     page_num = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_num)
     
