@@ -1305,8 +1305,13 @@
                         {{ case.tracking_id }}
                         {% else %}
                         <!-- Stylized Placeholder for Drafts -->
-                        <span style="color: #1e3a8a; font-weight: 700;">PAS-{% now "Y" %}-</span><span
-                            style="color: #94a3b8; font-weight: 500;">XXXXXXX</span>
+                        <span style="color: #1e3a8a; font-weight: 700;">
+                            {% if case.submitted_by.role == 'lgu_admin' and case.lgu_area_code %}
+                            L{{ case.lgu_area_code }}-PAS-{% now "y" %}-
+                            {% else %}
+                            PAS-{% now "y" %}-
+                            {% endif %}
+                        </span><span style="color: #94a3b8; font-weight: 500;">XXXXXX</span>
                         {% endif %}
                     </h3>
                     <div class="summary-type" style="margin-top: 0.5rem;">{{ case.get_case_type_display|default:"Transaction Type" }}</div>
@@ -2010,18 +2015,69 @@
             const isSegregation = caseTypeSelect.value === 'transfer_ownership_partial_segregation';
             const isFullTransfer = caseTypeSelect.value === 'transfer_ownership_tax_decl';
 
-            if (isSegregation || isFullTransfer) {
-                if (prevTdLabel) prevTdLabel.innerHTML = 'Previous Tax Dec Number<span class="text-danger">*</span>';
-                if (prevTdInput) prevTdInput.required = true;
-                if (prevTdHelpText) prevTdHelpText.style.display = 'none';
-            } else {
+            const isFirstTime = caseTypeSelect.value === 'land_first_time';
+            let isImprovement = caseTypeSelect.value === 'building_improvements';
+            if (caseTypeSelect.selectedIndex >= 0) {
+                const selectedText = caseTypeSelect.options[caseTypeSelect.selectedIndex].text;
+                if (selectedText.includes('Building') || selectedText.includes('Improvements') || selectedText.includes('Machineries')) {
+                    isImprovement = true;
+                }
+            }
+
+            if (isFirstTime) {
                 if (prevTdLabel) prevTdLabel.innerHTML = 'Previous Tax Dec Number';
-                if (prevTdInput) prevTdInput.required = false;
+                if (prevTdInput) {
+                    prevTdInput.readOnly = true;
+                    prevTdInput.value = 'NEW';
+                    prevTdInput.style.backgroundColor = '#f3f4f6';
+                    prevTdInput.style.color = '#6b7280';
+                    prevTdInput.style.pointerEvents = 'none';
+                    prevTdInput.required = false;
+                }
+                if (prevTdHelpText) prevTdHelpText.style.display = 'none';
+            } else if (isImprovement) {
+                if (prevTdLabel) prevTdLabel.innerHTML = 'Previous Tax Dec Number';
+                if (prevTdInput) {
+                    prevTdInput.readOnly = false;
+                    if (prevTdInput.value === 'NEW') prevTdInput.value = '';
+                    prevTdInput.style.backgroundColor = '';
+                    prevTdInput.style.color = '';
+                    prevTdInput.style.pointerEvents = 'auto';
+                    prevTdInput.required = false;
+                }
                 if (prevTdHelpText) prevTdHelpText.style.display = 'block';
+            } else {
+                if (prevTdLabel) prevTdLabel.innerHTML = 'Previous Tax Dec Number<span class="text-danger">*</span>';
+                if (prevTdInput) {
+                    prevTdInput.readOnly = false;
+                    if (prevTdInput.value === 'NEW') prevTdInput.value = '';
+                    prevTdInput.style.backgroundColor = '';
+                    prevTdInput.style.color = '';
+                    prevTdInput.style.pointerEvents = 'auto';
+                    if (caseTypeSelect.value) {
+                        prevTdInput.required = true;
+                    } else {
+                        prevTdInput.required = false;
+                        if (prevTdLabel) prevTdLabel.innerHTML = 'Previous Tax Dec Number';
+                    }
+                }
+                if (prevTdHelpText) prevTdHelpText.style.display = 'none';
+            }
+
+            const isLegacyEligible = isSegregation || isFullTransfer || caseTypeSelect.value === 'subdivision_consolidation' || caseTypeSelect.value === 'reassessment_reclassification' || caseTypeSelect.value === 'area_increase_decrease';
+
+            if (isLegacyEligible) {
+                if (legacyOverrideContainer) legacyOverrideContainer.style.display = 'block';
+            } else {
+                if (legacyOverrideContainer) legacyOverrideContainer.style.display = 'none';
+                if (legacyOverrideCheckbox && legacyOverrideCheckbox.checked) {
+                    legacyOverrideCheckbox.checked = false;
+                    if (legacyUploadWrapper) legacyUploadWrapper.style.display = 'none';
+                    if (legacyFileInput) legacyFileInput.required = false;
+                }
             }
 
             if (isSegregation || isFullTransfer) {
-                if (legacyOverrideContainer) legacyOverrideContainer.style.display = 'block';
                 if (standardAreaWrapper) standardAreaWrapper.style.display = 'none';
                 if (segregationAreaWrapper) segregationAreaWrapper.style.display = 'flex';
                 
@@ -2048,7 +2104,6 @@
                 
                 calculateRemainingArea();
             } else {
-                if (legacyOverrideContainer) legacyOverrideContainer.style.display = 'none';
                 if (standardAreaWrapper) standardAreaWrapper.style.display = 'flex';
                 if (segregationAreaWrapper) segregationAreaWrapper.style.display = 'none';
                 if (propertyAreaLabel) propertyAreaLabel.innerHTML = 'Property Area<span class="text-danger">*</span>';
@@ -2256,6 +2311,14 @@
                                 if (hiddenCls) hiddenCls.remove();
                             }
                             
+                            if (lguOriginSelect) {
+                                lguOriginSelect.style.pointerEvents = 'auto';
+                                lguOriginSelect.style.backgroundColor = '';
+                                lguOriginSelect.setAttribute('name', 'area');
+                                const hiddenLgu = document.getElementById('hidden_lgu_input');
+                                if (hiddenLgu) hiddenLgu.remove();
+                            }
+                            
                             if (continueBtn) continueBtn.disabled = true;
                             
                             let errorSpan = document.getElementById('td_ajax_error');
@@ -2268,7 +2331,7 @@
                                 errorSpan.style.marginTop = '0.25rem';
                                 prevTdInput.parentNode.appendChild(errorSpan);
                             }
-                            errorSpan.innerText = '❌ Mother Lot not found! You cannot proceed without a valid Source Tax Dec.';
+                            errorSpan.innerText = data.error || '❌ Mother Lot not found! You cannot proceed without a valid Source Tax Dec.';
                             
                             calculateRemainingArea();
                         }
@@ -2286,6 +2349,14 @@
                         classificationSelectEl.setAttribute('name', 'classification');
                         const hiddenCls = document.getElementById('hidden_classification_input');
                         if (hiddenCls) hiddenCls.remove();
+                    }
+                    
+                    if (lguOriginSelect) {
+                        lguOriginSelect.style.pointerEvents = 'auto';
+                        lguOriginSelect.style.backgroundColor = '';
+                        lguOriginSelect.setAttribute('name', 'area');
+                        const hiddenLgu = document.getElementById('hidden_lgu_input');
+                        if (hiddenLgu) hiddenLgu.remove();
                     }
                     
                     calculateRemainingArea();

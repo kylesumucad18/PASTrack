@@ -260,12 +260,7 @@
                                     {% else %}
                                         {{ case.previous_tax_dec_number }}
                                     {% endif %}
-                                    {% if case.is_legacy_override %}
-                                        <button id="openLegacyModal" onclick="openLegacyModal()" type="button" class="legacy-badge">
-                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                            Legacy Record
-                                        </button>
-                                    {% endif %}
+
                                 </span>
                             {% endif %}
                         </div>
@@ -1530,41 +1525,6 @@
     .legacy-badge svg { width: 0.85rem; height: 0.85rem; margin-right: 0.25rem; }
 </style>
 
-{% if case.is_legacy_override and case.legacy_document_scan %}
-    <div id="legacyDocumentModal" class="fixed inset-0 z-50 hidden bg-black/50 flex items-center justify-center p-4" onclick="closeLegacyModal()">
-        <div class="bg-white rounded-lg shadow-xl w-full md:w-3/4 lg:w-2/3 h-5/6 flex flex-col relative" onclick="event.stopPropagation()">
-            <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
-                <h3 class="text-lg font-semibold text-gray-800">Legacy Document Scan</h3>
-                <button type="button" onclick="closeLegacyModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            </div>
-            <div class="flex-1 p-0 overflow-hidden bg-gray-100 flex items-center justify-center relative h-full">
-                <iframe src="{{ case.legacy_document_scan.url }}" class="w-full h-full border-0"></iframe>
-            </div>
-        </div>
-    </div>
-{% endif %}
 
-<script>
-    const legacyModalBadge = document.getElementById('openLegacyModal');
-    if (legacyModalBadge) {
-        legacyModalBadge.addEventListener('click', openLegacyModal);
-    }
-    
-    function openLegacyModal() {
-        const modal = document.getElementById('legacyDocumentModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
-    }
-    
-    function closeLegacyModal() {
-        const modal = document.getElementById('legacyDocumentModal');
-        if (modal) {
-            modal.classList.add('hidden');
-        }
-    }
-</script>
 
 {% endblock content %}

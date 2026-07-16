@@ -128,6 +128,7 @@ class CaseDetailsForm(forms.ModelForm):
 
     def __init__(self, *args, user: CustomUser | None = None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.user = user
         if user and getattr(user, "role", None) == "lgu_admin":
             mun = (getattr(user, "lgu_municipality", "") or "").strip()
             if mun:
@@ -138,6 +139,22 @@ class CaseDetailsForm(forms.ModelForm):
         if self.instance and getattr(self.instance, "tracking_id", None):
             self.fields["area"].disabled = True
 
+    def clean_lot_number(self):
+        cleaned = self.cleaned_data or {}
+        lot_number = (cleaned.get("lot_number") or "").strip()
+
+        if not lot_number:
+            return lot_number
+
+        invalid_words = {"new", "old", "none", "tba", "na"}
+        if lot_number.lower() in invalid_words:
+            raise ValidationError(f'Invalid lot number: "{lot_number}" is not allowed.')
+
+        import re
+        if not re.match(r'^[a-zA-Z0-9\-\s]{3,50}$', lot_number):
+            raise ValidationError("Lot number must be 3-50 characters long and contain only letters, numbers, dashes, and spaces.")
+
+        return lot_number
 
     def clean(self):
         cleaned = super().clean() or {}
@@ -172,8 +189,22 @@ class CaseDetailsForm(forms.ModelForm):
         area_value = cleaned.get("area_value")
         area_unit = cleaned.get("area_unit")
         case_type = cleaned.get("case_type")
+        case_lgu_origin = cleaned.get("area")
 
-        if case_type in ["transfer_ownership_tax_decl", "transfer_ownership_partial_segregation"]:
+        if self.user and getattr(self.user, "lgu_municipality", ""):
+            user_lgu = self.user.lgu_municipality.strip()
+            if user_lgu and case_lgu_origin and case_lgu_origin != user_lgu:
+                self.add_error("area", "This transaction belongs to another municipality and cannot be processed here.")
+
+        legacy_eligible_cases = [
+            "transfer_ownership_tax_decl",
+            "transfer_ownership_partial_segregation",
+            "subdivision_consolidation",
+            "reassessment_reclassification",
+            "area_increase_decrease"
+        ]
+        
+        if case_type in legacy_eligible_cases:
             prev_td = (cleaned.get("previous_tax_dec_number") or "").strip()
             is_legacy = cleaned.get("is_legacy_override")
             
@@ -183,7 +214,7 @@ class CaseDetailsForm(forms.ModelForm):
                     self.add_error("previous_tax_dec_number", "Legacy Tax Dec Number must be 5-50 characters long and contain only letters, numbers, dashes, and spaces.")
             else:
                 if not prev_td or prev_td.lower() in ["na", "n/a", "none", "new"]:
-                    self.add_error("previous_tax_dec_number", "A valid Previous Tax Dec Number is strictly required for transfer cases (cannot be NA or New).")
+                    self.add_error("previous_tax_dec_number", "A valid Previous Tax Dec Number is strictly required for these cases (cannot be NA or New).")
 
         if case_type == "transfer_ownership_partial_segregation":
             original_area = cleaned.get("original_area")
