@@ -653,16 +653,38 @@ def submit_feedback(request):
 
 @login_required
 def analytics_dashboard(request):
-    denial = _require_super_admin(request)
-    if denial:
-        return denial
+    if request.user.role not in ['super_admin', 'lgu_admin'] and not getattr(request.user, 'role', '').startswith('capitol_'):
+        messages.error(request, "Not authorized.")
+        return redirect("dashboard")
+
+    if request.user.role == 'lgu_admin':
+        mun = getattr(request.user, "lgu_municipality", "")
+        qs = Case.objects.filter(submitted_by__lgu_municipality=mun)
+        total_users = CustomUser.objects.filter(lgu_municipality=mun).count()
+        cases_label = "Total Cases"
+    elif request.user.role.startswith('capitol_'):
+        logs = AuditLog.objects.filter(actor=request.user, action__startswith="case_").values_list('target_object', flat=True).distinct()
+        tracking_ids = [t.replace("Case: ", "").strip() for t in logs if t.startswith("Case: ")]
+        qs = Case.objects.filter(
+            Q(tracking_id__in=tracking_ids) |
+            Q(received_by=request.user) |
+            Q(assigned_to=request.user) |
+            Q(taxmapper_assigned_to=request.user) |
+            Q(numberer_assigned_to=request.user) |
+            Q(returned_by=request.user)
+        ).distinct()
+        total_users = CustomUser.objects.filter(role=request.user.role).count()
+        cases_label = "Total Cases Handled"
+    else:
+        qs = Case.objects.all()
+        total_users = CustomUser.objects.count()
+        cases_label = "Total Cases"
 
     # Module 5.1: High-level metrics
-    total_cases = Case.objects.count()
-    total_users = CustomUser.objects.count()
+    total_cases = qs.count()
 
     by_status_raw = list(
-        Case.objects.values("status").annotate(count=Count("id")).order_by("status")
+        qs.values("status").annotate(count=Count("id")).order_by("status")
     )
     status_labels = dict(Case.STATUS_CHOICES)
     by_status = [
@@ -670,7 +692,7 @@ def analytics_dashboard(request):
         for r in by_status_raw
     ]
 
-    released = Case.objects.filter(status="released", released_at__isnull=False)
+    released = qs.filter(status="released", released_at__isnull=False)
     avg_days = None
     if released.exists():
         # Average processing time (created -> released) in days.
@@ -688,6 +710,7 @@ def analytics_dashboard(request):
     return render(request, "core/analytics.html", {
         "role_display": request.user.get_role_display(),
         "total_cases": total_cases,
+        "cases_label": cases_label,
         "total_users": total_users,
         "by_status": by_status,
         "avg_days": avg_days,

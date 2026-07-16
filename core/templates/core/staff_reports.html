@@ -55,9 +55,14 @@
             <h1>My Performance Report</h1>
             <span>Account: <strong>{{ request.user.email }}</strong> | Role: <strong>{{ role_display }}</strong></span>
         </div>
-        <button onclick="window.print();" class="btn-outline">
-            <i class="ri-printer-line"></i> Print Report
-        </button>
+        <div style="display: flex; gap: 0.75rem;">
+            <a href="{% url 'analytics_dashboard' %}" class="btn-outline">
+                <i class="ri-bar-chart-2-line"></i> View Visual Analytics
+            </a>
+            <button onclick="window.print();" class="btn-outline">
+                <i class="ri-printer-line"></i> Print Report
+            </button>
+        </div>
     </div>
 
     <div class="report-grid">

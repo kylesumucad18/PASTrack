@@ -1,59 +1,341 @@
-{% extends "base.html" %}
-{% block title %}Analytics{% endblock %}
+{% extends 'base_new.html' %}
+{% load static %}
+{% block title %}Analytics | PAStrack{% endblock %}
+
+{% block extra_css %}
+<style>
+    .main-content { padding: 0 !important; }
+
+    /* ===== GRADIENT BACKGROUND ===== */
+    .dashboard-bg {
+        padding: 2.5rem;
+        min-height: 100%;
+        position: relative;
+        background-color: var(--bg-base, #f8fafc);
+        background-image:
+            linear-gradient(90deg, rgba(148, 163, 184, 0.064) 1px, transparent 1px),
+            linear-gradient(0deg, rgba(112, 93, 93, 0.062) 1px, transparent 1px),
+            linear-gradient(90deg, #ffffff 0%, rgba(248, 250, 252, 0.7) 40%, transparent 85%),
+            radial-gradient(circle at 50% -30%, rgba(170, 201, 252, 0.604) 0%, rgba(214, 230, 255, 0.095) 50%, transparent 85%),
+            linear-gradient(180deg, #e4eefc 0%, #f1f6fd 25%, #f8fafc 100%);
+        background-size: 64px 64px, 64px 64px, 100% 100%, 100% 100%, 100% 100%;
+        background-position: 0 0, 0 0, top left, top left, top left;
+        background-repeat: repeat, repeat, no-repeat, no-repeat, no-repeat;
+    }
+
+    /* ===== BENTO GRID ===== */
+    .bento-layout {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 1.25rem;
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    .bento-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        border-radius: 10px;
+        box-shadow: 0 4px 12px -4px rgba(15, 23, 42, 0.05);
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .span-4 { grid-column: span 4; }
+    .span-6 { grid-column: span 6; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+
+    /* ===== HERO BANNER ===== */
+    .hero-banner {
+        grid-column: span 12;
+        padding: 0.25rem 0 0.75rem 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .hero-text h1 {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: var(--text-main, #0f172a);
+        margin-bottom: 0.25rem;
+        letter-spacing: -0.02em;
+    }
+
+    .hero-text p {
+        font-size: 0.9rem;
+        color: var(--text-muted, #64748b);
+        font-weight: 500;
+        margin: 0;
+    }
+
+    .hero-actions { display: flex; gap: 1rem; }
+
+    /* ===== BUTTONS ===== */
+    .btn-primary {
+        background: var(--primary, #3b82f6);
+        color: white;
+        border: none;
+        padding: 0.6rem 1.25rem;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: 0.2s;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.25);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+    }
+
+    .btn-primary:hover {
+        opacity: 0.88;
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    /* ===== KPI CARDS ===== */
+    .kpi-row {
+        grid-column: span 12;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.25rem;
+    }
+
+    .card-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: var(--text-muted, #64748b);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .kpi-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--text-main, #0f172a);
+        line-height: 1;
+        margin: 0.25rem 0 0.75rem 0;
+        letter-spacing: -0.03em;
+    }
+
+    /* Focus KPI card */
+    .focus-card {
+        background: linear-gradient(145deg, var(--primary, #3b82f6), #1d4ed8);
+        color: white;
+        border: none;
+        box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.35);
+    }
+    .focus-card .card-title { color: rgba(255, 255, 255, 0.75); }
+    .focus-card .kpi-value { color: white; }
+
+    /* Chart */
+    .chart-wrapper {
+        position: relative;
+        width: 100%;
+        height: 300px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* Table */
+    .table-wrapper {
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        max-height: 300px;
+    }
+
+    .clean-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        text-align: left;
+    }
+
+    .clean-table th {
+        padding: 0.5rem 1rem 0.9rem 1rem;
+        font-size: 0.7rem;
+        color: var(--text-muted, #64748b);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    }
+
+    .clean-table td {
+        padding: 1rem 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid transparent;
+        font-size: 0.875rem;
+        transition: background 0.15s;
+    }
+
+    .clean-table tbody tr:nth-child(even) td {
+        background-color: rgba(248, 250, 252, 0.55);
+    }
+
+    .clean-table tbody tr:hover td {
+        background-color: rgba(241, 245, 249, 0.85);
+    }
+
+    @media (max-width: 992px) {
+        .span-4, .span-6 { grid-column: span 12; }
+        .kpi-row { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap;">
-        <div>
-            <h2 class="page-title">Analytics Dashboard</h2>
-            <p class="page-subtitle">{{ role_display }}</p>
+<div class="dashboard-bg">
+    <div class="bento-layout">
+        
+        <!-- Hero Banner -->
+        <div class="hero-banner">
+            <div class="hero-text">
+                <h1>Analytics Dashboard</h1>
+                <p>{{ role_display }}</p>
+            </div>
+            <div class="hero-actions">
+                <a href="{% url 'reports' %}" class="btn-primary">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Generate Reports
+                </a>
+            </div>
         </div>
-        <div style="display:flex; gap:10px;">
-            <a class="btn btn-secondary" href="{% url 'reports' %}">Reports</a>
-        </div>
-    </div>
-</div>
 
-<div class="card">
-    <div class="form-grid">
-        <div>
-            <label>Total Users</label>
-            <div style="font-weight:800; font-size:1.4rem;">{{ total_users }}</div>
+        <!-- KPI Row -->
+        <div class="kpi-row">
+            <div class="bento-card">
+                <div class="card-header">
+                    <span class="card-title">Total Users</span>
+                </div>
+                <div class="kpi-value">{{ total_users }}</div>
+            </div>
+            <div class="bento-card focus-card">
+                <div class="card-header">
+                    <span class="card-title">{{ cases_label|default:"Total Cases" }}</span>
+                </div>
+                <div class="kpi-value">{{ total_cases }}</div>
+            </div>
+            <div class="bento-card">
+                <div class="card-header">
+                    <span class="card-title">Avg Processing Time</span>
+                </div>
+                <div class="kpi-value" style="font-size: 1.8rem;">
+                    {% if avg_days %}{{ avg_days|floatformat:2 }} days{% else %}—{% endif %}
+                </div>
+            </div>
         </div>
-        <div>
-            <label>Total Cases</label>
-            <div style="font-weight:800; font-size:1.4rem;">{{ total_cases }}</div>
-        </div>
-        <div class="span-2">
-            <label>Average Processing Time (Created → Released)</label>
-            <div class="muted">{% if avg_days %}{{ avg_days|floatformat:2 }} days{% else %}—{% endif %}</div>
-        </div>
-    </div>
-</div>
 
-<div class="card card--flat">
-    <div class="card__header">
-        <strong>Cases by Status</strong>
-    </div>
-    <div class="card__body card__body--flush">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Status</th>
-                    <th style="width:18%">Count</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in by_status %}
-                    <tr>
-                        <td>{{ row.status }}</td>
-                        <td class="muted">{{ row.count }}</td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="2" class="muted"><em>No data</em></td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <!-- Cases By Status Chart -->
+        <div class="bento-card span-6">
+            <div class="card-header">
+                <span class="card-title">Cases By Status (Overview)</span>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Cases By Status Table -->
+        <div class="bento-card span-6">
+            <div class="card-header">
+                <span class="card-title">Cases By Status (Detailed)</span>
+            </div>
+            <div class="table-wrapper">
+                <table class="clean-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th style="width:25%; text-align:right;">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in by_status %}
+                            <tr>
+                                <td style="font-weight: 600; color: #334155;">{{ row.status }}</td>
+                                <td style="text-align:right; font-weight: 700; color: #0f172a;">{{ row.count }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="2" style="text-align:center; color:#94a3b8;">No data available</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const labels = [];
+        const data = [];
+        const backgroundColors = [
+            '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
+            '#8b5cf6', '#0ea5e9', '#ec4899', '#64748b'
+        ];
+
+        {% for row in by_status %}
+            labels.push("{{ row.status }}");
+            data.push({{ row.count }});
+        {% endfor %}
+
+        const ctx = document.getElementById('statusChart');
+        if (ctx && data.length > 0) {
+            new Chart(ctx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    family: "'Inter', sans-serif",
+                                    size: 11,
+                                    weight: '500'
+                                },
+                                color: '#475569'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}
