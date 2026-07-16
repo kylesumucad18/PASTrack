@@ -3327,8 +3327,7 @@ def case_wizard(request, tracking_id, step: int):
                         doc_type="Legacy Document Scan",
                         defaults={
                             "file": final_legacy_file,
-                            "uploaded_by": request.user,
-                            "converted_to_pdf": bool(convert_info.get("converted"))
+                            "uploaded_by": request.user
                         }
                     )
                 
@@ -3692,6 +3691,12 @@ def draft_wizard(request, draft_id, step: int):
                     case.lgu_area_code = _municipality_area_code(getattr(getattr(case, "submitted_by", None), "lgu_municipality", ""))
                 case.save()
 
+                new_case_type = (case.case_type or "").strip()
+                new_title_type = (case.property_title_type or "").strip()
+                if (new_case_type != old_case_type) or (new_title_type != old_title_type):
+                    _reset_case_uploads_and_checklist(case=case)
+                    _seed_case_checklist(case=case)
+
                 # Check legacy document scan upload
                 legacy_file = request.FILES.get("legacy_document_scan")
                 if form.cleaned_data.get("is_legacy_override") and legacy_file:
@@ -3701,11 +3706,6 @@ def draft_wizard(request, draft_id, step: int):
                         file=legacy_file,
                         uploaded_by=request.user
                     )
-                new_case_type = (case.case_type or "").strip()
-                new_title_type = (case.property_title_type or "").strip()
-                if (new_case_type != old_case_type) or (new_title_type != old_title_type):
-                    _reset_case_uploads_and_checklist(case=case)
-                    _seed_case_checklist(case=case)
 
                 AuditLog.objects.create(
                     actor=request.user,
@@ -6093,13 +6093,22 @@ def get_td_area(request, td_number):
     Used for frontend validation during Partial/Segregation transfers.
     """
     case = Case.objects.filter(td_number=td_number).first()
-    if case and case.area_value is not None:
-        return JsonResponse({
-            "success": True,
-            "area": str(case.area_value),
-            "classification": case.classification,
-            "lgu_origin": case.area
-        })
+    if case:
+        user_lgu = getattr(request.user, 'lgu_municipality', '')
+        if user_lgu and case.area and case.area != user_lgu:
+            return JsonResponse({
+                "success": False,
+                "error": "This Tax Declaration belongs to another municipality and cannot be processed here.",
+                "message": "This Tax Declaration belongs to another municipality and cannot be processed here."
+            })
+            
+        if case.area_value is not None:
+            return JsonResponse({
+                "success": True,
+                "area": str(case.area_value),
+                "classification": case.classification,
+                "lgu_origin": case.area
+            })
     return JsonResponse({
         "success": False,
         "message": "Tax Dec Number not found or has no available area."
