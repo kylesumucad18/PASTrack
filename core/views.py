@@ -1999,10 +1999,24 @@ def dashboard(request):
         today = timezone.localdate()
 
         stats_pending_approval = Case.objects.filter(status="for_approval").count()
-        stats_approved_today = AuditLog.objects.filter(actor=user, action="case_approval", created_at__date=today).count()
         
         from django.db.models.functions import Replace
         from django.db.models import Value
+        
+        approved_tids_today_sq = AuditLog.objects.filter(
+            actor=user,
+            action="case_approval",
+            created_at__date=today
+        ).annotate(
+            tid=Replace("target_object", Value("Case: "), Value(""))
+        ).values("tid")
+
+        stats_approved_today = Case.objects.filter(
+            tracking_id__in=approved_tids_today_sq
+        ).exclude(
+            status="cancelled"
+        ).count()
+        
         approved_tids_sq = AuditLog.objects.filter(
             actor=user,
             action="case_approval"
@@ -2020,13 +2034,13 @@ def dashboard(request):
         paginator = Paginator(qs, 10)
         page_obj = paginator.get_page(request.GET.get("page") or 1)
 
-        approved_logs = AuditLog.objects.filter(actor=user, action="case_approval", created_at__date=today).order_by("-created_at")[:5]
-        approved_tracking_ids = [log.target_object.replace("Case: ", "") for log in approved_logs]
-        
-        approved_today_cases = []
-        if approved_tracking_ids:
-            cases_dict = {c.tracking_id: c for c in Case.objects.filter(tracking_id__in=approved_tracking_ids)}
-            approved_today_cases = [cases_dict[tid] for tid in approved_tracking_ids if tid in cases_dict]
+        approved_today_cases = list(
+            Case.objects.filter(
+                tracking_id__in=approved_tids_today_sq
+            )
+            .exclude(status="cancelled")
+            .order_by("-updated_at")[:5]
+        )
 
         staff_activity = AuditLog.objects.filter(
             action__in=["case_status_change", "case_receipt", "case_assignment"]
@@ -6317,9 +6331,11 @@ def get_timeline_updates(request, tracking_id):
         details_remark = log.details.get("remark") if isinstance(log.details, dict) else ""
         raw_details_display = _format_case_history_details(getattr(log, "action", "") or "", getattr(log, "details", None))
         details_display = raw_details_display if raw_details_display != "—" and not details_remark else ""
+        from django.utils import timezone
+        local_time = timezone.localtime(log.created_at)
         
         data.append({
-            "created_at": log.created_at.strftime("%b %d, %I:%M %p").replace(' 0', ' '),
+            "created_at": local_time.strftime("%b %d, %I:%M %p").replace(' 0', ' '),
             "actor_display": role_display,
             "actor_id": actor_id,
             "action_text": action_text,
