@@ -1714,7 +1714,14 @@ def dashboard(request):
         today = timezone.localdate()
         stats_pending_intake = Case.objects.filter(status="not_received").count()
         stats_ready_assign = Case.objects.filter(status="received", assigned_to__isnull=True).count()
-        stats_received_today = AuditLog.objects.filter(actor=user, action="case_receipt", created_at__date=today).count()
+        
+        start_of_today = timezone.make_aware(datetime.combine(today, datetime.min.time()))
+        end_of_today = start_of_today + timedelta(days=1)
+        stats_received_today = Case.objects.filter(
+            received_by=user,
+            received_at__gte=start_of_today,
+            received_at__lt=end_of_today
+        ).exclude(status__in=["cancelled", "withdrawn", "closed", "draft"]).count()
         stats_returned_from_examiner = Case.objects.filter(status="received", assigned_to__isnull=True, returned_by__role="capitol_examiner").count()
 
         # Intake Volume Chart Data
@@ -4597,7 +4604,7 @@ def submissions(request):
         if request.user.role == "capitol_receiving":
             pending_intake_qs = qs.filter(status="not_received")
             to_assign_qs = qs.filter(status="received", assigned_to__isnull=True)
-            received_qs = qs.filter(status="received")
+            received_qs = qs.filter(received_by=request.user).exclude(status__in=["cancelled", "withdrawn", "closed", "draft"])
             correction_qs = qs.filter(status="client_correction")
             returned_from_examiner_qs = qs.filter(status="received", assigned_to__isnull=True, returned_by__role="capitol_examiner")
             
@@ -4630,7 +4637,9 @@ def submissions(request):
             elif tab == "received":
                 if time_range == "today":
                     today_date = timezone.localtime(timezone.now()).date()
-                    qs = received_qs.filter(received_at__date=today_date)
+                    start_of_today = timezone.make_aware(datetime.combine(today_date, datetime.min.time()))
+                    end_of_today = start_of_today + timedelta(days=1)
+                    qs = received_qs.filter(received_at__gte=start_of_today, received_at__lt=end_of_today)
                 else:
                     qs = received_qs
             elif tab == "to_assign":
