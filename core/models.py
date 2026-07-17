@@ -871,7 +871,7 @@ class Case(TimestampedModel):
                 self.client_contact = contact
 
         if self.tracking_id:
-            if self.tracking_id.startswith("PAS") or self.tracking_id.startswith("LGU"):
+            if self.tracking_id.startswith("PAS") or self.tracking_id.startswith("L"):
                 return super().save(*args, **kwargs)
             else:
                 # Force regeneration if the prefix is wrong
