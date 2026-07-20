@@ -322,7 +322,7 @@
                                                     name="review_remark_{{ doc.id }}"
                                                     class="doc-review-remark"
                                                     data-doc-id="{{ doc.id }}"
-                                                    data-doc-name="{{ doc.doc_type|escapejs }}"
+                                                    data-doc-name="{{ doc.doc_type }}"
                                                     value="{{ doc.review_remark|default:'' }}"
                                                     placeholder="Remark (optional)"
                                                     style="flex: 1; padding:0.5rem 0.75rem; border:1px solid var(--border); border-radius:8px; transition: all 0.2s;"
@@ -635,7 +635,7 @@
                                                 name="review_remark_{{ doc.id }}"
                                                 class="doc-review-remark"
                                                 data-doc-id="{{ doc.id }}"
-                                                data-doc-name="{{ doc.doc_type|escapejs }}"
+                                                data-doc-name="{{ doc.doc_type }}"
                                                 value="{{ doc.review_remark|default:'' }}"
                                                 placeholder="Remark (optional)"
                                                 style="width:100%; padding:0.5rem 0.75rem; border:1px solid var(--border); border-radius:8px;"
@@ -810,6 +810,10 @@
                                 {% endif %}
                             {% endif %}
                         {% endif %}
+
+                        <button class="btn btn-outline btn-block" type="button" onclick="openEmailUpdateModal()" style="color: var(--primary); border-color: var(--primary); margin-bottom: 0.5rem;">
+                            <i class="ri-mail-send-line"></i> Send Email Update
+                        </button>
 
                         {% if is_examiner or request.user.id == case.assigned_to_id %}
                             <form id="examinerForwardForm" method="post" action="{% url 'submit_for_approval' case.tracking_id %}" class="btn-block">
@@ -1292,6 +1296,38 @@
     }
     function closeReceiveModal() {
         document.getElementById('receiveModal').style.display = 'none';
+    }
+</script>
+
+<div id="emailUpdateModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
+    <div class="panel" style="width: 440px; padding: 2rem;">
+        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Send Email Update</h3>
+        
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+            <div style="margin-bottom: 0.25rem;">Client Name: <strong style="color: var(--text-main);">{{ case.client_name }}</strong></div>
+            <div>Tracking Number : <strong style="color: var(--text-main);">{{ case.tracking_id }}</strong></div>
+        </div>
+        
+        <div style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1rem;">
+            Are you sure you want to send an email update to the client with the current status?
+        </div>
+        
+        <form method="post" action="{% url 'send_email_update' case.tracking_id %}">
+            {% csrf_token %}
+            <div style="display: flex; gap: 0.75rem;">
+                <button type="button" class="btn btn-outline" style="flex:1; padding: 0.6rem;" onclick="closeEmailUpdateModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" style="flex:1; padding: 0.6rem;">Confirm</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEmailUpdateModal() {
+        document.getElementById('emailUpdateModal').style.display = 'flex';
+    }
+    function closeEmailUpdateModal() {
+        document.getElementById('emailUpdateModal').style.display = 'none';
     }
 </script>
 

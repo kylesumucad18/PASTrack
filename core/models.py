@@ -397,6 +397,7 @@ class AuditLog(TimestampedModel):
         ("case_rejection", "Transaction Rejected"),
         ("case_numbered", "Transaction Number Assigned"),
         ("case_release", "Transaction Released"),
+        ("case_email_update", "Sent Email Update"),
         ("support_feedback", "Support Feedback Submitted"),
     ]
 

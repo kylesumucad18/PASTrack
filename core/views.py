@@ -5104,6 +5104,11 @@ Provincial Assessor's Office
 Province of Cebu
 PAStrack Document Tracking System"""
 
+    # ---------------------------------------------------------
+    # EMAIL UPDATE: Case Received
+    # ---------------------------------------------------------
+    # Connects to send_case_email in core/notifications.py.
+    # Triggers when a Receiver marks a new submission as 'received'.
     send_case_email(
         to_email=(case.client_email or "").strip(),
         subject=f"PAStrack Update: Submission Received ({case.tracking_id})",
@@ -5238,6 +5243,11 @@ Provincial Assessor's Office
 Province of Cebu
 PAStrack Document Tracking System"""
 
+    # ---------------------------------------------------------
+    # EMAIL UPDATE: Case Returned to Client
+    # ---------------------------------------------------------
+    # Connects to send_case_email in core/notifications.py.
+    # Triggers when a Receiver returns a case to the client for corrections.
     email_ok = send_case_email(
         to_email=(case.client_email or "").strip(),
         subject=f"PAStrack Update: Additional Action Required ({case.tracking_id})",
@@ -5501,6 +5511,11 @@ Provincial Assessor's Office
 Province of Cebu
 PAStrack Document Tracking System"""
 
+    # ---------------------------------------------------------
+    # EMAIL UPDATE: Case Approved
+    # ---------------------------------------------------------
+    # Connects to send_case_email in core/notifications.py.
+    # Triggers when an Approver approves the case (moving it to 'for_numbering' or 'for_taxmapping').
     send_case_email(
         to_email=(case.client_email or "").strip(),
         subject=f"PAStrack Update: Transaction Approved ({case.tracking_id})",
@@ -5571,6 +5586,11 @@ def assign_numberer(request, tracking_id):
         }
     )
 
+    # ---------------------------------------------------------
+    # EMAIL UPDATE: Case Approved & Numberer Assigned
+    # ---------------------------------------------------------
+    # Connects to send_case_email in core/notifications.py.
+    # Triggers when an Approver approves and assigns it to a Numberer.
     send_case_email(
         to_email=(case.client_email or "").strip(),
         subject=f"PAStrack Update: Transaction Approved ({case.tracking_id})",
@@ -5658,6 +5678,11 @@ def complete_taxmapping(request, tracking_id):
         details={"old_status": old_status, "new_status": case.status, "taxmapped": True},
     )
 
+    # ---------------------------------------------------------
+    # EMAIL UPDATE: Tax Mapping Completed
+    # ---------------------------------------------------------
+    # Connects to send_case_email in core/notifications.py.
+    # Triggers when a Tax Mapper completes their task and forwards the case for numbering.
     send_case_email(
         to_email=(case.client_email or "").strip(),
         subject=f"PAStrack Update: Transaction Approved ({case.tracking_id})",
@@ -5704,7 +5729,7 @@ def return_for_correction(request, tracking_id):
     if flagged_docs:
         # Append the list of flagged files to the return reason so the Examiner sees it clearly
         flagged_details = "\n\nFlagged Documents by Approver:\n" + "\n".join(
-            f"- {d.doc_type}: {d.review_remark}" for d in flagged_docs
+            f"- {d.doc_type.replace('\\u002D', '-').replace('\\u0027', chr(39))}: {d.review_remark}" for d in flagged_docs
         )
         reason += flagged_details
 
@@ -5953,6 +5978,11 @@ def mark_numbered(request, tracking_id):
     )
 
     if old_status == "for_numbering":
+        # ---------------------------------------------------------
+        # EMAIL UPDATE: Case Numbered (Ready for Claiming)
+        # ---------------------------------------------------------
+        # Connects to send_case_email in core/notifications.py.
+        # Triggers when a Numberer assigns a Tax Dec number, meaning it's ready for release.
         send_case_email(
             to_email=(case.client_email or "").strip(),
             subject=f"PAStrack Update: Documents Ready for Claiming ({case.tracking_id})",
@@ -6057,6 +6087,11 @@ Provincial Assessor's Office
 Province of Cebu
 PAStrack Document Tracking System"""
 
+    # ---------------------------------------------------------
+    # EMAIL UPDATE: Client Corrections Received
+    # ---------------------------------------------------------
+    # Connects to send_case_email in core/notifications.py.
+    # Triggers when the client submits corrections and the case is received again.
     send_case_email(
         to_email=(case.client_email or "").strip(),
         subject=f"PAStrack — Case {case.tracking_id} Corrections Received",
@@ -6122,6 +6157,11 @@ def release_case(request, tracking_id):
 
     date_released = case.released_at.strftime('%B %d, %Y') if case.released_at else timezone.now().strftime('%B %d, %Y')
     
+    # ---------------------------------------------------------
+    # EMAIL UPDATE: Case Released (Successfully Claimed)
+    # ---------------------------------------------------------
+    # Connects to send_case_email in core/notifications.py.
+    # Triggers when a Releaser marks the documents as successfully claimed by the client.
     send_case_email(
         to_email=(case.client_email or "").strip(),
         subject=f"PAStrack Update: Documents Successfully Claimed ({case.tracking_id})",
@@ -6307,6 +6347,67 @@ from django.core.paginator import Paginator
 from django.http import JsonResponse
 from datetime import datetime
 from django.db.models import Q
+
+@login_required
+@require_POST
+def send_email_update(request, tracking_id):
+    case = get_object_or_404(Case, tracking_id=tracking_id)
+
+    # Allow any staff to send an update, or restrict to active assigned roles if needed.
+    # For now, if they can view it, they can send an update since it's a general staff action.
+    if not _user_can_view_case(request.user, case):
+        messages.error(request, "Not authorized to send updates for this case.")
+        return redirect("case_detail", tracking_id=case.tracking_id)
+
+    status_display = dict(Case.STATUS_CHOICES).get(case.status, case.status)
+    current_date = timezone.now().strftime('%B %d, %Y')
+    staff_name = request.user.get_full_name() or request.user.username
+    staff_role = request.user.get_role_display()
+
+    subject = f"PAStrack Update: Case Status ({case.tracking_id})"
+    
+    message_lines = [
+        f"Dear Client,\n",
+        f"This is an update regarding your real property tax declaration request.\n",
+        f"Transaction Details:",
+        f"• Tracking ID: {case.tracking_id}",
+        f"• Current Status: {status_display}",
+        f"• Date of Update: {current_date}\n",
+    ]
+
+    if case.return_reason:
+        # Fix literal unicode escapes like \u002D that might be in the database
+        cleaned_reason = case.return_reason.replace('\\u002D', '-').replace('\\u0027', "'")
+        message_lines.append(f"Remarks / Reason for Return:")
+        message_lines.append(f"{cleaned_reason}\n")
+
+    message_lines.append(f"This update was sent by {staff_name} ({staff_role}).\n")
+    message_lines.append(f"You may monitor the progress of your transaction through the PASTrack portal using your tracking ID.\n")
+    message_lines.append(f"Should you have any concerns, please contact the Provincial Assessor's Office.\n")
+    message_lines.append(f"Thank you for using PASTrack.")
+
+    plain_message = "\n".join(message_lines)
+
+    send_case_email(
+        to_email=(case.client_email or "").strip(),
+        subject=subject,
+        message=plain_message,
+    )
+
+    # Log in Audit Logs and Activity Logs
+    AuditLog.objects.create(
+        actor=request.user,
+        action="case_email_update",
+        target_object=f"Case: {case.tracking_id}",
+        details={
+            "remark": f"Sent email update to client. Status: {status_display}",
+            "email_sent": True
+        }
+    )
+
+    messages.success(request, f"Email update sent successfully for {case.tracking_id}.")
+    return redirect("case_detail", tracking_id=case.tracking_id)
+
 
 @login_required
 def get_timeline_updates(request, tracking_id):

@@ -66,6 +66,7 @@ urlpatterns = [
     path("case/<str:tracking_id>/release/", views.release_case, name="release_case"),
     path("case/<str:tracking_id>/documents/review/", views.review_case_documents, name="review_case_documents"),
     path("case/<str:tracking_id>/timeline/", views.get_timeline_updates, name="get_timeline_updates"),
+    path("case/<str:tracking_id>/send-email-update/", views.send_email_update, name="send_email_update"),
 
     # Protected media downloads
     path("documents/<int:doc_id>/download/", views.download_case_document, name="download_case_document"),

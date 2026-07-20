@@ -17,6 +17,16 @@ def _sns_enabled() -> bool:
     return bool(getattr(settings, "LEGALTRACK_SNS_ENABLED", False))
 
 
+# ==========================================
+# EMAIL UPDATES FUNCTION
+# ==========================================
+# This function acts as the central mechanism for sending case updates to clients via email.
+# It is triggered during key transitions in a case's lifecycle such as when a case is:
+# - Received
+# - Approved
+# - Numbered (Ready for Release)
+# - Returned for Correction
+# - Released
 def send_case_email(*, to_email: str, subject: str, message: str, html_message: str | None = None) -> bool:
     with open("email_log.txt", "a") as f:
         f.write(f"Attempting to send email to: {to_email}\n")
