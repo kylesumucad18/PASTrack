@@ -3501,9 +3501,11 @@ def case_wizard(request, tracking_id, step: int):
 
         initial = []
         if case.checklist:
+            existing_dts = set()
             for item in (case.checklist or []):
                 if isinstance(item, dict):
                     dt = item.get("doc_type", "")
+                    existing_dts.add(dt)
                     if dt and dt not in requirements and dt != "Endorsement Letter":
                         initial.append({
                             "doc_type": "__custom__",
@@ -3517,6 +3519,10 @@ def case_wizard(request, tracking_id, step: int):
                             "old_doc_type": dt,
                             "required": False,
                         })
+            # Add any new requirements that were introduced during an edit
+            for req in requirements:
+                if req not in existing_dts:
+                    initial.append({"doc_type": req, "old_doc_type": req, "required": False})
         else:
             for req in requirements:
                 initial.append({"doc_type": req, "old_doc_type": req, "required": False})
@@ -3873,9 +3879,11 @@ def draft_wizard(request, draft_id, step: int):
 
         initial = []
         if case.checklist:
+            existing_dts = set()
             for item in (case.checklist or []):
                 if isinstance(item, dict):
                     dt = item.get("doc_type", "")
+                    existing_dts.add(dt)
                     if dt and dt not in requirements and dt != "Endorsement Letter":
                         initial.append({
                             "doc_type": "__custom__",
@@ -3889,6 +3897,10 @@ def draft_wizard(request, draft_id, step: int):
                             "old_doc_type": dt,
                             "required": False,
                         })
+            # Add any new requirements that were introduced during an edit
+            for req in requirements:
+                if req not in existing_dts:
+                    initial.append({"doc_type": req, "old_doc_type": req, "required": False})
         else:
             for req in requirements:
                 initial.append({"doc_type": req, "old_doc_type": req, "required": False})
@@ -4359,7 +4371,31 @@ def case_detail(request, tracking_id):
         
     child_cases = None
     if case.td_number:
-        child_cases = Case.objects.filter(previous_tax_dec_number=case.td_number).exclude(pk=case.pk)
+        child_cases = Case.objects.filter(previous_tax_dec_number=case.td_number).exclude(pk=case.pk).exclude(tracking_id__isnull=True).exclude(tracking_id='')
+
+    from django.utils import timezone
+    recent_modal_logs_raw = AuditLog.objects.filter(
+        Q(target_object=f"Case: {case.tracking_id}") | 
+        Q(target_object=f"Draft: {case.draft_id}")
+    ).order_by("-created_at")[:5]
+    
+    recent_modal_logs = []
+    for log in recent_modal_logs_raw:
+        role_display = log.actor.get_role_display() if log.actor else "System"
+        actor_id = log.actor.username if log.actor and log.actor.username else ""
+        if log.action == "case_remark":
+            action_text = "Added a note"
+        else:
+            action_text = log.get_action_display()
+        
+        local_time = timezone.localtime(log.created_at)
+        recent_modal_logs.append({
+            "created_at": local_time.strftime("%b %d, %I:%M %p").replace(' 0', ' '),
+            "actor_display": role_display,
+            "actor_id": actor_id,
+            "action_text": action_text,
+            "is_success": log.action not in ["case_returned", "correction_requested"]
+        })
 
     response_context = {
         "case": case,
@@ -4412,6 +4448,7 @@ def case_detail(request, tracking_id):
         "history": history,
         "can_remark": can_remark,
         "remark_form": remark_form,
+        "recent_modal_logs": recent_modal_logs,
     }
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":

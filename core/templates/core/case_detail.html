@@ -140,6 +140,75 @@
         .doc-table td { display: block; width: 100%; text-align: left !important; }
         .doc-icon { display: none; }
     }
+
+    /* ===== PREMIUM MODAL UI (LIGHT MODE) ===== */
+    .premium-modal-overlay {
+        position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px);
+        display: none; justify-content: center; align-items: center; padding: 24px; z-index: 9999;
+    }
+
+    .premium-parent {
+        background: #ffffff; border: 1px solid var(--border); border-radius: 16px;
+        width: 100%; max-width: 960px; height: 600px; padding: 20px;
+        display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(5, 1fr); gap: 16px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        position: relative;
+    }
+    
+    .premium-close-btn {
+        position: absolute; top: 31px; right: 40px; width: 32px; height: 32px;
+        border-radius: 50%; background: #ffffff; border: 1px solid #e2e8f0;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; color: #64748b; transition: all 0.2s ease; z-index: 10;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .premium-close-btn:hover { background: #f1f5f9; color: #0f172a; }
+    
+    .premium-card {
+        background: #f8fafc; border: 1px solid var(--border); border-radius: 12px;
+        padding: 20px; display: flex; flex-direction: column;
+    }
+
+    .premium-div1 { grid-column: 1 / span 3; grid-row: 1; flex-direction: row; align-items: center; justify-content: space-between; }
+    .premium-div3 { grid-column: 1 / span 3; grid-row: 2 / span 4; overflow-y: auto; }
+    .premium-div2 { grid-column: 4 / span 2; grid-row: 1 / span 5; overflow-y: auto; }
+
+    .premium-div3::-webkit-scrollbar, .premium-div2::-webkit-scrollbar { width: 6px; }
+    .premium-div3::-webkit-scrollbar-track, .premium-div2::-webkit-scrollbar-track { background: transparent; }
+    .premium-div3::-webkit-scrollbar-thumb, .premium-div2::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    .premium-div3::-webkit-scrollbar-thumb:hover, .premium-div2::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    .premium-modal-title { font-size: 1.25rem; font-weight: 600; margin: 0; color: var(--text-main); }
+    .premium-modal-subtitle { font-size: 0.875rem; color: var(--text-muted); margin-top: 4px; }
+    
+    .premium-section-title { font-size: 1rem; font-weight: 600; margin: 0 0 16px 0; padding-bottom: 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; color: var(--text-main); }
+    .premium-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    .premium-detail-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 4px; }
+    .premium-detail-value { font-size: 0.9375rem; font-weight: 500; color: var(--text-main); }
+
+    .premium-doc-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .premium-doc-item { display: flex; align-items: center; gap: 12px; padding: 12px; background: #ffffff; border: 1px solid var(--border); border-radius: 8px; transition: all 0.2s ease; }
+    .premium-doc-item:hover { border-color: var(--primary); transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    .premium-doc-icon { width: 36px; height: 36px; background: #eff6ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--primary); }
+    .premium-doc-info { flex: 1; }
+    .premium-doc-name { font-size: 0.875rem; font-weight: 500; margin-bottom: 2px; color: var(--text-main); }
+    .premium-doc-size { font-size: 0.75rem; color: var(--text-muted); }
+
+    .premium-timeline { position: relative; padding-left: 20px; margin-top: 8px; }
+    .premium-timeline::before { content: ''; position: absolute; left: 3px; top: 8px; bottom: 0; width: 2px; background: var(--border); }
+    .premium-log-item { position: relative; padding-bottom: 24px; }
+    .premium-log-item:last-child { padding-bottom: 0; }
+    .premium-log-dot { position: absolute; left: -21.5px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #ffffff; border: 2px solid var(--primary); z-index: 1; }
+    .premium-log-dot.success { border-color: #10b981; }
+    .premium-log-dot.warning { border-color: #f59e0b; }
+    .premium-log-dot.danger { border-color: #ef4444; }
+    .premium-log-time { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+    .premium-log-action { font-size: 0.875rem; font-weight: 400; margin-bottom: 6px; line-height: 1.4; color: var(--text-main); }
+    .premium-log-action strong { font-weight: 600; }
+    .premium-log-staff { font-size: 0.75rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+    .premium-staff-avatar { width: 20px; height: 20px; background: var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: var(--text-main); font-weight: 600; }
+    
+    .premium-action-area { border-top: 1px solid var(--border); padding-top: 16px; margin-top: auto; }
 </style>
 {% endblock %}
 
@@ -191,7 +260,7 @@
             <div class="panel">
                 <div class="panel-header"><h2 class="panel-title">Transaction Information</h2></div>
                 <div class="panel-body">
-                    {% if child_cases %}
+                    {% if child_cases and case.status == 'cancelled' %}
                     <div style="border-left: 4px solid #3b82f6; background: #eff6ff; padding: 1rem; margin-bottom: 1.5rem; border-radius: 4px;">
                         <div style="display: flex; align-items: flex-start; gap: 0.75rem;">
                             <i class="ri-information-fill" style="color: #3b82f6; font-size: 1.25rem;"></i>
@@ -872,60 +941,9 @@
                         {% endif %}
 
                         {% if is_numberer and can_number %}
-                            <form id="numbererForm" method="post" action="{% url 'mark_numbered' case.tracking_id %}" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
-                                {% csrf_token %}
-                                {% if case.case_type == 'transfer_ownership_partial_segregation' %}
-                                    <input
-                                        type="text"
-                                        id="numberer_transaction_input_transferred"
-                                        inputmode="numeric"
-                                        pattern="\d{5}"
-                                        minlength="5"
-                                        maxlength="5"
-                                        name="transaction_number_transferred"
-                                        placeholder="New TD Number (Transferred)"
-                                        class="form-control"
-                                        required
-                                        title="Please enter exactly 5 digits"
-                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
-                                        style="padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);"
-                                    >
-                                    <input
-                                        type="text"
-                                        id="numberer_transaction_input_remaining"
-                                        inputmode="numeric"
-                                        pattern="\d{5}"
-                                        minlength="5"
-                                        maxlength="5"
-                                        name="transaction_number_remaining"
-                                        placeholder="New TD Number (Remaining)"
-                                        class="form-control"
-                                        required
-                                        title="Please enter exactly 5 digits"
-                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
-                                        style="padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);"
-                                    >
-                                {% else %}
-                                    <input
-                                        type="text"
-                                        id="numberer_transaction_input"
-                                        inputmode="numeric"
-                                        pattern="\d{5}"
-                                        minlength="5"
-                                        maxlength="5"
-                                        name="transaction_number"
-                                        placeholder="Enter 5-digit TD Number"
-                                        class="form-control"
-                                        required
-                                        title="Please enter exactly 5 digits"
-                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
-                                        style="padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);"
-                                    >
-                                {% endif %}
-                                <button class="btn btn-primary" type="button" onclick="openNumbererModal()" style="width:100%; padding: 0.6rem; border-radius: 6px;">
-                                    <i class="ri-hashtag"></i> Submit TD Number
-                                </button>
-                            </form>
+                            <button class="btn btn-primary btn-block" type="button" onclick="openInputTdModal()" style="padding: 0.6rem; border-radius: 6px; margin-bottom: 0.75rem;">
+                                <i class="ri-hashtag"></i> Input TD Number
+                            </button>
                         {% endif %}
 
                         {% if request.user.role == "super_admin" %}
@@ -1141,31 +1159,82 @@
 </div>
 
 <!-- Assign Modal (Receiver) -->
-<div id="assignModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 440px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Assign to Examiner</h3>
-        <form id="assignForm" method="post" action="">
-            {% csrf_token %}
-            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
-                <div style="margin-bottom: 0.25rem;">Client Name: <strong id="modalClientName" style="color: var(--text-main);"></strong></div>
-                <div>Tracking Number : <strong style="color: var(--text-main);" id="modalTrackingId"></strong></div>
+<div id="assignModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Assign to Examiner</h2>
+                <div class="premium-modal-subtitle">Tracking No: <span id="modalTrackingId"></span></div>
             </div>
-            
-            <div style="margin-bottom: 1.5rem;">
-                <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Select Examiner</label>
-                <select name="assigned_to" required class="form-select" style="padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 0.9rem;">
-                    <option value="" disabled selected>Select from active staff...</option>
-                    {% for ex in examiners %}
-                        <option value="{{ ex.id }}">{{ ex.full_name|default:ex.email }} (Pending: {{ ex.active_load|default:0 }})</option>
-                    {% endfor %}
-                </select>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
+        </div>
+
+        <div class="premium-div3 premium-card">
+            <h3 class="premium-section-title"><i class="ri-information-line"></i> Case Information</h3>
+            <div class="premium-detail-grid">
+                <div><span class="premium-detail-label">Client Name</span><span class="premium-detail-value" id="modalClientName"></span></div>
+                <div><span class="premium-detail-label">Type of Case</span><span class="premium-detail-value">{{ case.get_case_type_display }}</span></div>
+                <div><span class="premium-detail-label">Date Filed</span><span class="premium-detail-value">{{ case.created_at|date:"M d, Y" }}</span></div>
+                {% if case.td_number %}
+                <div><span class="premium-detail-label">TD Number</span><span class="premium-detail-value">{{ case.td_number }}</span></div>
+                {% endif %}
             </div>
-            
-            <div style="display: flex; gap: 0.75rem; margin-top: 2rem;">
-                <button type="button" class="btn btn-outline" style="flex:1; padding: 0.6rem;" onclick="closeAssignModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1; padding: 0.6rem;">Confirm</button>
+
+            <h3 class="premium-section-title" style="margin-top: 8px;"><i class="ri-file-list-3-line"></i> Uploaded Documents</h3>
+            <div class="premium-doc-list">
+                {% for doc in documents %}
+                <div class="premium-doc-item">
+                    <div class="premium-doc-icon"><i class="ri-file-pdf-2-line"></i></div>
+                    <div class="premium-doc-info">
+                        <div class="premium-doc-name">{{ doc.doc_type }}</div>
+                        <div class="premium-doc-size">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No documents uploaded.</div>
+                {% endfor %}
             </div>
-        </form>
+
+            <div class="premium-action-area">
+                <form id="assignForm" method="post" action="">
+                    {% csrf_token %}
+                    <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Select Examiner</label>
+                    <select name="assigned_to" required class="form-select" style="width: 100%; margin-bottom: 1.5rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem;">
+                        <option value="" disabled selected>Select from active staff...</option>
+                        {% for ex in examiners %}
+                            <option value="{{ ex.id }}">{{ ex.full_name|default:ex.email }} (Pending: {{ ex.active_load|default:0 }})</option>
+                        {% endfor %}
+                    </select>
+                    
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeAssignModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex:1;">Confirm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff">
+                        <div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>
+                        {{ log.actor_display }}
+                    </div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -1181,23 +1250,72 @@
     }
 </script>
 
-<div id="reassignModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 420px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1rem;">Reassign Examiner</h3>
-        <form method="post" action="{% url 'reassign_case_examiner' case.tracking_id %}">
-            {% csrf_token %}
-            <label style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.35rem; display:block;">Select Examiner</label>
-            <select name="assigned_to" required class="form-control">
-                <option value="" disabled selected>Select from active staff...</option>
-                {% for ex in examiners %}
-                    <option value="{{ ex.id }}">{{ ex.full_name|default:ex.email }} ({{ ex.active_load|default:0 }})</option>
-                {% endfor %}
-            </select>
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button type="button" class="btn btn-outline" style="flex:1" onclick="closeReassignModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1;">Confirm</button>
+<div id="reassignModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Reassign Examiner</h2>
+                <div class="premium-modal-subtitle">Tracking No: {{ case.tracking_id }}</div>
             </div>
-        </form>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
+        </div>
+        <div class="premium-div3 premium-card">
+            <h3 class="premium-section-title"><i class="ri-information-line"></i> Case Information</h3>
+            <div class="premium-detail-grid">
+                <div><span class="premium-detail-label">Client Name</span><span class="premium-detail-value">{{ case.client_name }}</span></div>
+                <div><span class="premium-detail-label">Type of Case</span><span class="premium-detail-value">{{ case.get_case_type_display }}</span></div>
+                <div><span class="premium-detail-label">Date Filed</span><span class="premium-detail-value">{{ case.created_at|date:"M d, Y" }}</span></div>
+                {% if case.td_number %}
+                <div><span class="premium-detail-label">TD Number</span><span class="premium-detail-value">{{ case.td_number }}</span></div>
+                {% endif %}
+            </div>
+            <h3 class="premium-section-title" style="margin-top: 8px;"><i class="ri-file-list-3-line"></i> Uploaded Documents</h3>
+            <div class="premium-doc-list">
+                {% for doc in documents %}
+                <div class="premium-doc-item">
+                    <div class="premium-doc-icon"><i class="ri-file-pdf-2-line"></i></div>
+                    <div class="premium-doc-info">
+                        <div class="premium-doc-name">{{ doc.doc_type }}</div>
+                        <div class="premium-doc-size">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No documents uploaded.</div>
+                {% endfor %}
+            </div>
+            <div class="premium-action-area">
+                <form method="post" action="{% url 'reassign_case_examiner' case.tracking_id %}">
+                    {% csrf_token %}
+                    <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Select Examiner</label>
+                    <select name="assigned_to" required class="form-select" style="width: 100%; margin-bottom: 1.5rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem;">
+                        <option value="" disabled selected>Select from active staff...</option>
+                        {% for ex in examiners %}
+                            <option value="{{ ex.id }}">{{ ex.full_name|default:ex.email }} ({{ ex.active_load|default:0 }})</option>
+                        {% endfor %}
+                    </select>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeReassignModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex:1;">Confirm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1211,17 +1329,52 @@
 </script>
 
 <!-- Return Modal (Receiver -> Client Correction) -->
-<div id="returnModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 400px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1rem;">Reason for Correction</h3>
-        <form method="post" action="{% url 'return_case' case.tracking_id %}">
-            {% csrf_token %}
-            <textarea name="reason" class="remarks-input" placeholder="Explain what needs to be fixed..." required></textarea>
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button type="button" class="btn btn-outline" style="flex:1" onclick="closeReturnModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1; background: #dc2626;">Confirm Return</button>
+<div id="returnModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Return for Correction</h2>
+                <div class="premium-modal-subtitle">Tracking No: {{ case.tracking_id }}</div>
             </div>
-        </form>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
+        </div>
+        <div class="premium-div3 premium-card">
+            <h3 class="premium-section-title"><i class="ri-information-line"></i> Case Information</h3>
+            <div class="premium-detail-grid">
+                <div><span class="premium-detail-label">Client Name</span><span class="premium-detail-value">{{ case.client_name }}</span></div>
+                <div><span class="premium-detail-label">Type of Case</span><span class="premium-detail-value">{{ case.get_case_type_display }}</span></div>
+                <div><span class="premium-detail-label">Date Filed</span><span class="premium-detail-value">{{ case.created_at|date:"M d, Y" }}</span></div>
+                <div><span class="premium-detail-label">Returned By</span><span class="premium-detail-value">{{ request.user.get_role_display }}</span></div>
+            </div>
+            
+            <div class="premium-action-area" style="margin-top: auto;">
+                <h3 class="premium-section-title" style="margin-top: 8px;"><i class="ri-error-warning-line"></i> Reason for Correction</h3>
+                <form method="post" action="{% url 'return_case' case.tracking_id %}" style="display: flex; flex-direction: column;">
+                    {% csrf_token %}
+                    <textarea name="reason" class="remarks-input" placeholder="Explain what needs to be fixed..." required style="min-height: 120px; margin-bottom: 1.5rem;"></textarea>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button type="button" class="btn btn-outline" style="flex:1" onclick="closeReturnModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex:1; background: #dc2626; border-color: #dc2626;">Confirm Return</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1234,20 +1387,45 @@
     }
 </script>
 
-<div id="deleteTransactionModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 400px; padding: 2rem; border-radius: 12px;">
-        <h3 class="panel-title" style="margin-bottom: 1rem;">Delete Transaction</h3>
-        <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 2rem;">
-            Are you sure you want to <strong style="color: #dc2626;">permanently delete</strong> transaction <strong id="modalTransactionId" style="color: var(--text-main);"></strong>? This action cannot be undone.
-        </div>
-        
-        <form id="deleteTransactionForm" method="POST" action="">
-            {% csrf_token %}
-            <div style="display: flex; gap: 1rem;">
-                <button type="button" class="btn btn-text" style="flex:1; border: 1px solid var(--border);" onclick="closeDeleteTransactionModal()">Cancel</button>
-                <button type="submit" class="btn btn-danger" style="flex:1; background: #dc2626; color: white;">Delete Permanently</button>
+<div id="deleteTransactionModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Delete Transaction</h2>
+                <div class="premium-modal-subtitle">Tracking No: <span id="modalTransactionId"></span></div>
             </div>
-        </form>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
+        </div>
+        <div class="premium-div3 premium-card" style="justify-content: center; text-align: center;">
+            <i class="ri-alert-fill" style="font-size: 3rem; color: #dc2626; margin-bottom: 1rem;"></i>
+            <h3 class="premium-section-title" style="justify-content: center; border: none; margin-bottom: 0.5rem;">Are you absolutely sure?</h3>
+            <div style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 2rem;">
+                You are about to permanently delete this transaction. This action cannot be undone.
+            </div>
+            <form id="deleteTransactionForm" method="POST" action="">
+                {% csrf_token %}
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="button" class="btn btn-outline" style="flex:1" onclick="closeDeleteTransactionModal()">Cancel</button>
+                    <button type="submit" class="btn btn-danger" style="flex:1; background: #dc2626; border-color: #dc2626; color: white;">Delete Permanently</button>
+                </div>
+            </form>
+        </div>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1267,26 +1445,68 @@
     }
 </script>
 
-<div id="receiveModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 440px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Receive transaction</h3>
-        
-        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
-            <div style="margin-bottom: 0.25rem;">Client Name: <strong style="color: var(--text-main);">{{ case.client_name }}</strong></div>
-            <div>Tracking Number : <strong style="color: var(--text-main);">{{ case.tracking_id }}</strong></div>
-        </div>
-        
-        <div style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1rem;">
-            Are you sure you want to mark this transaction as <strong style="color: var(--text-main);">Received</strong>?
-        </div>
-        
-        <form method="post" action="{% url 'receive_case' case.tracking_id %}">
-            {% csrf_token %}
-            <div style="display: flex; gap: 0.75rem;">
-                <button type="button" class="btn btn-outline" style="flex:1; padding: 0.6rem;" onclick="closeReceiveModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1; padding: 0.6rem;">Confirm</button>
+<div id="receiveModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Receive Transaction</h2>
+                <div class="premium-modal-subtitle">Tracking No: {{ case.tracking_id }}</div>
             </div>
-        </form>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
+        </div>
+        <div class="premium-div3 premium-card">
+            <h3 class="premium-section-title"><i class="ri-information-line"></i> Case Information</h3>
+            <div class="premium-detail-grid">
+                <div><span class="premium-detail-label">Client Name</span><span class="premium-detail-value">{{ case.client_name }}</span></div>
+                <div><span class="premium-detail-label">Type of Case</span><span class="premium-detail-value">{{ case.get_case_type_display }}</span></div>
+                <div><span class="premium-detail-label">Date Filed</span><span class="premium-detail-value">{{ case.created_at|date:"M d, Y" }}</span></div>
+                {% if case.td_number %}
+                <div><span class="premium-detail-label">TD Number</span><span class="premium-detail-value">{{ case.td_number }}</span></div>
+                {% endif %}
+            </div>
+            <h3 class="premium-section-title" style="margin-top: 8px;"><i class="ri-file-list-3-line"></i> Uploaded Documents</h3>
+            <div class="premium-doc-list">
+                {% for doc in documents %}
+                <div class="premium-doc-item">
+                    <div class="premium-doc-icon"><i class="ri-file-pdf-2-line"></i></div>
+                    <div class="premium-doc-info">
+                        <div class="premium-doc-name">{{ doc.doc_type }}</div>
+                        <div class="premium-doc-size">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No documents uploaded.</div>
+                {% endfor %}
+            </div>
+            <div class="premium-action-area">
+                <div style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 1rem; font-weight: 500;">
+                    Are you sure you want to mark this transaction as <strong>Received</strong>?
+                </div>
+                <form method="post" action="{% url 'receive_case' case.tracking_id %}">
+                    {% csrf_token %}
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeReceiveModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex:1;">Confirm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1299,26 +1519,55 @@
     }
 </script>
 
-<div id="emailUpdateModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 440px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Send Email Update</h3>
-        
-        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
-            <div style="margin-bottom: 0.25rem;">Client Name: <strong style="color: var(--text-main);">{{ case.client_name }}</strong></div>
-            <div>Tracking Number : <strong style="color: var(--text-main);">{{ case.tracking_id }}</strong></div>
-        </div>
-        
-        <div style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1rem;">
-            Are you sure you want to send an email update to the client with the current status?
-        </div>
-        
-        <form method="post" action="{% url 'send_email_update' case.tracking_id %}">
-            {% csrf_token %}
-            <div style="display: flex; gap: 0.75rem;">
-                <button type="button" class="btn btn-outline" style="flex:1; padding: 0.6rem;" onclick="closeEmailUpdateModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1; padding: 0.6rem;">Confirm</button>
+<div id="emailUpdateModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Send Email Update</h2>
+                <div class="premium-modal-subtitle">Tracking No: {{ case.tracking_id }}</div>
             </div>
-        </form>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
+        </div>
+        <div class="premium-div3 premium-card">
+            <h3 class="premium-section-title"><i class="ri-information-line"></i> Case Information</h3>
+            <div class="premium-detail-grid">
+                <div><span class="premium-detail-label">Client Name</span><span class="premium-detail-value">{{ case.client_name }}</span></div>
+                <div><span class="premium-detail-label">Current Status</span><span class="premium-detail-value">{{ case.get_status_display }}</span></div>
+                <div><span class="premium-detail-label">Type of Case</span><span class="premium-detail-value">{{ case.get_case_type_display }}</span></div>
+                <div><span class="premium-detail-label">Last Updated</span><span class="premium-detail-value">{{ case.updated_at|date:"M d, Y h:i A" }}</span></div>
+            </div>
+            
+            <div class="premium-action-area" style="text-align: center; margin-top: auto; padding-top: 2rem; border-top: 1px solid var(--border);">
+                <i class="ri-mail-send-line" style="font-size: 3rem; color: var(--primary); margin-bottom: 1rem; display: inline-block;"></i>
+                <h3 class="premium-section-title" style="justify-content: center; border: none; margin-bottom: 0.5rem; padding-bottom: 0;">Send Status Update?</h3>
+                <div style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 2rem;">
+                    Are you sure you want to send an email update<br> to <strong>{{ case.client_name }}</strong> with the current status?
+                </div>
+                <form method="post" action="{% url 'send_email_update' case.tracking_id %}">
+                    {% csrf_token %}
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button type="button" class="btn btn-outline" style="flex:1" onclick="closeEmailUpdateModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex:1;">Confirm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1331,19 +1580,54 @@
     }
 </script>
 
-<div id="examinerReturnModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 450px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1rem;">Return to Receiver</h3>
-        <form method="post" action="{% url 'return_to_receiving' case.tracking_id %}">
-            {% csrf_token %}
-            <div id="examinerReturnFlaggedFiles"></div>
-            <input type="hidden" name="flagged" id="examinerReturnFlaggedInput" value="">
-            <textarea name="reason" class="remarks-input" placeholder="General feedback... (Explain what needs to be fixed)" required></textarea>
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button type="button" class="btn btn-outline" style="flex:1" onclick="closeExaminerReturnModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1;">Confirm</button>
+<div id="examinerReturnModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Return to Receiver</h2>
+                <div class="premium-modal-subtitle">Tracking No: {{ case.tracking_id }}</div>
             </div>
-        </form>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
+        </div>
+        <div class="premium-div3 premium-card">
+            <h3 class="premium-section-title"><i class="ri-information-line"></i> Case Information</h3>
+            <div class="premium-detail-grid">
+                <div><span class="premium-detail-label">Client Name</span><span class="premium-detail-value">{{ case.client_name }}</span></div>
+                <div><span class="premium-detail-label">Type of Case</span><span class="premium-detail-value">{{ case.get_case_type_display }}</span></div>
+                <div><span class="premium-detail-label">Date Filed</span><span class="premium-detail-value">{{ case.created_at|date:"M d, Y" }}</span></div>
+                <div><span class="premium-detail-label">Returned By</span><span class="premium-detail-value">{{ request.user.get_role_display }}</span></div>
+            </div>
+            
+            <div class="premium-action-area" style="margin-top: auto;">
+                <h3 class="premium-section-title" style="margin-top: 8px;"><i class="ri-error-warning-line"></i> Reason for Return</h3>
+                <div id="examinerReturnFlaggedFiles"></div>
+                <form method="post" action="{% url 'return_to_receiving' case.tracking_id %}" style="display: flex; flex-direction: column;">
+                    {% csrf_token %}
+                    <input type="hidden" name="flagged_docs" id="examinerReturnFlaggedInput">
+                    <textarea name="reason" class="remarks-input" placeholder="General feedback... (Explain what needs to be fixed)" required style="min-height: 120px; margin-bottom: 1.5rem;"></textarea>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button type="button" class="btn btn-outline" style="flex:1" onclick="closeExaminerReturnModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex:1; background: #dc2626; border-color: #dc2626;">Confirm Return</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1387,20 +1671,55 @@
     }
 </script>
 
-<div id="approverReturnModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 400px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1rem;">Return to Examiner</h3>
-        <form method="post" action="{% url 'return_for_correction' case.tracking_id %}">
-            {% csrf_token %}
-            <div style="font-size: 0.85rem; color: #0284c7; margin-bottom: 1rem; padding: 0.75rem; background-color: #f0f9ff; border-left: 3px solid #0284c7;">
-                <strong><i class="ri-information-line"></i> Note:</strong> You can optionally flag files with a <strong>Remark</strong> to specify exactly what needs correction.
+<div id="approverReturnModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Return to Examiner</h2>
+                <div class="premium-modal-subtitle">Tracking No: {{ case.tracking_id }}</div>
             </div>
-            <textarea name="reason" class="remarks-input" placeholder="General instructions for the Examiner..." required></textarea>
-            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-                <button type="button" class="btn btn-outline" style="flex:1" onclick="closeApproverReturnModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1;">Confirm</button>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
+        </div>
+        <div class="premium-div3 premium-card">
+            <h3 class="premium-section-title"><i class="ri-information-line"></i> Case Information</h3>
+            <div class="premium-detail-grid">
+                <div><span class="premium-detail-label">Client Name</span><span class="premium-detail-value">{{ case.client_name }}</span></div>
+                <div><span class="premium-detail-label">Type of Case</span><span class="premium-detail-value">{{ case.get_case_type_display }}</span></div>
+                <div><span class="premium-detail-label">Date Filed</span><span class="premium-detail-value">{{ case.created_at|date:"M d, Y" }}</span></div>
+                <div><span class="premium-detail-label">Returned By</span><span class="premium-detail-value">{{ request.user.get_role_display }}</span></div>
             </div>
-        </form>
+            
+            <div class="premium-action-area" style="margin-top: auto;">
+                <h3 class="premium-section-title" style="margin-top: 8px;"><i class="ri-error-warning-line"></i> Reason for Return</h3>
+                <div style="font-size: 0.85rem; color: #0284c7; margin-bottom: 1rem; padding: 0.75rem; background-color: #f0f9ff; border-left: 3px solid #0284c7;">
+                    <strong><i class="ri-information-line"></i> Note:</strong> You can optionally flag files with a <strong>Remark</strong> to specify exactly what needs correction.
+                </div>
+                <form method="post" action="{% url 'return_for_correction' case.tracking_id %}" style="display: flex; flex-direction: column;">
+                    {% csrf_token %}
+                    <textarea name="reason" class="remarks-input" placeholder="General instructions for the Examiner..." required style="min-height: 120px; margin-bottom: 1.5rem;"></textarea>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button type="button" class="btn btn-outline" style="flex:1" onclick="closeApproverReturnModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex:1; background: #dc2626; border-color: #dc2626;">Confirm Return</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1413,53 +1732,135 @@
     }
 </script>
 
-<div id="approveModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 440px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Approve Transaction</h3>
-        
-        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
-            <div style="margin-bottom: 0.25rem;">Client Name: <strong style="color: var(--text-main);">{{ case.client_name }}</strong></div>
-            <div>Tracking Number : <strong style="color: var(--text-main);">{{ case.tracking_id }}</strong></div>
+<div id="approveModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Approve Transaction</h2>
+                <div class="premium-modal-subtitle">Tracking No: {{ case.tracking_id }}</div>
+            </div>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
         </div>
-        
-        <div style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1rem;">
-            Are you sure you want to <strong style="color: var(--text-main);">approve</strong> this transaction?
+        <div class="premium-div3 premium-card">
+            <h3 class="premium-section-title"><i class="ri-information-line"></i> Case Information</h3>
+            <div class="premium-detail-grid">
+                <div><span class="premium-detail-label">Client Name</span><span class="premium-detail-value">{{ case.client_name }}</span></div>
+                <div><span class="premium-detail-label">Type of Case</span><span class="premium-detail-value">{{ case.get_case_type_display }}</span></div>
+                <div><span class="premium-detail-label">Date Filed</span><span class="premium-detail-value">{{ case.created_at|date:"M d, Y" }}</span></div>
+                {% if case.td_number %}
+                <div><span class="premium-detail-label">TD Number</span><span class="premium-detail-value">{{ case.td_number }}</span></div>
+                {% endif %}
+            </div>
+            <h3 class="premium-section-title" style="margin-top: 8px;"><i class="ri-file-list-3-line"></i> Uploaded Documents</h3>
+            <div class="premium-doc-list">
+                {% for doc in documents %}
+                <div class="premium-doc-item">
+                    <div class="premium-doc-icon"><i class="ri-file-pdf-2-line"></i></div>
+                    <div class="premium-doc-info">
+                        <div class="premium-doc-name">{{ doc.doc_type }}</div>
+                        <div class="premium-doc-size">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No documents uploaded.</div>
+                {% endfor %}
+            </div>
+            <div class="premium-action-area">
+                <div style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 1rem;">
+                    Are you sure you want to <strong>approve</strong> this transaction?
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeApproveModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" style="flex:1;" onclick="proceedToAssignNumberer()">Confirm</button>
+                </div>
+            </div>
         </div>
-        
-        <div style="display: flex; gap: 0.75rem;">
-            <button type="button" class="btn btn-outline" style="flex:1; padding: 0.6rem;" onclick="closeApproveModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" style="flex:1; padding: 0.6rem;" onclick="proceedToAssignNumberer()">Confirm</button>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
         </div>
     </div>
 </div>
 
-<div id="assignNumbererModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 440px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Assign to Numberer</h3>
-        <form method="post" action="{% url 'assign_numberer' case.tracking_id %}">
-            {% csrf_token %}
-            <input type="hidden" name="confirm_approve" value="1">
-            
-            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
-                <div style="margin-bottom: 0.25rem;">Client Name: <strong style="color: var(--text-main);">{{ case.client_name }}</strong></div>
-                <div>Tracking Number : <strong style="color: var(--text-main);">{{ case.tracking_id }}</strong></div>
+<div id="assignNumbererModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Assign to Numberer</h2>
+                <div class="premium-modal-subtitle">Tracking No: {{ case.tracking_id }}</div>
             </div>
-            
-            <div style="margin-bottom: 1.5rem;">
-                <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Select Numberer</label>
-                <select name="assigned_to" required class="form-select" style="padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 0.9rem;">
-                    <option value="" disabled selected>Select from active staff...</option>
-                    {% for nm in numberers %}
-                        <option value="{{ nm.id }}">{{ nm.full_name|default:nm.email }} (Pending: {{ nm.pending_cases_count|default:0 }})</option>
-                    {% endfor %}
-                </select>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
+        </div>
+        <div class="premium-div3 premium-card">
+            <h3 class="premium-section-title"><i class="ri-information-line"></i> Case Information</h3>
+            <div class="premium-detail-grid">
+                <div><span class="premium-detail-label">Client Name</span><span class="premium-detail-value">{{ case.client_name }}</span></div>
+                <div><span class="premium-detail-label">Type of Case</span><span class="premium-detail-value">{{ case.get_case_type_display }}</span></div>
+                <div><span class="premium-detail-label">Date Filed</span><span class="premium-detail-value">{{ case.created_at|date:"M d, Y" }}</span></div>
+                {% if case.td_number %}
+                <div><span class="premium-detail-label">TD Number</span><span class="premium-detail-value">{{ case.td_number }}</span></div>
+                {% endif %}
             </div>
-            
-            <div style="display: flex; gap: 0.75rem; margin-top: 2rem;">
-                <button type="button" class="btn btn-outline" style="flex:1; padding: 0.6rem;" onclick="closeAssignNumbererModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1; padding: 0.6rem;">Confirm</button>
+            <h3 class="premium-section-title" style="margin-top: 8px;"><i class="ri-file-list-3-line"></i> Uploaded Documents</h3>
+            <div class="premium-doc-list">
+                {% for doc in documents %}
+                <div class="premium-doc-item">
+                    <div class="premium-doc-icon"><i class="ri-file-pdf-2-line"></i></div>
+                    <div class="premium-doc-info">
+                        <div class="premium-doc-name">{{ doc.doc_type }}</div>
+                        <div class="premium-doc-size">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No documents uploaded.</div>
+                {% endfor %}
             </div>
-        </form>
+            <div class="premium-action-area">
+                <form method="post" action="{% url 'assign_numberer' case.tracking_id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="confirm_approve" value="1">
+                    <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Select Numberer</label>
+                    <select name="assigned_to" required class="form-select" style="width: 100%; margin-bottom: 1.5rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem;">
+                        <option value="" disabled selected>Select from active staff...</option>
+                        {% for nm in numberers %}
+                            <option value="{{ nm.id }}">{{ nm.full_name|default:nm.email }} (Pending: {{ nm.pending_cases_count|default:0 }})</option>
+                        {% endfor %}
+                    </select>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeAssignNumbererModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex:1;">Confirm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1479,32 +1880,72 @@
     }
 </script>
 
-<div id="taxmapperAssignModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 440px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Assign to Tax Mapper</h3>
-        <form method="post" action="{% url 'assign_taxmapper' case.tracking_id %}">
-            {% csrf_token %}
-            
-            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
-                <div style="margin-bottom: 0.25rem;">Client Name: <strong style="color: var(--text-main);">{{ case.client_name }}</strong></div>
-                <div>Tracking Number : <strong style="color: var(--text-main);">{{ case.tracking_id }}</strong></div>
+<div id="taxmapperAssignModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Assign to Tax Mapper</h2>
+                <div class="premium-modal-subtitle">Tracking No: {{ case.tracking_id }}</div>
             </div>
-            
-            <div style="margin-bottom: 1.5rem;">
-                <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Select Tax Mapper</label>
-                <select name="taxmapper_id" required class="form-select" style="padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; width: 100%; font-size: 0.9rem;">
-                    <option value="" disabled selected>Select from active staff...</option>
-                    {% for tm in taxmappers %}
-                        <option value="{{ tm.id }}">{{ tm.full_name|default:tm.email }}</option>
-                    {% endfor %}
-                </select>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
+        </div>
+        <div class="premium-div3 premium-card">
+            <h3 class="premium-section-title"><i class="ri-information-line"></i> Case Information</h3>
+            <div class="premium-detail-grid">
+                <div><span class="premium-detail-label">Client Name</span><span class="premium-detail-value">{{ case.client_name }}</span></div>
+                <div><span class="premium-detail-label">Type of Case</span><span class="premium-detail-value">{{ case.get_case_type_display }}</span></div>
+                <div><span class="premium-detail-label">Date Filed</span><span class="premium-detail-value">{{ case.created_at|date:"M d, Y" }}</span></div>
+                {% if case.td_number %}
+                <div><span class="premium-detail-label">TD Number</span><span class="premium-detail-value">{{ case.td_number }}</span></div>
+                {% endif %}
             </div>
-            
-            <div style="display: flex; gap: 0.75rem; margin-top: 2rem;">
-                <button type="button" class="btn btn-outline" style="flex:1; padding: 0.6rem;" onclick="closeTaxmapperAssignModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1; padding: 0.6rem;">Confirm</button>
+            <h3 class="premium-section-title" style="margin-top: 8px;"><i class="ri-file-list-3-line"></i> Uploaded Documents</h3>
+            <div class="premium-doc-list">
+                {% for doc in documents %}
+                <div class="premium-doc-item">
+                    <div class="premium-doc-icon"><i class="ri-file-pdf-2-line"></i></div>
+                    <div class="premium-doc-info">
+                        <div class="premium-doc-name">{{ doc.doc_type }}</div>
+                        <div class="premium-doc-size">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No documents uploaded.</div>
+                {% endfor %}
             </div>
-        </form>
+            <div class="premium-action-area">
+                <form method="post" action="{% url 'assign_taxmapper' case.tracking_id %}">
+                    {% csrf_token %}
+                    <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Select Tax Mapper</label>
+                    <select name="taxmapper_id" required class="form-select" style="width: 100%; margin-bottom: 1.5rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem;">
+                        <option value="" disabled selected>Select from active staff...</option>
+                        {% for tm in taxmappers %}
+                            <option value="{{ tm.id }}">{{ tm.full_name|default:tm.email }}</option>
+                        {% endfor %}
+                    </select>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeTaxmapperAssignModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex:1;">Confirm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1518,16 +1959,45 @@
 </script>
 
 <!-- Transaction Corrected Modal (Receiver) -->
-<div id="transactionCorrectedModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 400px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1.5rem; text-align: center;">Case already corrected?</h3>
-        <form method="post" action="{% url 'transaction_corrected' case.tracking_id %}">
-            {% csrf_token %}
-            <div style="display: flex; gap: 0.5rem;">
-                <button type="button" class="btn btn-outline" style="flex:1" onclick="closeTransactionCorrectedModal()">NO</button>
-                <button type="submit" class="btn btn-primary" style="flex:1;">YES</button>
+<div id="transactionCorrectedModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Confirm Correction</h2>
+                <div class="premium-modal-subtitle">Tracking No: {{ case.tracking_id }}</div>
             </div>
-        </form>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
+        </div>
+        <div class="premium-div3 premium-card" style="justify-content: center; text-align: center;">
+            <i class="ri-checkbox-circle-fill" style="font-size: 3rem; color: var(--success-text); margin-bottom: 1rem;"></i>
+            <h3 class="premium-section-title" style="justify-content: center; border: none; margin-bottom: 0.5rem;">Case already corrected?</h3>
+            <div style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 2rem;">
+                Has the client resolved the issues and provided the necessary corrections for this case?
+            </div>
+            <form method="post" action="{% url 'transaction_corrected' case.tracking_id %}">
+                {% csrf_token %}
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="button" class="btn btn-outline" style="flex:1" onclick="closeTransactionCorrectedModal()">NO</button>
+                    <button type="submit" class="btn btn-primary" style="flex:1;">YES</button>
+                </div>
+            </form>
+        </div>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1570,22 +2040,64 @@
 </script>
 
 <!-- Examiner Forward Modal -->
-<div id="examinerForwardModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 440px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Confirm Forwarding</h3>
-        
-        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">
-            <div style="margin-bottom: 0.25rem;">Client Name: <strong style="color: var(--text-main);">{{ case.client_name }}</strong></div>
-            <div>Tracking Number : <strong style="color: var(--text-main);">{{ case.tracking_id }}</strong></div>
+<div id="examinerForwardModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Forward to Approver</h2>
+                <div class="premium-modal-subtitle">Tracking No: {{ case.tracking_id }}</div>
+            </div>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
         </div>
-        
-        <div style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1rem;">
-            Are you sure you want to forward this case to the <strong style="color: var(--text-main);">Approver</strong>?
+        <div class="premium-div3 premium-card">
+            <h3 class="premium-section-title"><i class="ri-information-line"></i> Case Information</h3>
+            <div class="premium-detail-grid">
+                <div><span class="premium-detail-label">Client Name</span><span class="premium-detail-value">{{ case.client_name }}</span></div>
+                <div><span class="premium-detail-label">Type of Case</span><span class="premium-detail-value">{{ case.get_case_type_display }}</span></div>
+                <div><span class="premium-detail-label">Date Filed</span><span class="premium-detail-value">{{ case.created_at|date:"M d, Y" }}</span></div>
+                {% if case.td_number %}
+                <div><span class="premium-detail-label">TD Number</span><span class="premium-detail-value">{{ case.td_number }}</span></div>
+                {% endif %}
+            </div>
+            <h3 class="premium-section-title" style="margin-top: 8px;"><i class="ri-file-list-3-line"></i> Uploaded Documents</h3>
+            <div class="premium-doc-list">
+                {% for doc in documents %}
+                <div class="premium-doc-item">
+                    <div class="premium-doc-icon"><i class="ri-file-pdf-2-line"></i></div>
+                    <div class="premium-doc-info">
+                        <div class="premium-doc-name">{{ doc.doc_type }}</div>
+                        <div class="premium-doc-size">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No documents uploaded.</div>
+                {% endfor %}
+            </div>
+            <div class="premium-action-area">
+                <div style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 1rem;">
+                    Are you sure you want to forward this case to the <strong>Approver</strong>?
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeExaminerForwardModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" style="flex:1;" onclick="document.getElementById('examinerForwardForm').submit()">Confirm</button>
+                </div>
+            </div>
         </div>
-        
-        <div style="display: flex; gap: 0.75rem;">
-            <button type="button" class="btn btn-outline" style="flex:1; padding: 0.6rem;" onclick="closeExaminerForwardModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" style="flex:1; padding: 0.6rem;" onclick="document.getElementById('examinerForwardForm').submit()">Confirm</button>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
         </div>
     </div>
 </div>
@@ -1599,85 +2111,187 @@
     }
 </script>
 
-<!-- Numberer Submit Modal -->
-<div id="numbererSubmitModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 400px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1rem; text-align: center;">Confirm TD Number</h3>
-        <p style="text-align: center; color: var(--text-muted); margin-bottom: 0.5rem; font-size: 0.9rem;">You are about to finalize the TD number for this case.</p>
-        <div style="text-align: center; font-size: 1.5rem; font-weight: 700; color: #1e293b; margin-bottom: 1.5rem;" id="numbererModalTDDisplay"></div>
-        <div style="display: flex; gap: 0.5rem;">
-            <button type="button" class="btn btn-outline" style="flex:1" onclick="closeNumbererModal()">Cancel</button>
-            <button type="button" class="btn btn-primary" style="flex:1;" onclick="document.getElementById('numbererForm').submit()">Confirm</button>
+<!-- Input TD Number Modal -->
+<div id="inputTdModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Input TD Number</h2>
+                <div class="premium-modal-subtitle">Tracking No: {{ case.tracking_id }}</div>
+            </div>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
+        </div>
+        <div class="premium-div3 premium-card">
+            <h3 class="premium-section-title"><i class="ri-information-line"></i> Case Information</h3>
+            <div class="premium-detail-grid">
+                <div><span class="premium-detail-label">Client Name</span><span class="premium-detail-value">{{ case.client_name }}</span></div>
+                <div><span class="premium-detail-label">Type of Case</span><span class="premium-detail-value">{{ case.get_case_type_display }}</span></div>
+                <div><span class="premium-detail-label">Date Filed</span><span class="premium-detail-value">{{ case.created_at|date:"M d, Y" }}</span></div>
+                {% if case.td_number %}
+                <div><span class="premium-detail-label">TD Number</span><span class="premium-detail-value">{{ case.td_number }}</span></div>
+                {% endif %}
+            </div>
+            
+            <h3 class="premium-section-title" style="margin-top: 8px;"><i class="ri-file-list-3-line"></i> Uploaded Documents</h3>
+            <div class="premium-doc-list">
+                {% for doc in documents %}
+                <div class="premium-doc-item">
+                    <div class="premium-doc-icon"><i class="ri-file-pdf-2-line"></i></div>
+                    <div class="premium-doc-info">
+                        <div class="premium-doc-name">{{ doc.doc_type }}</div>
+                        <div class="premium-doc-size">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No documents uploaded.</div>
+                {% endfor %}
+            </div>
+            
+            <div class="premium-action-area">
+                <form method="post" action="{% url 'mark_numbered' case.tracking_id %}">
+                    {% csrf_token %}
+                    {% if case.case_type == 'transfer_ownership_partial_segregation' %}
+                        <div style="margin-bottom: 1rem;">
+                            <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">New TD Number (Transferred Area)</label>
+                            <input type="text" inputmode="numeric" pattern="\d{5}" minlength="5" maxlength="5" name="transaction_number_transferred" placeholder="Enter 5-digit TD Number" class="form-control" required title="Please enter exactly 5 digits" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)" style="width: 100%; padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);">
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">New TD Number (Remaining Area)</label>
+                            <input type="text" inputmode="numeric" pattern="\d{5}" minlength="5" maxlength="5" name="transaction_number_remaining" placeholder="Enter 5-digit TD Number" class="form-control" required title="Please enter exactly 5 digits" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)" style="width: 100%; padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);">
+                        </div>
+                    {% else %}
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Tax Declaration Number</label>
+                            <input type="text" inputmode="numeric" pattern="\d{5}" minlength="5" maxlength="5" name="transaction_number" placeholder="Enter 5-digit TD Number" class="form-control" required title="Please enter exactly 5 digits" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)" style="width: 100%; padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);">
+                        </div>
+                    {% endif %}
+                    
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeInputTdModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex:1;">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    function openNumbererModal() {
-        const isPartial = document.getElementById('numberer_transaction_input_transferred') !== null;
-        if (isPartial) {
-            const input1 = document.getElementById('numberer_transaction_input_transferred');
-            const input2 = document.getElementById('numberer_transaction_input_remaining');
-            if (input1 && input1.value.trim().length === 5 && input2 && input2.value.trim().length === 5) {
-                document.getElementById('numbererModalTDDisplay').innerText = input1.value.trim() + " (Transferred) & " + input2.value.trim() + " (Remaining)";
-                document.getElementById('numbererSubmitModal').style.display = 'flex';
-            } else {
-                if (!input1.checkValidity()) { input1.reportValidity(); }
-                else if (!input2.checkValidity()) { input2.reportValidity(); }
-            }
-        } else {
-            const input = document.getElementById('numberer_transaction_input');
-            if (input && input.value.trim().length === 5) {
-                document.getElementById('numbererModalTDDisplay').innerText = input.value.trim();
-                document.getElementById('numbererSubmitModal').style.display = 'flex';
-            } else {
-                input.reportValidity();
-            }
-        }
+    function openInputTdModal() {
+        document.getElementById('inputTdModal').style.display = 'flex';
     }
-    function closeNumbererModal() {
-        document.getElementById('numbererSubmitModal').style.display = 'none';
+    function closeInputTdModal() {
+        document.getElementById('inputTdModal').style.display = 'none';
     }
 </script>
 
 <!-- Releaser Modal -->
-<div id="releaserSubmitModal" class="drawer-backdrop" style="display:none; justify-content:center; align-items:center; opacity:1; visibility:visible;">
-    <div class="panel" style="width: 500px; padding: 2rem;">
-        <h3 class="panel-title" style="margin-bottom: 1rem; text-align: center;">Confirm Release</h3>
-        <p style="text-align: center; color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.9rem;">Please enter the details of the person claiming these documents.</p>
-        
-        <form method="post" action="{% url 'release_case' case.tracking_id %}">
-            {% csrf_token %}
-            <div style="margin-bottom: 1rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--text);">Claimed By <span style="color:red;">*</span></label>
-                <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
-                    <input type="text" name="claimed_by_fname" class="form-control" required placeholder="Firstname" pattern="^[a-zA-ZñÑ\s\-\.]+$" title="Please enter a valid first name" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\-\.]/g, '')" style="flex: 2; min-width: 0; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
-                    
-                    <input type="text" name="claimed_by_mi" class="form-control" placeholder="MI" maxlength="1" pattern="^[a-zA-ZñÑ]$" title="Single letter only" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ]/g, '')" style="flex: 1; max-width: 60px; min-width: 0; padding: 0.75rem; text-align: center; border: 1px solid var(--border); border-radius: 8px; text-transform: uppercase;">
-                    
-                    <input type="text" name="claimed_by_lname" class="form-control" required placeholder="Lastname" pattern="^[a-zA-ZñÑ\s\-\.]+$" title="Please enter a valid last name" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\-\.]/g, '')" style="flex: 2; min-width: 0; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
-                    
-                    <select name="claimed_by_suffix" class="form-select" style="flex: 1; max-width: 85px; min-width: 0; padding: 0.75rem 0.25rem; border: 1px solid var(--border); border-radius: 8px; appearance: auto; background-color: white;">
-                        <option value="" selected>Suffix</option>
-                        <option value="Jr.">Jr.</option>
-                        <option value="Sr.">Sr.</option>
-                        <option value="II">II</option>
-                        <option value="III">III</option>
-                        <option value="IV">IV</option>
-                        <option value="V">V</option>
-                    </select>
-                </div>
+<div id="releaserSubmitModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Confirm Release</h2>
+                <div class="premium-modal-subtitle">Tracking No: {{ case.tracking_id }}</div>
             </div>
-            <div style="margin-bottom: 1.5rem;">
-                <label style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--text);">Contact Number <span style="color:red;">*</span></label>
-                <input type="text" name="claimed_by_contact" class="form-control" required placeholder="e.g. 09123456789" inputmode="numeric" pattern="^[0-9]+$" title="Please enter numbers only" oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
+        </div>
+        
+        <div class="premium-div3 premium-card">
+            <h3 class="premium-section-title"><i class="ri-information-line"></i> Case Information</h3>
+            <div class="premium-detail-grid">
+                <div><span class="premium-detail-label">Client Name</span><span class="premium-detail-value">{{ case.client_name }}</span></div>
+                <div><span class="premium-detail-label">Type of Case</span><span class="premium-detail-value">{{ case.get_case_type_display }}</span></div>
+                <div><span class="premium-detail-label">Date Filed</span><span class="premium-detail-value">{{ case.created_at|date:"M d, Y" }}</span></div>
+                {% if case.td_number %}
+                <div><span class="premium-detail-label">TD Number</span><span class="premium-detail-value">{{ case.td_number }}</span></div>
+                {% endif %}
             </div>
             
-            <div style="display: flex; gap: 0.5rem;">
-                <button type="button" class="btn btn-outline" style="flex:1" onclick="closeReleaserModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary" style="flex:1;">Confirm Release</button>
+            <h3 class="premium-section-title" style="margin-top: 8px;"><i class="ri-file-list-3-line"></i> Uploaded Documents</h3>
+            <div class="premium-doc-list">
+                {% for doc in documents %}
+                <div class="premium-doc-item">
+                    <div class="premium-doc-icon"><i class="ri-file-pdf-2-line"></i></div>
+                    <div class="premium-doc-info">
+                        <div class="premium-doc-name">{{ doc.doc_type }}</div>
+                        <div class="premium-doc-size">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No documents uploaded.</div>
+                {% endfor %}
             </div>
-        </form>
+
+            <div class="premium-action-area" style="margin-top: auto;">
+                <p style="color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem;">Please enter the details of the person claiming these documents.</p>
+                
+                <form method="post" action="{% url 'release_case' case.tracking_id %}">
+                    {% csrf_token %}
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--text);">Claimed By <span style="color:red;">*</span></label>
+                        <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+                            <input type="text" name="claimed_by_fname" class="form-control" required placeholder="Firstname" pattern="^[a-zA-ZñÑ\s\-\.]+$" title="Please enter a valid first name" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\-\.]/g, '')" style="flex: 2; min-width: 0; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                            
+                            <input type="text" name="claimed_by_mi" class="form-control" placeholder="MI" maxlength="1" pattern="^[a-zA-ZñÑ]$" title="Single letter only" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ]/g, '')" style="flex: 1; max-width: 60px; min-width: 0; padding: 0.75rem; text-align: center; border: 1px solid var(--border); border-radius: 8px; text-transform: uppercase;">
+                            
+                            <input type="text" name="claimed_by_lname" class="form-control" required placeholder="Lastname" pattern="^[a-zA-ZñÑ\s\-\.]+$" title="Please enter a valid last name" oninput="this.value = this.value.replace(/[^a-zA-ZñÑ\s\-\.]/g, '')" style="flex: 2; min-width: 0; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                            
+                            <select name="claimed_by_suffix" class="form-select" style="flex: 1; max-width: 85px; min-width: 0; padding: 0.75rem 0.25rem; border: 1px solid var(--border); border-radius: 8px; appearance: auto; background-color: white;">
+                                <option value="" selected>Suffix</option>
+                                <option value="Jr.">Jr.</option>
+                                <option value="Sr.">Sr.</option>
+                                <option value="II">II</option>
+                                <option value="III">III</option>
+                                <option value="IV">IV</option>
+                                <option value="V">V</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.5rem; color: var(--text);">Contact Number <span style="color:red;">*</span></label>
+                        <input type="text" name="claimed_by_contact" class="form-control" required placeholder="e.g. 09123456789" inputmode="numeric" pattern="^[0-9]+$" title="Please enter numbers only" oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px;">
+                    </div>
+                    
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeReleaserModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex:1;">Confirm Release</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 </div>
 
