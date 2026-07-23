@@ -4041,6 +4041,9 @@ def draft_wizard(request, draft_id, step: int = 1):
                 details={"unified_form": True}
             )
 
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return render_unified(form, formset)
+
             if "save_draft" in request.POST:
                 messages.success(request, "Draft saved.")
                 return redirect("drafts")
