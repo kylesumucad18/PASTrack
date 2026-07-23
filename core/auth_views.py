@@ -11,6 +11,7 @@ from django.core import signing
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.http import HttpResponse
 
 from .forms import AccountActivationForm
 from .models import AuditLog, CustomUser, PasswordResetRequest
@@ -247,12 +248,14 @@ def activate_account(request, token: str):
 @require_http_methods(["GET", "POST"])
 def logout_view(request):
     """Logout endpoint that allows GET and POST for local/dev convenience."""
+    if not request.user.is_authenticated:
+        return HttpResponse("Unauthorized", status=401)
+
     allow_get = bool(getattr(settings, "LEGALTRACK_ALLOW_GET_LOGOUT", False))
     if request.method == "GET" and not allow_get:
         messages.error(request, "Logout requires a POST request.")
         return redirect("dashboard")
 
-    if request.user.is_authenticated:
-        logout(request)
-        request.session.flush()
+    logout(request)
+    request.session.flush()
     return redirect("login")

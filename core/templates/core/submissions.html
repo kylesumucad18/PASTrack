@@ -278,6 +278,9 @@
     <tr>
         <th class="col-case-no">Case Number</th>
         <th class="col-client">Client & Request</th>
+        {% if request.user.role == 'super_admin' %}
+            <th>Tax Declaration Number</th>
+        {% endif %}
         <th>Ownership Type</th>
         {% if request.user.role == 'capitol_numberer' %}
             <th>Transaction Number</th>
@@ -322,6 +325,13 @@
                 </div>
             {% endif %}
         </td>
+        
+        {% if request.user.role == 'super_admin' %}
+            <td style="font-family: monospace; font-weight: 700; color: #1e293b;">
+                {{ case.td_number|default:"—" }}
+            </td>
+        {% endif %}
+
         <td>
             <span class="request-subtext">{{ case.get_ownership_type_display|default:"-" }}</span>
         </td>

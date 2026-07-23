@@ -22,42 +22,130 @@
         background-color: #f8fafc;
     }
 
-    .wizard-inner {
+    .parent {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        grid-template-rows: 55px repeat(4, 1fr);
+        gap: 8px;
+        width: 100vw;
+        padding: 8px;
+        height: 100vh;
+        box-sizing: border-box;
+    }
+
+    .div1 {
+        grid-column: 1;
+        grid-row: 1;
         display: flex;
-        align-items: flex-start;
-        gap: 2.5rem;
-        width: 100%;
-        max-width: 1350px;
-        padding: 0 2rem;
+        align-items: center;
+        padding-left: calc(2rem + 16px);
+    }
+
+    .div2 {
+        grid-column: 1;
+        grid-row: 2 / span 4;
+        background-color: #f4f7fb;
+        border-radius: 16px;
+        overflow: hidden;
+        margin-top: -10px;
+    }
+
+    .div3 {
+        grid-column: 2 / span 3;
+        grid-row: 1 / span 5;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        scrollbar-width: none;
+        background-color: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+    
+    .div3::-webkit-scrollbar {
+        display: none;
+    }
+
+    .div4 {
+        grid-column: 5;
+        grid-row: 1 / span 5;
+        background-color: #f4f7fb;
+        border-radius: 16px;
+        overflow: hidden;
+    }
+    
+    .explanation-card {
+        padding: 1.5rem 1rem;
+        height: 100%;
+        overflow-y: auto;
+        scrollbar-width: none;
+    }
+    .explanation-card::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .expl-item {
+        padding: 1.25rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        transition: 0.3s;
+        opacity: 0.4;
+        border: 1px solid transparent;
+    }
+    
+    .expl-item.active {
+        opacity: 1;
+        background-color: white;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    }
+    
+    .expl-item h3 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+    }
+    
+    .expl-item p {
+        font-size: 0.85rem;
+        color: #64748b;
+        line-height: 1.5;
+        margin-bottom: 0.5rem;
     }
 
     /* --- LEFT COLUMN: STEPPER --- */
     .wizard-left {
-        width: 300px;
         display: flex;
         flex-direction: column;
-        flex-shrink: 0;
     }
 
     .back-link {
-        color: #94a3b8;
+        color: #64748b;
         text-decoration: none;
-        font-size: 0.85rem;
-        font-weight: 500;
-        margin-bottom: 1rem;
-        display: inline-block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
         transition: 0.2s;
-        line-height: 1.5rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        background-color: transparent;
+        border: none;
+        opacity: 0.7;
     }
 
     .back-link:hover {
         color: #1e3a8a;
+        background-color: #f1f5f9;
     }
 
     .wizard-left-card {
-        background-color: #f4f7fb;
-        border-radius: 16px;
         padding: 2.5rem 2rem;
+        height: 100%;
+        box-sizing: border-box;
     }
 
     .brand-logo {
@@ -158,11 +246,8 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        margin-top: 2.5rem;
-        height: calc(100vh - 5rem);
-        overflow-y: auto;
-        scrollbar-width: none;
-        align-items: flex-start;
+        align-items: stretch;
+        width: 100%;
     }
 
     .wizard-right::-webkit-scrollbar {
@@ -170,26 +255,22 @@
     }
 
     .wizard-right-card {
-        background-color: #ffffff;
-        border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
-        border: 1px solid #f1f5f9;
         padding: 2.5rem 3rem;
         width: 100%;
-        margin-bottom: 2rem;
+        box-sizing: border-box;
     }
 
     /* Dynamic widths based on step */
     .step-1-card {
-        max-width: 850px;
+        max-width: none;
     }
 
     .step-2-card {
-        max-width: 950px;
+        max-width: none;
     }
 
     .step-3-card {
-        max-width: 1000px;
+        max-width: none;
         padding: 3rem 4rem;
     }
 
@@ -732,10 +813,20 @@
         }
 
         /* Hide text on mobile to save space */
+        .parent {
+            display: flex;
+            flex-direction: column;
+            height: auto;
+            padding: 1rem;
+            overflow: visible;
+        }
+
+        .div1, .div2, .div3, .div4 {
+            width: 100%;
+        }
+
         .wizard-right {
             margin-top: 0;
-            height: auto;
-            overflow: visible;
             width: 100%;
         }
 
@@ -797,17 +888,51 @@
             margin: 0;
         }
     }
+
+    /* Progressive Disclosure */
+    .locked-step {
+        opacity: 0.5;
+        pointer-events: none;
+        position: relative;
+        transition: opacity 0.3s ease;
+    }
+    .locked-step::after {
+        content: '\eb84'; /* ri-lock-fill */
+        font-family: 'remixicon';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 3rem;
+        color: #94a3b8;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 50%;
+        width: 80px;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        z-index: 10;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="wizard-page">
-    <div class="wizard-inner">
+    <div class="parent">
 
-        <!-- ===== LEFT SIDEBAR: STEPPER ===== -->
-        <div class="wizard-left">
-            <a href="{% url 'dashboard' %}" class="back-link">Back to Dashboard</a>
-            <div class="wizard-left-card">
+        <!-- div1: Back Button -->
+        <div class="div1">
+            <a href="#" onclick="showDiscardModal(event)" class="back-link">
+                <i class="ri-arrow-left-s-line" style="font-size: 1.25rem;"></i> Back to Dashboard
+            </a>
+        </div>
+
+        <!-- div2: Logo and Stepper -->
+        <div class="div2">
+            <div class="wizard-left">
+                <div class="wizard-left-card">
                 <div class="brand-logo" style="display: flex; align-items: center; gap: 2px; padding: 0 ;">
                     <img src="{% static 'core/logo.png' %}" alt="Logo"
                         style="width: 54px; height: 54px; object-fit: contain;">
@@ -815,25 +940,23 @@
                 </div>
 
                 <div class="stepper">
-                    <div
-                        class="step-item {% if step == 1 %}active{% elif step > 1 %}completed{% else %}pending{% endif %}">
-                        <div class="step-box">{% if step > 1 %}<i class="ri-check-line"></i>{% else %}1{% endif %}</div>
+                    <div class="step-item active">
+                        <div class="step-box">1</div>
                         <div class="step-text">
                             <h4>Client Information</h4>
                             <p>Complete client metadata and required fields.</p>
                         </div>
                     </div>
 
-                    <div
-                        class="step-item {% if step == 2 %}active{% elif step > 2 %}completed{% else %}pending{% endif %}">
-                        <div class="step-box">{% if step > 2 %}<i class="ri-check-line"></i>{% else %}2{% endif %}</div>
+                    <div class="step-item active">
+                        <div class="step-box">2</div>
                         <div class="step-text">
                             <h4>Checklist and Attachments</h4>
                             <p>Upload supporting documents.</p>
                         </div>
                     </div>
 
-                    <div class="step-item {% if step == 3 %}active{% else %}pending{% endif %}">
+                    <div class="step-item active">
                         <div class="step-box">3</div>
                         <div class="step-text">
                             <h4>Review</h4>
@@ -843,23 +966,40 @@
                 </div>
             </div>
         </div>
+        </div>
 
-        <!-- ===== RIGHT COLUMN: MAIN CONTENT ===== -->
-        <div class="wizard-right">
+        <!-- div3: Main Form Content -->
+        <div class="div3" style="overflow-y: auto; padding-right: 1rem;">
+<form method="post" enctype="multipart/form-data" id="unifiedSubmitForm">
+{% csrf_token %}
+
+
+            <div class="wizard-right">
 
             <!-- ==============================
                  STEP 1: CLIENT INFORMATION
                  ============================== -->
-            {% if step == 1 %}
+            
             <div class="wizard-right-card step-1-card">
+                <!-- REMINDER COMMENTED OUT
+                {% if case %}
+                <div style="position: sticky; top: -1px; z-index: 50; background-color: #eff6ff; color: #1e3a8a; padding: 0.75rem 1.25rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; border: 1px solid #bfdbfe; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <i class="ri-edit-box-line" style="font-size: 1.25rem;"></i> Reminder: You are currently Editing a Case
+                </div>
+                {% else %}
+                <div style="position: sticky; top: -1px; z-index: 50; background-color: #f0fdf4; color: #166534; padding: 0.75rem 1.25rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; border: 1px solid #bbf7d0; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <i class="ri-file-add-line" style="font-size: 1.25rem;"></i> Reminder: You are currently Creating a Case
+                </div>
+                {% endif %}
+                -->
                 <h2 class="card-title">Client Information</h2>
 
                 {% if form.non_field_errors %}
                 <div class="alert-error">{{ form.non_field_errors }}</div>
                 {% endif %}
 
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
+                
+                    
                     <div class="form-grid">
                         <!-- Ownership Type -->
                         <div class="form-group col-12" id="ownership-type-group">
@@ -992,42 +1132,21 @@
                             <small id="prev_td_help_text" class="form-text" style="color: #6c757d; display: block; margin-top: 0.25rem;">Enter "NA" or "New" if not applicable</small>
                             {% if form.previous_tax_dec_number.errors %}<span class="error-msg">{{ form.previous_tax_dec_number.errors.0 }}</span>{% endif %}
                             
-                            <style>
-                                .parent {
-                                    display: grid;
-                                    grid-template-columns: repeat(5, 1fr);
-                                    grid-template-rows: repeat(5, 1fr);
-                                    gap: 8px;
-                                }
-                                .div1 {
-                                    grid-column: span 2 / span 2;
-                                    background-color: #f8fafc; 
-                                    border: 1px solid #cbd5e1; 
-                                    border-radius: 6px;
-                                    padding: 0.5rem 0.75rem;
-                                }
-                                .div2 {
-                                    grid-column: span 2 / span 2;
-                                    grid-row: span 2 / span 2;
-                                    grid-row-start: 2;
-                                    margin-top: 15px;
-                                }
-                            </style>
-                            <div id="legacy_override_container" class="parent" style="display: none; margin-top: 0.5rem;">
-                                <div class="div1" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div id="legacy_override_container" style="display: none; margin-top: 0.5rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.5rem 0.75rem; width: fit-content; margin-bottom: 1rem;">
                                     {{ form.is_legacy_override }}
                                     <label for="{{ form.is_legacy_override.id_for_label }}" style="margin: 0; font-weight: 600; color: #334155; font-size: calc(0.95rem - 2px);">Legacy Record Override (Pre-2000s)</label>
                                 </div>
-                                <div class="div2">
+                                <div>
                                     {% if case.legacy_document_scan %}
-                                    <div style="height: 100%; display: flex; flex-direction: column; justify-content: center; background-color: #f8fafc; padding: 1rem; border-radius: 0.5rem; border: 1px dashed #cbd5e1;">
+                                    <div style="display: flex; flex-direction: column; justify-content: center; background-color: #f8fafc; padding: 1rem; border-radius: 0.5rem; border: 1px dashed #cbd5e1;">
                                         <label style="font-size: 0.85rem; color: #334155; font-weight: 600; display: block; margin-bottom: 0.25rem;"><i class="ri-checkbox-circle-fill" style="color: #059669; margin-right: 4px;"></i> Scanned Mother Lot Document</label>
                                         <p style="font-size: 0.8rem; color: #64748b; margin-top: 0.25rem;">Document already uploaded. You can update or replace it in Step 2.</p>
                                     </div>
                                     {% else %}
-                                    <div id="legacy_upload_wrapper" style="display: none; height: 100%; flex-direction: column;">
+                                    <div id="legacy_upload_wrapper" style="display: none; flex-direction: column;">
                                         <label style="font-size: 0.85rem; color: #334155; font-weight: 600; display: block; margin-bottom: 0.35rem;">Scanned Mother Lot Document <span class="text-danger">*</span></label>
-                                        <label for="legacy_document_scan_input" style="flex: 1; border: 2px dashed #cbd5e1; border-radius: 0.5rem; padding: 1rem; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; background-color: #ffffff; transition: all 0.2s;">
+                                        <label for="legacy_document_scan_input" style="border: 2px dashed #cbd5e1; border-radius: 0.5rem; padding: 1.5rem 1rem; display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; background-color: #ffffff; transition: all 0.2s;">
                                             <i class="ri-file-upload-line" style="font-size: 2rem; color: #3b82f6; margin-bottom: 0.5rem;"></i>
                                             <span id="legacy-file-name" style="font-size: 0.9rem; font-weight: 600; color: #334155; text-align: center;">Click to browse or drag file</span>
                                             <span style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">JPG, PNG, PDF (Max 25MB)</span>
@@ -1095,14 +1214,7 @@
                         </div> {% endcomment %}
                     </div>
 
-                    <div class="form-actions" style="justify-content: space-between;">
-                        <div style="display: flex; gap: 1rem; align-items: center;">
-                            <a href="{% url 'dashboard' %}" class="btn-text">Cancel</a>
-                            <button type="submit" name="save_draft" value="1" class="btn btn-outline"
-                                style="border: 1px solid var(--border);">Save as Draft</button>
-                        </div>
-                        <button type="submit" name="save_continue" value="1" class="btn btn-primary">Continue</button>
-                    </div>
+                    
                     <!-- Minimalistic Co-Owner Delete Modal -->
                     <div id="removeCoOwnerModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:9999; justify-content:center; align-items:center;">
                         <div style="background:white; border-radius:12px; padding:1.5rem; width:340px; box-shadow:0 10px 40px rgba(0,0,0,0.15); text-align: center; animation: slideDown 0.2s ease;">
@@ -1124,14 +1236,25 @@
                             </div>
                         </div>
                     </div>
-                </form>
+                
             </div>
 
             <!-- ==============================
                  STEP 2: CHECKLIST & ATTACHMENTS
                  ============================== -->
-            {% elif step == 2 %}
+            <hr style="margin: 3rem 0; border: none; border-top: 1px solid var(--border);">
             <div class="wizard-right-card step-2-card">
+                <!-- REMINDER COMMENTED OUT
+                {% if case %}
+                <div style="position: sticky; top: -1px; z-index: 50; background-color: #eff6ff; color: #1e3a8a; padding: 0.75rem 1.25rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; border: 1px solid #bfdbfe; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <i class="ri-edit-box-line" style="font-size: 1.25rem;"></i> Reminder: You are currently Editing a Case
+                </div>
+                {% else %}
+                <div style="position: sticky; top: -1px; z-index: 50; background-color: #f0fdf4; color: #166534; padding: 0.75rem 1.25rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; border: 1px solid #bbf7d0; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <i class="ri-file-add-line" style="font-size: 1.25rem;"></i> Reminder: You are currently Creating a Case
+                </div>
+                {% endif %}
+                -->
                 <h2 class="card-title" style="margin-bottom: 0.2rem;">Checklist and Attachments</h2>
                 <p style="color: #64748b; font-size: 0.9rem; margin-top: 0; margin-bottom: 2.5rem;">
                     Upload the required documents for your <span style="color: #1e3a8a; font-weight: 600;">{{ case.get_case_type_display|default:"transaction" }}</span> request.
@@ -1139,8 +1262,8 @@
                         style="color: #94a3b8; text-decoration: none; margin-left: 0.2rem;">Change</a>
                 </p>
 
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
+                
+                    
                     {{ formset.management_form }}
 
                     {% if formset.non_form_errors %}
@@ -1238,15 +1361,7 @@
                         </div>
                     </div>
 
-                    <div class="form-actions" style="margin-top: 3rem; justify-content: space-between;">
-                        <div style="display: flex; gap: 1rem; align-items: center;">
-                            <a href="{% url 'draft_wizard' case.draft_id 1 %}" class="btn-text"
-                                style="padding-left:0;">Back</a>
-                            <button type="submit" name="save_draft" value="1" class="btn btn-outline"
-                                style="border: 1px solid var(--border);">Save as Draft</button>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Continue</button>
-                    </div>
+                    
 
                     <!-- Minimalistic Validation Modal -->
                     <div id="nameRequiredModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:9999; justify-content:center; align-items:center;">
@@ -1307,14 +1422,23 @@
                             </div>
                         </div>
                     </div>
-                </form>
+                
             </div>
 
             <!-- ==============================
                  STEP 3: REVIEW (NEW SPLIT DESIGN)
                  ============================== -->
-            {% else %}
+            <hr style="margin: 3rem 0; border: none; border-top: 1px solid var(--border);">
             <div class="wizard-right-card step-3-card">
+                {% if case %}
+                <div style="position: sticky; top: -1px; z-index: 50; background-color: #eff6ff; color: #1e3a8a; padding: 0.75rem 1.25rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; border: 1px solid #bfdbfe; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <i class="ri-edit-box-line" style="font-size: 1.25rem;"></i> Reminder: You are currently Editing a Case
+                </div>
+                {% else %}
+                <div style="position: sticky; top: -1px; z-index: 50; background-color: #f0fdf4; color: #166534; padding: 0.75rem 1.25rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; border: 1px solid #bbf7d0; margin-bottom: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+                    <i class="ri-file-add-line" style="font-size: 1.25rem;"></i> Reminder: You are currently Creating a Case
+                </div>
+                {% endif %}
                 <h2 class="card-title">Review Submission</h2>
 
                 <!-- ID Header -->
@@ -1340,19 +1464,19 @@
                 <div class="summary-list">
                     <div class="summary-row">
                         <span class="summary-label">Full Name</span>
-                        <span class="summary-value">{{ case.client_display_name }}</span>
+                        <span class="summary-value" id="review-full-name">{{ case.client_display_name }}</span>
                     </div>
                     <div class="summary-row">
                         <span class="summary-label">Phone Number</span>
-                        <span class="summary-value">{{ case.client_number|default:"—" }}</span>
+                        <span class="summary-value" id="review-phone">{{ case.client_number|default:"—" }}</span>
                     </div>
                     <div class="summary-row">
                         <span class="summary-label">Email</span>
-                        <span class="summary-value">{{ case.client_email|default:"—" }}</span>
+                        <span class="summary-value" id="review-email">{{ case.client_email|default:"—" }}</span>
                     </div>
                     <div class="summary-row">
                         <span class="summary-label">LGU Origin</span>
-                        <span class="summary-value">{{ case.area|default:"—" }}</span>
+                        <span class="summary-value" id="review-lgu">{{ case.area|default:"—" }}</span>
                     </div>
                     {% if case.needs_taxmapping %}
                     <div class="summary-row" style="border-bottom: none;">
@@ -1364,6 +1488,7 @@
 
                 <h4 style="font-size: 1rem; color: #0f172a; margin: 0 0 1rem 0;">Checklist and Attachments</h4>
 
+                <div class="checklist-summary-container">
                 <!-- Interactive Split Document Viewer -->
                 <div class="preview-container">
 
@@ -1408,15 +1533,16 @@
                     </div>
 
                 </div>
+                </div>
 
-                <form method="post" style="margin-top: 3rem;" id="step3SubmitForm">
+                
                     {% csrf_token %}
                     <div class="form-actions" style="justify-content: space-between;">
                         <a href="{% url 'draft_wizard' case.draft_id 2 %}" class="btn-text"
                             style="padding-left:0;">Back</a>
                         <button type="submit" class="btn btn-primary" style="background-color: #1e3a8a;">Submit</button>
                     </div>
-                </form>
+                
 
                 <!-- No Documents Warning Modal -->
                 <div id="noDocsModal"
@@ -1434,11 +1560,40 @@
                     </div>
                 </div>
             </div>
-            {% endif %}
+            
 
-        </div>
+            </div> <!-- End wizard-right -->
+        
+    <div class="form-actions" style="margin-top: 3rem; justify-content: space-between; display: flex;">
+        <button type="submit" name="save_draft" value="1" class="btn btn-outline"
+            style="border: 1px solid var(--border);">Save as Draft</button>
+        <button type="submit" name="submit_case" value="1" class="btn btn-primary">Submit Case</button>
     </div>
-</div>
+</form>
+</div> <!-- End div3 -->
+
+        <!-- div4: Contextual Explanations -->
+        <div class="div4">
+            <div class="explanation-card">
+                <div class="expl-item active">
+                    <h3>Client Information</h3>
+                    <p>Provide all essential client details here. This information identifies the primary owner or entity applying for the transaction.</p>
+                    <p>Ensure that the Ownership Type matches the submitted documents.</p>
+                </div>
+                <div class="expl-item active">
+                    <h3>Checklist and Attachments</h3>
+                    <p>Upload the required supporting documents. Documents should be clear and legible.</p>
+                    <p>Our system validates the completeness of your uploads based on the selected case type.</p>
+                </div>
+                <div class="expl-item active">
+                    <h3>Review &amp; Submit</h3>
+                    <p>Please double-check all information before final submission. This will create a new tracking ID for the case.</p>
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- End parent -->
+</div> <!-- End wizard-page -->
 {% endblock %}
 
 {% block extra_js %}
@@ -2048,6 +2203,7 @@
                     legacyFileName.textContent = 'Select a file or drag and drop here';
                     legacyFileName.style.color = '#1f2937';
                 }
+                if (typeof evaluateLegacyState === 'function') evaluateLegacyState();
             });
         }
         
@@ -2131,7 +2287,11 @@
                 } else {
                     if (propertyAreaLabel) propertyAreaLabel.innerHTML = 'Property Area (Segregation / Partial)<span class="text-danger">*</span>';
                     if (remainingAreaDisplay && remainingAreaDisplay.parentNode) remainingAreaDisplay.parentNode.style.display = 'block';
-                    if (transferredAreaInput) transferredAreaInput.readOnly = false;
+                    if (typeof updateTransferredAreaLock === 'function') {
+                        updateTransferredAreaLock();
+                    } else {
+                        if (transferredAreaInput) transferredAreaInput.readOnly = false;
+                    }
                 }
                 
                 if (standardErrors) standardErrors.style.display = 'none';
@@ -2178,34 +2338,128 @@
             }
         }
 
+        function updateTransferredAreaLock() {
+            if (!transferredAreaInput) return;
+            const isSeg = caseTypeSelect && caseTypeSelect.value === 'transfer_ownership_partial_segregation';
+            if (isSeg) {
+                if (originalAreaInput && originalAreaInput.value.trim() !== '') {
+                    transferredAreaInput.readOnly = false;
+                } else {
+                    transferredAreaInput.readOnly = true;
+                    transferredAreaInput.value = '';
+                }
+            }
+        }
+
+        if (originalAreaInput) {
+            originalAreaInput.addEventListener('input', function() {
+                if (this.value.includes('-')) this.value = this.value.replace('-', '');
+                if (this.value.startsWith('0') && this.value.length > 1 && this.value[1] !== '.') {
+                    this.value = this.value.replace(/^0+/, '');
+                }
+                updateTransferredAreaLock();
+                calculateRemainingArea();
+            });
+            originalAreaInput.addEventListener('blur', function() {
+                let val = parseFloat(this.value);
+                if (val <= 0) this.value = '';
+                updateTransferredAreaLock();
+                calculateRemainingArea();
+            });
+        }
+
+        if (transferredAreaInput) {
+            transferredAreaInput.addEventListener('input', function() {
+                if (this.value.includes('-')) this.value = this.value.replace('-', '');
+                if (this.value.startsWith('0') && this.value.length > 1 && this.value[1] !== '.') {
+                    this.value = this.value.replace(/^0+/, '');
+                }
+                let val = parseFloat(this.value);
+                const original = parseFloat(originalAreaInput.value) || 0;
+                
+                if (original > 0 && val >= original) {
+                    this.value = this.value.slice(0, -1);
+                    val = parseFloat(this.value);
+                    if (val >= original) {
+                        this.value = '';
+                    }
+                }
+                calculateRemainingArea();
+            });
+            transferredAreaInput.addEventListener('blur', function() {
+                let val = parseFloat(this.value);
+                const original = parseFloat(originalAreaInput.value) || 0;
+                if (val <= 0 || (original > 0 && val >= original)) {
+                    this.value = '';
+                }
+                calculateRemainingArea();
+            });
+        }
+        
+        const areaValueInput = document.getElementById('{{ form.area_value.id_for_label }}');
+        if (areaValueInput) {
+            areaValueInput.addEventListener('input', function() {
+                if (this.value.includes('-')) this.value = this.value.replace('-', '');
+                if (this.value.startsWith('0') && this.value.length > 1 && this.value[1] !== '.') {
+                    this.value = this.value.replace(/^0+/, '');
+                }
+            });
+            areaValueInput.addEventListener('blur', function() {
+                let val = parseFloat(this.value);
+                if (val <= 0) this.value = '';
+            });
+        }
+
         function evaluateLegacyState() {
             if (!legacyOverrideCheckbox) return;
+            
+            const classificationSelectEl = document.getElementById('{{ form.classification.id_for_label }}');
+            const areaValueInput = document.getElementById('{{ form.area_value.id_for_label }}');
+            const localLguOriginSelect = document.getElementById('{{ form.area.id_for_label }}');
+            
             if (legacyOverrideCheckbox.checked) {
                 if (legacyUploadWrapper) legacyUploadWrapper.style.display = 'block';
                 if (legacyFileInput) legacyFileInput.required = true;
-                
-                if (originalAreaInput) originalAreaInput.readOnly = false;
                 if (prevTdInput) prevTdInput.readOnly = false;
                 
                 const existingAjaxError = document.getElementById('td_ajax_error');
                 if (existingAjaxError) existingAjaxError.remove();
                 
-                // Unlock fields
-                const classificationSelectEl = document.getElementById('{{ form.classification.id_for_label }}');
-                if (classificationSelectEl) {
-                    classificationSelectEl.style.pointerEvents = 'auto';
-                    classificationSelectEl.style.backgroundColor = '';
-                    classificationSelectEl.setAttribute('name', 'classification');
-                    const hiddenCls = document.getElementById('hidden_classification_input');
-                    if (hiddenCls) hiddenCls.remove();
-                }
-                const localLguOriginSelect = document.getElementById('{{ form.area.id_for_label }}');
-                if (localLguOriginSelect) {
-                    localLguOriginSelect.style.pointerEvents = 'auto';
-                    localLguOriginSelect.style.backgroundColor = '';
-                    localLguOriginSelect.setAttribute('name', 'area');
-                    const hiddenLgu = document.getElementById('hidden_lgu_input');
-                    if (hiddenLgu) hiddenLgu.remove();
+                const hasExistingDoc = {% if case.legacy_document_scan %}true{% else %}false{% endif %};
+                const hasNewDoc = legacyFileInput && legacyFileInput.files && legacyFileInput.files.length > 0;
+                const isDocPresent = hasExistingDoc || hasNewDoc;
+                
+                if (isDocPresent) {
+                    if (classificationSelectEl) {
+                        classificationSelectEl.style.pointerEvents = 'auto';
+                        classificationSelectEl.style.backgroundColor = '';
+                        classificationSelectEl.setAttribute('name', 'classification');
+                    }
+                    if (originalAreaInput) originalAreaInput.readOnly = false;
+                    if (areaValueInput) areaValueInput.readOnly = false;
+                    
+                    if (localLguOriginSelect) {
+                        localLguOriginSelect.style.pointerEvents = 'auto';
+                        localLguOriginSelect.style.backgroundColor = '';
+                        localLguOriginSelect.setAttribute('name', 'area');
+                        const hiddenLgu = document.getElementById('hidden_lgu_input');
+                        if (hiddenLgu) hiddenLgu.remove();
+                    }
+                } else {
+                    if (classificationSelectEl) {
+                        classificationSelectEl.style.pointerEvents = 'none';
+                        classificationSelectEl.style.backgroundColor = '#e9ecef';
+                        classificationSelectEl.removeAttribute('name');
+                        classificationSelectEl.value = '';
+                    }
+                    if (originalAreaInput) {
+                        originalAreaInput.readOnly = true;
+                        originalAreaInput.value = '';
+                    }
+                    if (areaValueInput) {
+                        areaValueInput.readOnly = true;
+                        areaValueInput.value = '';
+                    }
                 }
             } else {
                 if (legacyUploadWrapper) legacyUploadWrapper.style.display = 'none';
@@ -2215,6 +2469,7 @@
                     prevTdInput.dispatchEvent(new Event('blur')); // Retrigger validation lock
                 }
             }
+            if (typeof updateTransferredAreaLock === 'function') updateTransferredAreaLock();
         }
 
         if (legacyOverrideCheckbox) {
@@ -2224,6 +2479,7 @@
 
         function calculateRemainingArea() {
             if (!originalAreaInput || !transferredAreaInput || !remainingAreaDisplay) return;
+            if (typeof updateTransferredAreaLock === 'function') updateTransferredAreaLock();
             
             const original = parseFloat(originalAreaInput.value) || 0;
             const transferred = parseFloat(transferredAreaInput.value) || 0;
@@ -2266,7 +2522,51 @@
         }
 
         if (caseTypeSelect) {
-            caseTypeSelect.addEventListener('change', updateAreaFieldsVisibility);
+            caseTypeSelect.addEventListener('change', function(e) {
+                // Clear inputs to ensure correct data for the new Type of Case
+                const lotNumberInput = document.getElementById('{{ form.lot_number.id_for_label }}');
+                if (lotNumberInput) lotNumberInput.value = '';
+                
+                if (prevTdInput) prevTdInput.value = '';
+                
+                const legacyCheckbox = document.getElementById('{{ form.is_legacy_override.id_for_label }}');
+                if (legacyCheckbox && legacyCheckbox.checked) {
+                    legacyCheckbox.checked = false;
+                    legacyCheckbox.dispatchEvent(new Event('change'));
+                }
+                const legacyFileInput = document.querySelector('input[name="legacy_document_scan"]');
+                if (legacyFileInput) {
+                    legacyFileInput.value = '';
+                }
+                const legacyFileName = document.getElementById('legacy-file-name');
+                if (legacyFileName) {
+                    legacyFileName.textContent = 'Click to browse or drag file';
+                    legacyFileName.style.color = '#334155';
+                }
+                
+                const classificationSelectEl = document.getElementById('{{ form.classification.id_for_label }}');
+                if (classificationSelectEl) {
+                    classificationSelectEl.value = '';
+                    classificationSelectEl.style.pointerEvents = 'auto';
+                    classificationSelectEl.style.backgroundColor = '';
+                    classificationSelectEl.setAttribute('name', 'classification');
+                }
+                
+                const areaValueInput = document.getElementById('{{ form.area_value.id_for_label }}');
+                if (areaValueInput) areaValueInput.value = '';
+                
+                if (originalAreaInput) originalAreaInput.value = '';
+                if (transferredAreaInput) transferredAreaInput.value = '';
+                if (remainingAreaDisplay) remainingAreaDisplay.value = '0';
+                
+                const hiddenCls = document.getElementById('hidden_classification_input');
+                if (hiddenCls) hiddenCls.remove();
+                
+                const tdError = document.getElementById('td_ajax_error');
+                if (tdError) tdError.remove();
+
+                updateAreaFieldsVisibility();
+            });
             // Run on init
             updateAreaFieldsVisibility();
         }
@@ -2278,7 +2578,13 @@
                 if (!caseTypeSelect) return;
                 const isSegregation = caseTypeSelect.value === 'transfer_ownership_partial_segregation';
                 const isFullTransfer = caseTypeSelect.value === 'transfer_ownership_tax_decl';
-                if (!isSegregation && !isFullTransfer) return;
+                const isSubConsol = caseTypeSelect.value === 'subdivision_consolidation';
+                const isReassess = caseTypeSelect.value === 'reassessment_reclassification';
+                const isAreaIncDec = caseTypeSelect.value === 'area_increase_decrease';
+                
+                const requiresMotherLot = isSegregation || isFullTransfer || isSubConsol || isReassess || isAreaIncDec;
+
+                if (!requiresMotherLot) return;
                 if (legacyOverrideCheckbox && legacyOverrideCheckbox.checked) return; // Disable AJAX for legacy
 
                 const tdNumber = prevTdInput.value.trim();
@@ -2436,5 +2742,223 @@
             transferredAreaInput.addEventListener('input', calculateRemainingArea);
         }
     });
+
+    // ==========================================
+    // PROGRESSIVE DISCLOSURE & DYNAMIC CHECKLIST
+    // ==========================================
+    (function() {
+        const step1Card = document.querySelector('.step-1-card');
+        const step2Card = document.querySelector('.step-2-card');
+        const step3Card = document.querySelector('.step-3-card');
+        const requiredInputs = step1Card.querySelectorAll('[required]');
+        
+        let lastCaseType = document.getElementById('id_case_type') ? document.getElementById('id_case_type').value : '';
+        let lastTitleType = document.getElementById('id_property_title_type') ? document.getElementById('id_property_title_type').value : '';
+
+        function checkClientInfoComplete() {
+            let allFilled = true;
+            requiredInputs.forEach(input => {
+                if (!input.value.trim() && input.type !== 'hidden') {
+                    // Check if it's visible or its parent is visible
+                    if (input.offsetParent !== null) {
+                        allFilled = false;
+                    }
+                }
+            });
+
+            if (allFilled) {
+                step2Card.classList.remove('locked-step');
+                step3Card.classList.remove('locked-step');
+                
+                // Trigger background fetch if Case Type changed
+                const currentCaseType = document.getElementById('id_case_type') ? document.getElementById('id_case_type').value : '';
+                const currentTitleType = document.getElementById('id_property_title_type') ? document.getElementById('id_property_title_type').value : '';
+                
+                if (currentCaseType && (currentCaseType !== lastCaseType || currentTitleType !== lastTitleType)) {
+                    lastCaseType = currentCaseType;
+                    lastTitleType = currentTitleType;
+                    triggerBackgroundSave();
+                }
+            } else {
+                step2Card.classList.add('locked-step');
+                step3Card.classList.add('locked-step');
+            }
+        }
+
+        function triggerBackgroundSave() {
+            // Visual loading
+            step2Card.style.opacity = '0.5';
+            
+            const form = document.getElementById('unifiedSubmitForm');
+            const formData = new FormData(form);
+            formData.append('save_draft', '1');
+            
+            // Allow silent save without redirect
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => response.text())
+              .then(html => {
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(html, 'text/html');
+                  
+                  // Update the DOM for Checklist
+                  const newStep2 = doc.querySelector('.step-2-card');
+                  if (newStep2) {
+                      step2Card.innerHTML = newStep2.innerHTML;
+                      // Re-bind listeners for step 2 if necessary
+                      // Actually, global listeners or inline onclicks usually handle this,
+                      // but we should update the summary in Step 3 as well
+                  }
+                  
+                  const newStep3 = doc.querySelector('.step-3-card');
+                  if (newStep3) {
+                      // We only want to update the checklist summary part of step 3, not the whole thing to avoid losing focus if user is typing
+                      const oldSummary = step3Card.querySelector('.checklist-summary-container');
+                      const newSummary = newStep3.querySelector('.checklist-summary-container');
+                      if (oldSummary && newSummary) {
+                          oldSummary.innerHTML = newSummary.innerHTML;
+                      }
+                  }
+              }).catch(err => console.error(err))
+              .finally(() => {
+                  step2Card.style.opacity = '';
+                  checkClientInfoComplete(); // Re-verify
+              });
+        }
+
+        // Attach listeners to all inputs in step 1
+        requiredInputs.forEach(input => {
+            input.addEventListener('input', checkClientInfoComplete);
+            input.addEventListener('change', checkClientInfoComplete);
+        });
+        
+        // Listen to dynamic changes like case_type
+        if (document.getElementById('id_case_type')) {
+            document.getElementById('id_case_type').addEventListener('change', checkClientInfoComplete);
+        }
+        if (document.getElementById('id_property_title_type')) {
+            document.getElementById('id_property_title_type').addEventListener('change', checkClientInfoComplete);
+        }
+
+        // Initialize state
+        checkClientInfoComplete();
+
+        // ------------------------------------------
+        // REVIEW SUBMISSION AUTO-UPDATE
+        // ------------------------------------------
+        const nameInput = document.getElementById('id_first_name');
+        const lastNameInput = document.getElementById('id_last_name');
+        const middleInput = document.getElementById('id_middle_initial');
+        const phoneInput = document.getElementById('id_phone_number');
+        const emailInput = document.getElementById('id_email_address');
+        const lguInput = document.getElementById('id_lgu_origin');
+        
+        function updateReviewSummary() {
+            const fullNameElem = document.getElementById('review-full-name');
+            const phoneElem = document.getElementById('review-phone');
+            const emailElem = document.getElementById('review-email');
+            const lguElem = document.getElementById('review-lgu');
+            
+            if (fullNameElem) {
+                let name = '';
+                if (nameInput && nameInput.value) name += nameInput.value + ' ';
+                if (middleInput && middleInput.value) name += middleInput.value + ' ';
+                if (lastNameInput && lastNameInput.value) name += lastNameInput.value;
+                fullNameElem.textContent = name.trim() || '—';
+            }
+            if (phoneElem && phoneInput) phoneElem.textContent = phoneInput.value || '—';
+            if (emailElem && emailInput) emailElem.textContent = emailInput.value || '—';
+            if (lguElem && lguInput) {
+                const selectedOption = lguInput.options[lguInput.selectedIndex];
+                lguElem.textContent = selectedOption && selectedOption.value ? selectedOption.text : '—';
+            }
+        }
+
+        const reviewInputs = [nameInput, lastNameInput, middleInput, phoneInput, emailInput, lguInput];
+        reviewInputs.forEach(inp => {
+            if(inp) {
+                inp.addEventListener('input', updateReviewSummary);
+                inp.addEventListener('change', updateReviewSummary);
+            }
+        });
+    })();
+
+    // Discard Modal Logic
+    function showDiscardModal(e) {
+        if (e) e.preventDefault();
+        document.getElementById('discardCaseModal').style.display = 'flex';
+    }
+
+    function hideDiscardModal() {
+        document.getElementById('discardCaseModal').style.display = 'none';
+    }
+
+    function discardCase() {
+        {% if case %}
+        fetch("{% url 'delete_draft' case.draft_id %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}"
+            }
+        }).then(() => {
+            window.location.href = "{% url 'dashboard' %}";
+        }).catch(err => {
+            console.error(err);
+            window.location.href = "{% url 'dashboard' %}";
+        });
+        {% else %}
+        window.location.href = "{% url 'dashboard' %}";
+        {% endif %}
+    }
+
+    {% if case %}
+    // Handle tab close for discarding draft
+    window.addEventListener('beforeunload', function (e) {
+        // If form is not submitting, prompt user
+        if (!window.isSubmitting) {
+            // Note: browser will show generic prompt
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    window.addEventListener('unload', function (e) {
+        if (!window.isSubmitting) {
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            navigator.sendBeacon("{% url 'delete_draft' case.draft_id %}", formData);
+        }
+    });
+
+    // Mark submitting so it doesn't discard on Save/Continue
+    document.getElementById('unifiedSubmitForm').addEventListener('submit', function() {
+        window.isSubmitting = true;
+    });
+    {% endif %}
 </script>
+
+<!-- Discard Case Modal -->
+<div id="discardCaseModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:white; border-radius:12px; padding:1.5rem; width:340px; box-shadow:0 10px 40px rgba(0,0,0,0.15); text-align: center; animation: slideDown 0.2s ease;">
+        <i class="ri-alert-line" style="font-size: 2.5rem; color: #ef4444; margin-bottom: 0.25rem; display: block;"></i>
+        <h3 style="margin:0 0 0.5rem 0; font-size:1.1rem; color:#0f172a;">Discard Case Creation?</h3>
+        <p style="margin:0 0 1.25rem 0; font-size:0.9rem; color:#64748b;">
+            Are you sure you want to discard this case? Any unsaved progress will be lost.
+        </p>
+        <div style="display: flex; gap: 0.5rem;">
+            <button type="button" onclick="hideDiscardModal()"
+                style="flex: 1; padding:0.6rem; border-radius:6px; background:#f1f5f9; color:#0f172a; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; transition: 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                No
+            </button>
+            <button type="button" onclick="discardCase()"
+                style="flex: 1; padding:0.6rem; border-radius:6px; background:#ef4444; color:white; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; transition: 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+                Yes, Discard
+            </button>
+        </div>
+    </div>
+</div>
 {% endblock %}

@@ -468,7 +468,7 @@
                 </div>
             </div>
             
-            <form method="post" action="{% url 'logout' %}" style="margin:0;">
+            <form method="post" action="{% url 'logout' %}" style="margin:0;" onsubmit="const btn = this.querySelector('button'); if(btn.disabled) return false; btn.disabled = true; return true;">
                 {% csrf_token %}
                 <button type="submit" class="logout-btn">
                     <i class="ri-logout-box-r-line"></i> <span class="hide-text">Sign Out</span>

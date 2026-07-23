@@ -287,7 +287,7 @@ class CaseDetailsForm(forms.ModelForm):
 
         case_type = (cleaned.get("case_type") or "").strip()
         title_type = (cleaned.get("property_title_type") or "").strip()
-        if case_type in {"land_first_time", "transfer_ownership_tax_decl"}:
+        if case_type in {"land_first_time", "transfer_ownership_tax_decl", "transfer_ownership_partial_segregation"}:
             if title_type not in {"titled", "untitled"}:
                 self.add_error("property_title_type", "Please select whether the property is titled or untitled.")
         else:
