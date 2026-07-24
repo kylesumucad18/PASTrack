@@ -28,6 +28,7 @@ urlpatterns = [
     path("users/<int:user_id>/delete/", views.delete_user, name="delete_user"),
     path("api/users/", views.user_list_api, name="user_list_api"),
     path("api/get-td-area/<str:td_number>/", views.get_td_area, name="get_td_area"),
+    path("api/check-td-exists/<str:td_number>/", views.check_td_exists, name="check_td_exists"),
     path("audit-logs/", views.audit_logs, name="audit_logs"),
     path("audit-logs/export.csv", views.export_audit_logs_csv, name="export_audit_logs_csv"),
     path("accounts/set-password/", views.set_password_view, name="set_password"),

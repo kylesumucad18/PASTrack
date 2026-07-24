@@ -247,6 +247,10 @@ def activate_account(request, token: str):
 @require_http_methods(["GET", "POST"])
 def logout_view(request):
     """Logout endpoint that allows GET and POST for local/dev convenience."""
+    if not request.user.is_authenticated:
+        from django.http import HttpResponse
+        return HttpResponse("Unauthorized", status=401)
+
     allow_get = bool(getattr(settings, "LEGALTRACK_ALLOW_GET_LOGOUT", False))
     if request.method == "GET" and not allow_get:
         messages.error(request, "Logout requires a POST request.")

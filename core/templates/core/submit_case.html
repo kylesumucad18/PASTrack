@@ -1124,6 +1124,26 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Change Case Type Confirmation Modal -->
+                    <div id="changeCaseTypeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:9999; justify-content:center; align-items:center;">
+                        <div style="background:white; border-radius:12px; padding:1.5rem; width:340px; box-shadow:0 10px 40px rgba(0,0,0,0.15); text-align: center; animation: slideDown 0.2s ease;">
+                            <i class="ri-error-warning-line" style="font-size: 2.5rem; color: #f59e0b; margin-bottom: 0.25rem; display: block;"></i>
+                            <h3 style="margin:0 0 0.5rem 0; font-size:1.1rem; color:#0f172a;">Confirm change Type of Case?</h3>
+                            <p style="margin:0 0 1.25rem 0; font-size:0.9rem; color:#64748b;">
+                                You have an uploaded file in the Scanned Mother Lot Document
+                            </p>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button type="button" onclick="cancelCaseTypeChange()"
+                                    style="flex: 1; padding:0.6rem; border-radius:6px; background:#f1f5f9; color:#0f172a; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; transition: 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
+                                    No
+                                </button>
+                                <button type="button" onclick="confirmCaseTypeChange()"
+                                    style="flex: 1; padding:0.6rem; border-radius:6px; background:#3b82f6; color:white; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; transition: 0.2s;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+                                    Yes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </form>
             </div>
 
@@ -1240,8 +1260,8 @@
 
                     <div class="form-actions" style="margin-top: 3rem; justify-content: space-between;">
                         <div style="display: flex; gap: 1rem; align-items: center;">
-                            <a href="{% url 'draft_wizard' case.draft_id 1 %}" class="btn-text"
-                                style="padding-left:0;">Back</a>
+                            <button type="submit" name="go_back" value="1" class="btn-text"
+                                style="padding-left:0; border:none; background:none; cursor:pointer;">Back</button>
                             <button type="submit" name="save_draft" value="1" class="btn btn-outline"
                                 style="border: 1px solid var(--border);">Save as Draft</button>
                         </div>
@@ -2048,6 +2068,8 @@
                     legacyFileName.textContent = 'Select a file or drag and drop here';
                     legacyFileName.style.color = '#1f2937';
                 }
+                evaluateLegacyState();
+                evaluateTransferredAreaState();
             });
         }
         
@@ -2178,43 +2200,93 @@
             }
         }
 
+        const areaValueInput = document.getElementById('{{ form.area_value.id_for_label }}');
+
+        function evaluateTransferredAreaState() {
+            if (!transferredAreaInput) return;
+            const orig = parseFloat(originalAreaInput.value);
+            
+            const isLegacyChecked = legacyOverrideCheckbox && legacyOverrideCheckbox.checked;
+            const isLegacyDocUploaded = {% if case.legacy_document_scan %}true{% else %}false{% endif %} || (legacyFileInput && legacyFileInput.files && legacyFileInput.files.length > 0);
+            
+            let shouldBeLocked = false;
+            
+            if (isLegacyChecked && !isLegacyDocUploaded) {
+                shouldBeLocked = true;
+            } else {
+                const isSegregation = caseTypeSelect && caseTypeSelect.value === 'transfer_ownership_partial_segregation';
+                if (isSegregation) {
+                    if (isNaN(orig) || orig <= 0) {
+                        shouldBeLocked = true;
+                    }
+                }
+            }
+
+            const isFullTransfer = caseTypeSelect && caseTypeSelect.value === 'transfer_ownership_tax_decl';
+            if (isFullTransfer) {
+                shouldBeLocked = true;
+            }
+
+            if (shouldBeLocked) {
+                transferredAreaInput.readOnly = true;
+            } else {
+                transferredAreaInput.readOnly = false;
+            }
+        }
+
         function evaluateLegacyState() {
             if (!legacyOverrideCheckbox) return;
+            const isLegacyDocUploaded = {% if case.legacy_document_scan %}true{% else %}false{% endif %} || (legacyFileInput && legacyFileInput.files && legacyFileInput.files.length > 0);
+
             if (legacyOverrideCheckbox.checked) {
                 if (legacyUploadWrapper) legacyUploadWrapper.style.display = 'block';
                 if (legacyFileInput) legacyFileInput.required = true;
                 
-                if (originalAreaInput) originalAreaInput.readOnly = false;
-                if (prevTdInput) prevTdInput.readOnly = false;
-                
-                const existingAjaxError = document.getElementById('td_ajax_error');
-                if (existingAjaxError) existingAjaxError.remove();
-                
-                // Unlock fields
-                const classificationSelectEl = document.getElementById('{{ form.classification.id_for_label }}');
-                if (classificationSelectEl) {
-                    classificationSelectEl.style.pointerEvents = 'auto';
-                    classificationSelectEl.style.backgroundColor = '';
-                    classificationSelectEl.setAttribute('name', 'classification');
-                    const hiddenCls = document.getElementById('hidden_classification_input');
-                    if (hiddenCls) hiddenCls.remove();
-                }
-                const localLguOriginSelect = document.getElementById('{{ form.area.id_for_label }}');
-                if (localLguOriginSelect) {
-                    localLguOriginSelect.style.pointerEvents = 'auto';
-                    localLguOriginSelect.style.backgroundColor = '';
-                    localLguOriginSelect.setAttribute('name', 'area');
-                    const hiddenLgu = document.getElementById('hidden_lgu_input');
-                    if (hiddenLgu) hiddenLgu.remove();
+                if (isLegacyDocUploaded) {
+                    if (originalAreaInput) originalAreaInput.readOnly = false;
+                    if (areaValueInput) areaValueInput.readOnly = false;
+                    if (prevTdInput) prevTdInput.readOnly = false;
+                    
+                    const existingAjaxError = document.getElementById('td_ajax_error');
+                    if (existingAjaxError) existingAjaxError.remove();
+                    
+                    const classificationSelectEl = document.getElementById('{{ form.classification.id_for_label }}');
+                    if (classificationSelectEl) {
+                        classificationSelectEl.style.pointerEvents = 'auto';
+                        classificationSelectEl.style.backgroundColor = '';
+                        classificationSelectEl.setAttribute('name', 'classification');
+                        const hiddenCls = document.getElementById('hidden_classification_input');
+                        if (hiddenCls) hiddenCls.remove();
+                    }
+                    const localLguOriginSelect = document.getElementById('{{ form.area.id_for_label }}');
+                    if (localLguOriginSelect) {
+                        localLguOriginSelect.style.pointerEvents = 'auto';
+                        localLguOriginSelect.style.backgroundColor = '';
+                        localLguOriginSelect.setAttribute('name', 'area');
+                        const hiddenLgu = document.getElementById('hidden_lgu_input');
+                        if (hiddenLgu) hiddenLgu.remove();
+                    }
+                } else {
+                    if (originalAreaInput) originalAreaInput.readOnly = true;
+                    if (areaValueInput) areaValueInput.readOnly = true;
+                    
+                    const classificationSelectEl = document.getElementById('{{ form.classification.id_for_label }}');
+                    if (classificationSelectEl) {
+                        classificationSelectEl.style.pointerEvents = 'none';
+                        classificationSelectEl.style.backgroundColor = '#e9ecef';
+                    }
                 }
             } else {
                 if (legacyUploadWrapper) legacyUploadWrapper.style.display = 'none';
                 if (legacyFileInput) legacyFileInput.required = false;
                 if (originalAreaInput) originalAreaInput.readOnly = true;
+                if (areaValueInput) areaValueInput.readOnly = false; // Restore standard logic
+                
                 if (prevTdInput && prevTdInput.value) {
-                    prevTdInput.dispatchEvent(new Event('blur')); // Retrigger validation lock
+                    prevTdInput.dispatchEvent(new Event('blur')); 
                 }
             }
+            evaluateTransferredAreaState();
         }
 
         if (legacyOverrideCheckbox) {
@@ -2265,8 +2337,80 @@
             }
         }
 
+        let previousCaseType = caseTypeSelect ? caseTypeSelect.value : '';
+
+        window.proceedWithCaseTypeChange = function(newValue) {
+            caseTypeSelect.value = newValue;
+            previousCaseType = newValue;
+            
+            const propTitleType = document.getElementById('{{ form.property_title_type.id_for_label }}');
+            if (propTitleType) propTitleType.value = '';
+            
+            const lotNumber = document.getElementById('{{ form.lot_number.id_for_label }}');
+            if (lotNumber) lotNumber.value = '';
+            
+            if (prevTdInput) {
+                prevTdInput.value = '';
+                prevTdInput.dispatchEvent(new Event('blur'));
+            }
+            
+            const classificationSelectEl = document.getElementById('{{ form.classification.id_for_label }}');
+            if (classificationSelectEl) classificationSelectEl.value = '';
+            
+            if (areaValueInput) areaValueInput.value = '';
+            if (originalAreaInput) originalAreaInput.value = '';
+            if (transferredAreaInput) transferredAreaInput.value = '';
+            
+            updateAreaFieldsVisibility();
+            calculateRemainingArea();
+        };
+
+        window.confirmCaseTypeChange = function() {
+            const modal = document.getElementById('changeCaseTypeModal');
+            if (modal) {
+                modal.style.display = 'none';
+                const newValue = modal.dataset.newValue;
+                
+                if (legacyOverrideCheckbox) {
+                    legacyOverrideCheckbox.checked = false;
+                }
+                if (legacyFileInput) {
+                    legacyFileInput.value = '';
+                }
+                if (legacyFileName) {
+                    legacyFileName.textContent = 'Select a file or drag and drop here';
+                    legacyFileName.style.color = '#1f2937';
+                }
+                
+                evaluateLegacyState();
+                proceedWithCaseTypeChange(newValue);
+            }
+        };
+
+        window.cancelCaseTypeChange = function() {
+            const modal = document.getElementById('changeCaseTypeModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        };
+
         if (caseTypeSelect) {
-            caseTypeSelect.addEventListener('change', updateAreaFieldsVisibility);
+            caseTypeSelect.addEventListener('change', function(e) {
+                const newValue = this.value;
+                const isLegacyChecked = legacyOverrideCheckbox && legacyOverrideCheckbox.checked;
+                const isLegacyDocUploaded = {% if case.legacy_document_scan %}true{% else %}false{% endif %} || (legacyFileInput && legacyFileInput.files && legacyFileInput.files.length > 0);
+                
+                if (isLegacyChecked && isLegacyDocUploaded) {
+                    const modal = document.getElementById('changeCaseTypeModal');
+                    if (modal) {
+                        modal.style.display = 'flex';
+                        modal.dataset.newValue = newValue;
+                        this.value = previousCaseType;
+                    }
+                } else {
+                    proceedWithCaseTypeChange(newValue);
+                }
+            });
             // Run on init
             updateAreaFieldsVisibility();
         }
@@ -2419,7 +2563,16 @@
             });
         }
 
+        function preventZeroStart(e) {
+            if (this.value === '0') {
+                this.value = '';
+            } else if (this.value.startsWith('0') && !this.value.startsWith('0.')) {
+                this.value = this.value.replace(/^0+/, '');
+            }
+        }
+
         if (originalAreaInput) {
+            originalAreaInput.addEventListener('input', preventZeroStart);
             originalAreaInput.addEventListener('input', function() {
                 const isFullTransfer = caseTypeSelect && caseTypeSelect.value === 'transfer_ownership_tax_decl';
                 const isLegacy = legacyOverrideCheckbox && legacyOverrideCheckbox.checked;
@@ -2428,12 +2581,28 @@
                         transferredAreaInput.value = originalAreaInput.value;
                     }
                 }
+                evaluateTransferredAreaState();
                 calculateRemainingArea();
             });
         }
 
         if (transferredAreaInput) {
-            transferredAreaInput.addEventListener('input', calculateRemainingArea);
+            let lastValidTransferred = transferredAreaInput.value;
+            transferredAreaInput.addEventListener('input', preventZeroStart);
+            transferredAreaInput.addEventListener('input', function(e) {
+                const orig = parseFloat(originalAreaInput.value) || 0;
+                let trans = parseFloat(this.value);
+                if (!isNaN(trans) && !isNaN(orig) && trans >= orig && orig > 0) {
+                    this.value = lastValidTransferred; // Revert to last valid value if it exceeds Original Area
+                } else {
+                    lastValidTransferred = this.value;
+                }
+                calculateRemainingArea();
+            });
+        }
+        
+        if (areaValueInput) {
+            areaValueInput.addEventListener('input', preventZeroStart);
         }
     });
 </script>

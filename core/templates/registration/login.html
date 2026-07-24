@@ -376,7 +376,7 @@
             </div>
             {% endif %}
 
-            <form method="post" x-data="{ showPwd: false }">
+            <form method="post" x-data="{ showPwd: false }" onsubmit="this.querySelector('button[type=submit]').disabled=true;">
                 {% csrf_token %}
 
                 <div class="form-group">

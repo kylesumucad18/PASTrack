@@ -321,15 +321,14 @@
                             {% if not case.previous_tax_dec_number or case.previous_tax_dec_number|lower == 'na' or case.previous_tax_dec_number|lower == 'none' or case.previous_tax_dec_number|lower == 'n/a' %}
                                 <span class="info-value" style="color: var(--text-muted); font-style: italic;">None</span>
                             {% else %}
-                                <span class="info-value">
+                                <span class="info-value" style="display: flex; align-items: center; gap: 0.5rem;">
                                     {% if case.is_legacy_override %}
-                                        {{ case.previous_tax_dec_number }}
+                                        {{ case.previous_tax_dec_number }} <span style="background: var(--primary-light, #e0e7ff); color: var(--primary, #4338ca); font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase;">Legacy</span>
                                     {% elif previous_case %}
                                         <a href="{% url 'case_detail' previous_case.tracking_id %}" class="text-primary text-decoration-underline">{{ case.previous_tax_dec_number }}</a>
                                     {% else %}
                                         {{ case.previous_tax_dec_number }}
                                     {% endif %}
-
                                 </span>
                             {% endif %}
                         </div>
@@ -880,10 +879,6 @@
                             {% endif %}
                         {% endif %}
 
-                        <button class="btn btn-outline btn-block" type="button" onclick="openEmailUpdateModal()" style="color: var(--primary); border-color: var(--primary); margin-bottom: 0.5rem;">
-                            <i class="ri-mail-send-line"></i> Send Email Update
-                        </button>
-
                         {% if is_examiner or request.user.id == case.assigned_to_id %}
                             <form id="examinerForwardForm" method="post" action="{% url 'submit_for_approval' case.tracking_id %}" class="btn-block">
                                 {% csrf_token %}
@@ -947,59 +942,15 @@
                         {% endif %}
 
                         {% if request.user.role == "super_admin" %}
-                            <form method="post" action="{% url 'mark_numbered' case.tracking_id %}" class="btn-block">
-                                {% csrf_token %}
-                                {% if case.case_type == 'transfer_ownership_partial_segregation' %}
-                                    <input
-                                        type="text"
-                                        inputmode="numeric"
-                                        pattern="\d{5}"
-                                        minlength="5"
-                                        maxlength="5"
-                                        name="transaction_number_transferred"
-                                        placeholder="Override TD Number (Transferred)"
-                                        class="form-control"
-                                        style="margin-bottom: 0.5rem;"
-                                        required
-                                        title="Please enter exactly 5 digits"
-                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
-                                    >
-                                    <input
-                                        type="text"
-                                        inputmode="numeric"
-                                        pattern="\d{5}"
-                                        minlength="5"
-                                        maxlength="5"
-                                        name="transaction_number_remaining"
-                                        placeholder="Override TD Number (Remaining)"
-                                        class="form-control"
-                                        style="margin-bottom: 0.5rem;"
-                                        required
-                                        title="Please enter exactly 5 digits"
-                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
-                                    >
-                                {% else %}
-                                    <input
-                                        type="text"
-                                        inputmode="numeric"
-                                        pattern="\d{5}"
-                                        minlength="5"
-                                        maxlength="5"
-                                        name="transaction_number"
-                                        value="{{ case.td_number|default:'' }}"
-                                        placeholder="Override Tax Declaration Number (5 digits)"
-                                        class="form-control"
-                                        style="margin-bottom: 0.5rem;"
-                                        required
-                                        title="Please enter exactly 5 digits"
-                                        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5)"
-                                    >
-                                {% endif %}
-                                <button class="btn btn-outline" type="submit" style="width:100%;">
-                                    <i class="ri-edit-2-line"></i> Override Tax Declaration Number
+                            <button class="btn btn-outline btn-block" type="button" onclick="openOverrideTdModal()" style="margin-bottom: 0.75rem;">
+                                <i class="ri-edit-2-line"></i> Override Tax Declaration Number
+                            </button>
+                            
+                            {% if case.status != 'released' %}
+                                <button class="btn btn-outline btn-block" type="button" onclick="openEmailUpdateModal()" style="color: var(--primary); border-color: var(--primary); margin-bottom: 0.75rem;">
+                                    <i class="ri-mail-send-line"></i> Send Email Update
                                 </button>
-
-                            </form>
+                            {% endif %}
 
                             <button class="btn btn-danger btn-block" type="button" onclick="openDeleteTransactionModal('{{ case.tracking_id }}')">
                                 <i class="ri-delete-bin-line"></i> Delete Transaction
@@ -1287,11 +1238,13 @@
             <div class="premium-action-area">
                 <form method="post" action="{% url 'reassign_case_examiner' case.tracking_id %}">
                     {% csrf_token %}
-                    <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Select Examiner</label>
+                    <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Select New Assigned Examiner</label>
                     <select name="assigned_to" required class="form-select" style="width: 100%; margin-bottom: 1.5rem; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem;">
-                        <option value="" disabled selected>Select from active staff...</option>
+                        {% if not case.assigned_to %}
+                            <option value="" disabled selected>Select from active staff...</option>
+                        {% endif %}
                         {% for ex in examiners %}
-                            <option value="{{ ex.id }}">{{ ex.full_name|default:ex.email }} ({{ ex.active_load|default:0 }})</option>
+                            <option value="{{ ex.id }}" {% if case.assigned_to and case.assigned_to.id == ex.id %}selected{% endif %}>{{ ex.full_name|default:ex.email }} ({{ ex.active_load|default:0 }})</option>
                         {% endfor %}
                     </select>
                     <div style="display: flex; gap: 0.75rem;">
@@ -2199,7 +2152,208 @@
     function closeInputTdModal() {
         document.getElementById('inputTdModal').style.display = 'none';
     }
+    
+    function openOverrideTdModal() {
+        document.getElementById('overrideTdModal').style.display = 'flex';
+    }
+    function closeOverrideTdModal() {
+        document.getElementById('overrideTdModal').style.display = 'none';
+    }
 </script>
+
+<!-- Override TD Number Modal -->
+<div id="overrideTdModal" class="premium-modal-overlay">
+    <div class="premium-parent">
+        <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
+        <div class="premium-div1 premium-card">
+            <div>
+                <h2 class="premium-modal-title">Override Tax Declaration Number</h2>
+                <div class="premium-modal-subtitle">Tracking No: {{ case.tracking_id }}</div>
+            </div>
+            <div class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</div>
+        </div>
+        <div class="premium-div3 premium-card">
+            <h3 class="premium-section-title"><i class="ri-information-line"></i> Case Information</h3>
+            <div class="premium-detail-grid">
+                <div><span class="premium-detail-label">Client Name</span><span class="premium-detail-value">{{ case.client_name }}</span></div>
+                <div><span class="premium-detail-label">Type of Case</span><span class="premium-detail-value">{{ case.get_case_type_display }}</span></div>
+                <div><span class="premium-detail-label">Date Filed</span><span class="premium-detail-value">{{ case.created_at|date:"M d, Y" }}</span></div>
+                {% if case.td_number %}
+                <div><span class="premium-detail-label">TD Number</span><span class="premium-detail-value">{{ case.td_number }}</span></div>
+                {% endif %}
+            </div>
+            
+            <h3 class="premium-section-title" style="margin-top: 8px;"><i class="ri-file-list-3-line"></i> Uploaded Documents</h3>
+            <div class="premium-doc-list">
+                {% for doc in documents %}
+                <div class="premium-doc-item">
+                    <div class="premium-doc-icon"><i class="ri-file-pdf-2-line"></i></div>
+                    <div class="premium-doc-info">
+                        <div class="premium-doc-name">{{ doc.doc_type }}</div>
+                        <div class="premium-doc-size">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No documents uploaded.</div>
+                {% endfor %}
+            </div>
+            
+            <div class="premium-action-area">
+                <form method="post" action="{% url 'mark_numbered' case.tracking_id %}">
+                    {% csrf_token %}
+                    {% if case.case_type == 'transfer_ownership_partial_segregation' %}
+                        <div style="margin-bottom: 1rem;">
+                            <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Override TD Number (Transferred Area)</label>
+                            <input type="text" id="overrideTdInputTransferred" inputmode="numeric" pattern="\d{5}" minlength="5" maxlength="5" name="transaction_number_transferred" placeholder="Override TD Number (Transferred)" class="form-control" required title="Please enter exactly 5 digits" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5); validateOverrideTd();" style="width: 100%; padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);">
+                            <small id="overrideTdStatusTransferred" style="display:block; margin-top: 0.25rem; font-size: 0.8rem;"></small>
+                        </div>
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Override TD Number (Remaining Area)</label>
+                            <input type="text" id="overrideTdInputRemaining" inputmode="numeric" pattern="\d{5}" minlength="5" maxlength="5" name="transaction_number_remaining" placeholder="Override TD Number (Remaining)" class="form-control" required title="Please enter exactly 5 digits" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5); validateOverrideTd();" style="width: 100%; padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);">
+                            <small id="overrideTdStatusRemaining" style="display:block; margin-top: 0.25rem; font-size: 0.8rem;"></small>
+                        </div>
+                    {% else %}
+                        <div style="margin-bottom: 1.5rem;">
+                            <label style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display:block; color: var(--text-main);">Override Tax Declaration Number (5 digits)</label>
+                            <input type="text" id="overrideTdInputSingle" inputmode="numeric" pattern="\d{5}" minlength="5" maxlength="5" name="transaction_number" value="{{ case.td_number|default:'' }}" placeholder="Override Tax Declaration Number (5 digits)" class="form-control" required title="Please enter exactly 5 digits" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 5); validateOverrideTd();" style="width: 100%; padding: 0.6rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);">
+                            <small id="overrideTdStatusSingle" style="display:block; margin-top: 0.25rem; font-size: 0.8rem;"></small>
+                        </div>
+                    {% endif %}
+                    
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeOverrideTdModal()">Cancel</button>
+                        <style>
+                            #overrideTdSubmitBtn:disabled {
+                                background-color: #f1f5f9 !important;
+                                border-color: #e2e8f0 !important;
+                                color: #94a3b8 !important;
+                                cursor: not-allowed !important;
+                            }
+                        </style>
+                        <button type="submit" id="overrideTdSubmitBtn" class="btn btn-primary" style="flex:1;" disabled>Override</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let overrideTdTimeout = null;
+    
+    function validateOverrideTd() {
+        const btn = document.getElementById('overrideTdSubmitBtn');
+        btn.disabled = true;
+
+        const singleInput = document.getElementById('overrideTdInputSingle');
+        const transferInput = document.getElementById('overrideTdInputTransferred');
+        const remainInput = document.getElementById('overrideTdInputRemaining');
+        
+        let inputsToCheck = [];
+        if (singleInput) {
+            inputsToCheck.push({ input: singleInput, status: document.getElementById('overrideTdStatusSingle') });
+        } else if (transferInput && remainInput) {
+            inputsToCheck.push({ input: transferInput, status: document.getElementById('overrideTdStatusTransferred') });
+            inputsToCheck.push({ input: remainInput, status: document.getElementById('overrideTdStatusRemaining') });
+        }
+
+        let allValidFormat = true;
+        inputsToCheck.forEach(item => {
+            const val = item.input.value;
+            if (val.length !== 5) {
+                allValidFormat = false;
+                if (val.length > 0) {
+                    item.status.innerText = "Must be 5 digits";
+                    item.status.style.color = "var(--danger-text, #dc3545)";
+                } else {
+                    item.status.innerText = "";
+                }
+            } else {
+                item.status.innerText = "Checking availability...";
+                item.status.style.color = "var(--text-muted)";
+            }
+        });
+
+        if (!allValidFormat) return;
+
+        if (overrideTdTimeout) clearTimeout(overrideTdTimeout);
+        overrideTdTimeout = setTimeout(async () => {
+            let allAvailable = true;
+            for (let item of inputsToCheck) {
+                const val = item.input.value;
+                try {
+                    const response = await fetch(`/api/check-td-exists/${val}/`);
+                    const data = await response.json();
+                    
+                    if (data.exists) {
+                        const currentTd = "{{ case.td_number|default:'' }}";
+                        if (val === currentTd) {
+                            allAvailable = false;
+                            item.status.innerText = "Current TD Number";
+                            item.status.style.color = "var(--text-muted)";
+                            continue;
+                        }
+                        
+                        allAvailable = false;
+                        item.status.innerText = "TD Number already exists!";
+                        item.status.style.color = "var(--danger-text, #dc3545)";
+                    } else {
+                        item.status.innerText = "TD Number is available";
+                        item.status.style.color = "var(--success-text, #198754)";
+                    }
+                } catch (error) {
+                    allAvailable = false;
+                    item.status.innerText = "Error checking availability";
+                    item.status.style.color = "var(--danger-text, #dc3545)";
+                }
+            }
+            if (allAvailable) {
+                btn.disabled = false;
+            }
+        }, 500);
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const single = document.getElementById('overrideTdInputSingle');
+        if (single && single.value.length === 5) {
+            validateOverrideTd();
+        }
+    });
+</script>
+            </div>
+        </div>
+        <div class="premium-div2 premium-card">
+            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
+            <div class="premium-timeline">
+                {% for log in recent_modal_logs %}
+                <div class="premium-log-item">
+                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
+                    <div class="premium-log-time">{{ log.created_at }}</div>
+                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
+                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
+                </div>
+                {% empty %}
+                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Releaser Modal -->
 <div id="releaserSubmitModal" class="premium-modal-overlay">

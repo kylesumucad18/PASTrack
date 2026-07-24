@@ -1019,6 +1019,8 @@ def _case_current_holder_label(case: Case) -> str:
 
 def _case_current_holder_detail(case: Case) -> str:
     status = getattr(case, "status", "") or ""
+    if status == "released":
+        return "Ready for Deletion"
     if status in {"to_examine", "in_review"}:
         u = getattr(case, "assigned_to", None)
         if u:
@@ -4059,6 +4061,10 @@ def draft_wizard(request, draft_id, step: int):
                     messages.success(request, "Draft saved.")
                     return redirect("drafts")
 
+                if "go_back" in request.POST:
+                    messages.success(request, "Draft checklist and uploads saved.")
+                    return redirect("draft_wizard", draft_id=case.draft_id, step=1)
+
                 messages.success(request, "Draft checklist and uploads saved.")
                 return redirect("draft_wizard", draft_id=case.draft_id, step=3)
         else:
@@ -4440,8 +4446,11 @@ def case_detail(request, tracking_id):
             "To be received by Receiver"
             if (getattr(case, "status", "") == "not_received" and getattr(case, "received_at", None) is None)
             else (
-                "Currently with Receiver (Correction needed)" if getattr(case, "status", "") == "client_correction"
-                else f"Currently with {_case_current_holder_label(case)}"
+                "Archived" if getattr(case, "status", "") == "released"
+                else (
+                    "Currently with Receiver (Correction needed)" if getattr(case, "status", "") == "client_correction"
+                    else f"Currently with {_case_current_holder_label(case)}"
+                )
             )
         ),
         "remarks": remarks,
@@ -4916,7 +4925,8 @@ def submissions(request):
             Q(client_first_name__icontains=search) |
             Q(client_last_name__icontains=search) |
             Q(client_email__icontains=search) |
-            Q(submitted_by__email__icontains=search)
+            Q(submitted_by__email__icontains=search) |
+            Q(td_number__icontains=search)
         )
 
     today = timezone.localtime(timezone.now()).date()
@@ -5961,6 +5971,9 @@ def mark_numbered(request, tracking_id):
                                 created_by=source_case.created_by,
                                 submitted_by=source_case.submitted_by,
                                 lgu_submitted_at=source_case.lgu_submitted_at,
+                                assigned_to=case.assigned_to,
+                                assigned_at=case.assigned_at,
+                                assigned_by=case.assigned_by,
                             )
                             AuditLog.objects.create(
                                 actor=request.user,
@@ -5968,6 +5981,19 @@ def mark_numbered(request, tracking_id):
                                 target_object=f"Case: {record_b.tracking_id}",
                                 details={"reason": f"Generated Record B (Remaining Area) from {source_case.tracking_id}"}
                             )
+
+                            approval_log = AuditLog.objects.filter(
+                                action="case_approval",
+                                target_object=f"Case: {case.tracking_id}"
+                            ).order_by("-created_at").first()
+                            
+                            if approval_log:
+                                AuditLog.objects.create(
+                                    actor=approval_log.actor,
+                                    action="case_approval",
+                                    target_object=f"Case: {record_b.tracking_id}",
+                                    details={"reason": f"System-generated inherited approval from {case.tracking_id}"}
+                                )
 
                             # Inherit documents without duplicating physical files
                             inherited_docs = []
@@ -6328,6 +6354,15 @@ def get_td_area(request, td_number):
         "success": False,
         "message": "Tax Dec Number not found or has no available area."
     })
+
+@login_required
+def check_td_exists(request, td_number):
+    """
+    API Endpoint: Checks if a given Tax Declaration Number already exists in the system.
+    Returns JSON with exists: true/false.
+    """
+    exists = Case.objects.filter(td_number=td_number).exists()
+    return JsonResponse({"exists": exists})
 
 
 def generate_case_pdf(request, tracking_id):

@@ -205,7 +205,7 @@
             
             <div class="search-bar flex-1">
                 <i class="ri-search-line"></i>
-                <input type="text" name="search" value="{{ selected_search }}" placeholder="Search tracking no, client name, or email...">
+                <input type="text" name="search" value="{{ selected_search }}" placeholder="Search tracking no, client name, email, or TD no...">
             </div>
 
             <select name="time_range" class="filter-select flex-1 min-w-0 text-sm" title="Sort/Filter by Date">
@@ -278,20 +278,23 @@
     <tr>
         <th class="col-case-no">Case Number</th>
         <th class="col-client">Client & Request</th>
-        <th>Ownership Type</th>
+        {% if request.user.role == 'super_admin' %}
+            <th style="padding-left: 10px;">Tax Declaration Number</th>
+        {% endif %}
+        <th style="padding-left: 10px;">Ownership Type</th>
         {% if request.user.role == 'capitol_numberer' %}
-            <th>Transaction Number</th>
+            <th style="padding-left: 10px;">Transaction Number</th>
         {% endif %}
         
         {% if tab == 'to_examine' or tab == 'in_review' %}
-            <th>Assigned To</th>
-            <th>Date Assigned</th>
+            <th style="padding-left: 10px;">Assigned To</th>
+            <th style="padding-left: 10px;">Date Assigned</th>
         {% else %}
-            <th>LGU Origin</th>
-            <th>Date Submitted</th>
+            <th style="padding-left: 10px;">LGU Origin</th>
+            <th style="padding-left: 10px;">Date Submitted</th>
         {% endif %}
         
-        <th class="col-status">Status</th>
+        <th class="col-status" style="padding-left: 10px;">Status</th>
         
         {% if scope == 'me' and tab != 'to_examine' %}
             <th style="text-align: right;">Action</th>
@@ -322,18 +325,23 @@
                 </div>
             {% endif %}
         </td>
-        <td>
+        {% if request.user.role == 'super_admin' %}
+            <td style="font-family: monospace; font-weight: 700; color: #1e293b; padding-left: 10px;">
+                {{ case.td_number|default:"—" }}
+            </td>
+        {% endif %}
+        <td style="padding-left: 10px;">
             <span class="request-subtext">{{ case.get_ownership_type_display|default:"-" }}</span>
         </td>
 
         {% if request.user.role == 'capitol_numberer' %}
-            <td style="font-family: monospace; font-weight: 700; color: #1e293b;">
+            <td style="font-family: monospace; font-weight: 700; color: #1e293b; padding-left: 10px;">
                 {{ case.td_number|default:"—" }}
             </td>
         {% endif %}
 
         {% if tab == 'to_examine' or tab == 'in_review' %}
-            <td>
+            <td style="padding-left: 10px;">
                 {% if case.assigned_to %}
                 <div class="user-info-cell">
                     <div class="avatar-circle">
@@ -348,13 +356,13 @@
                 <span class="text-muted italic">Not yet assigned</span>
                 {% endif %}
             </td>
-            <td><span class="date-text">{{ case.updated_at|date:"M d, Y" }}</span></td>
+            <td style="padding-left: 10px;"><span class="date-text">{{ case.updated_at|date:"M d, Y" }}</span></td>
         {% else %}
-            <td><span class="date-text">{{ case.area|default:"Direct" }}</span></td>
-            <td><span class="date-text">{{ case.created_at|date:"M d, Y" }}</span></td>
+            <td style="padding-left: 10px;"><span class="date-text">{{ case.area|default:"Direct" }}</span></td>
+            <td style="padding-left: 10px;"><span class="date-text">{{ case.created_at|date:"M d, Y" }}</span></td>
         {% endif %}
 
-        <td>
+        <td style="padding-left: 10px;">
             <span class="status-pill status-{{ case.status }}">
                 {{ case.get_status_display }}
             </span>
