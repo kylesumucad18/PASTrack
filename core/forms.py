@@ -213,8 +213,11 @@ class CaseDetailsForm(forms.ModelForm):
                 if not re.match(r'^[a-zA-Z0-9\-\s]{5,50}$', prev_td):
                     self.add_error("previous_tax_dec_number", "Legacy Tax Dec Number must be 5-50 characters long and contain only letters, numbers, dashes, and spaces.")
             else:
-                if not prev_td or prev_td.lower() in ["na", "n/a", "none", "new"]:
-                    self.add_error("previous_tax_dec_number", "A valid Previous Tax Dec Number is strictly required for these cases (cannot be NA or New).")
+                import re
+                if not prev_td or prev_td.lower() in ["na", "n/a", "none", "new"] or not re.match(r'^\d{5}$', prev_td):
+                    self.add_error("previous_tax_dec_number", "A valid Previous Tax Declaration Number is strictly required for this case type.")
+        else:
+            cleaned["previous_tax_dec_number"] = "N/A"
 
         if case_type == "transfer_ownership_partial_segregation":
             original_area = cleaned.get("original_area")

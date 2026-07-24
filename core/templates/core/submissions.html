@@ -239,6 +239,12 @@
                     {% endfor %}
                 </select>
 
+                <select name="is_legacy" class="filter-select flex-1 min-w-0 text-sm">
+                    <option value="all">All Legacy Status</option>
+                    <option value="yes" {% if selected_legacy == 'yes' %}selected{% endif %}>Has Legacy Record</option>
+                    <option value="no" {% if selected_legacy == 'no' %}selected{% endif %}>No Legacy Record</option>
+                </select>
+
                 <select name="examiner" class="filter-select flex-1 min-w-0 text-sm">
                     <option value="all">Examined By: All</option>
                     {% for ex in all_examiners %}
@@ -278,27 +284,20 @@
     <tr>
         <th class="col-case-no">Case Number</th>
         <th class="col-client">Client & Request</th>
-        {% if request.user.role == 'super_admin' %}
-            <th style="padding-left: 10px;">Tax Declaration Number</th>
-        {% endif %}
-        <th style="padding-left: 10px;">Ownership Type</th>
-        {% if request.user.role == 'capitol_numberer' %}
-            <th style="padding-left: 10px;">Transaction Number</th>
-        {% endif %}
+        <th style="padding-left: 5px;">Legacy Case</th>
+        <th style="padding-left: 5px;">Tax Declaration Number</th>
+        <th style="padding-left: 5px;">Ownership Type</th>
         
         {% if tab == 'to_examine' or tab == 'in_review' %}
-            <th style="padding-left: 10px;">Assigned To</th>
-            <th style="padding-left: 10px;">Date Assigned</th>
+            <th style="padding-left: 5px;">Assigned To</th>
+            <th style="padding-left: 5px;">Date Assigned</th>
         {% else %}
-            <th style="padding-left: 10px;">LGU Origin</th>
-            <th style="padding-left: 10px;">Date Submitted</th>
+            <th style="padding-left: 5px;">LGU Origin</th>
+            <th style="padding-left: 5px;">Date Submitted</th>
         {% endif %}
         
-        <th class="col-status" style="padding-left: 10px;">Status</th>
+        <th class="col-status" style="padding-left: 5px;">Status</th>
         
-        {% if scope == 'me' and tab != 'to_examine' %}
-            <th style="text-align: right;">Action</th>
-        {% endif %}
     </tr>
 </thead>
     <tbody>
@@ -325,23 +324,22 @@
                 </div>
             {% endif %}
         </td>
-        {% if request.user.role == 'super_admin' %}
-            <td style="font-family: monospace; font-weight: 700; color: #1e293b; padding-left: 10px;">
-                {{ case.td_number|default:"—" }}
-            </td>
-        {% endif %}
-        <td style="padding-left: 10px;">
+        <td style="padding-left: 5px;">
+            {% if case.is_legacy_override %}
+                <span style="background: var(--primary-light, #e0e7ff); color: var(--primary, #4338ca); font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 4px; letter-spacing: 0.5px; text-transform: uppercase;">Legacy</span>
+            {% else %}
+                <span class="text-muted" style="font-size: 0.85rem;">NA</span>
+            {% endif %}
+        </td>
+        <td style="font-family: monospace; font-weight: 700; color: #1e293b; padding-left: 5px;">
+            {{ case.td_number|default:"—" }}
+        </td>
+        <td style="padding-left: 5px;">
             <span class="request-subtext">{{ case.get_ownership_type_display|default:"-" }}</span>
         </td>
 
-        {% if request.user.role == 'capitol_numberer' %}
-            <td style="font-family: monospace; font-weight: 700; color: #1e293b; padding-left: 10px;">
-                {{ case.td_number|default:"—" }}
-            </td>
-        {% endif %}
-
         {% if tab == 'to_examine' or tab == 'in_review' %}
-            <td style="padding-left: 10px;">
+            <td style="padding-left: 5px;">
                 {% if case.assigned_to %}
                 <div class="user-info-cell">
                     <div class="avatar-circle">
@@ -356,25 +354,18 @@
                 <span class="text-muted italic">Not yet assigned</span>
                 {% endif %}
             </td>
-            <td style="padding-left: 10px;"><span class="date-text">{{ case.updated_at|date:"M d, Y" }}</span></td>
+            <td style="padding-left: 5px;"><span class="date-text">{{ case.updated_at|date:"M d, Y" }}</span></td>
         {% else %}
-            <td style="padding-left: 10px;"><span class="date-text">{{ case.area|default:"Direct" }}</span></td>
-            <td style="padding-left: 10px;"><span class="date-text">{{ case.created_at|date:"M d, Y" }}</span></td>
+            <td style="padding-left: 5px;"><span class="date-text">{{ case.area|default:"Direct" }}</span></td>
+            <td style="padding-left: 5px;"><span class="date-text">{{ case.created_at|date:"M d, Y" }}</span></td>
         {% endif %}
 
-        <td style="padding-left: 10px;">
+        <td style="padding-left: 5px;">
             <span class="status-pill status-{{ case.status }}">
                 {{ case.get_status_display }}
             </span>
         </td>
 
-        {% if scope == 'me' and tab != 'to_examine' %}
-        <td style="text-align: right;">
-            <a href="{% url 'case_detail' case.tracking_id %}" class="view-btn">
-                <i class="ri-arrow-right-line"></i>
-            </a>
-        </td>
-        {% endif %}
     </tr>
     {% endfor %}
 </tbody>

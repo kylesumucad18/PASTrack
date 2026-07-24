@@ -2080,51 +2080,40 @@
             const isSegregation = caseTypeSelect.value === 'transfer_ownership_partial_segregation';
             const isFullTransfer = caseTypeSelect.value === 'transfer_ownership_tax_decl';
 
-            const isFirstTime = caseTypeSelect.value === 'land_first_time';
-            let isImprovement = caseTypeSelect.value === 'building_improvements';
-            if (caseTypeSelect.selectedIndex >= 0) {
-                const selectedText = caseTypeSelect.options[caseTypeSelect.selectedIndex].text;
-                if (selectedText.includes('Building') || selectedText.includes('Improvements') || selectedText.includes('Machineries')) {
-                    isImprovement = true;
-                }
-            }
+            const strictCaseTypes = [
+                'transfer_ownership_tax_decl', 
+                'transfer_ownership_partial_segregation', 
+                'subdivision_consolidation', 
+                'reassessment_reclassification', 
+                'area_increase_decrease'
+            ];
+            
+            const isStrict = strictCaseTypes.includes(caseTypeSelect.value);
 
-            if (isFirstTime) {
-                if (prevTdLabel) prevTdLabel.innerHTML = 'Previous Tax Dec Number';
-                if (prevTdInput) {
-                    prevTdInput.readOnly = true;
-                    prevTdInput.value = 'NEW';
-                    prevTdInput.style.backgroundColor = '#f3f4f6';
-                    prevTdInput.style.color = '#6b7280';
-                    prevTdInput.style.pointerEvents = 'none';
-                    prevTdInput.required = false;
-                }
-                if (prevTdHelpText) prevTdHelpText.style.display = 'none';
-            } else if (isImprovement) {
-                if (prevTdLabel) prevTdLabel.innerHTML = 'Previous Tax Dec Number';
-                if (prevTdInput) {
-                    prevTdInput.readOnly = false;
-                    if (prevTdInput.value === 'NEW') prevTdInput.value = '';
-                    prevTdInput.style.backgroundColor = '';
-                    prevTdInput.style.color = '';
-                    prevTdInput.style.pointerEvents = 'auto';
-                    prevTdInput.required = false;
-                }
-                if (prevTdHelpText) prevTdHelpText.style.display = 'block';
-            } else {
+            if (isStrict) {
                 if (prevTdLabel) prevTdLabel.innerHTML = 'Previous Tax Dec Number<span class="text-danger">*</span>';
                 if (prevTdInput) {
                     prevTdInput.readOnly = false;
-                    if (prevTdInput.value === 'NEW') prevTdInput.value = '';
+                    if (prevTdInput.value === 'N/A' || prevTdInput.value === 'NEW') prevTdInput.value = '';
                     prevTdInput.style.backgroundColor = '';
                     prevTdInput.style.color = '';
                     prevTdInput.style.pointerEvents = 'auto';
-                    if (caseTypeSelect.value) {
-                        prevTdInput.required = true;
-                    } else {
-                        prevTdInput.required = false;
-                        if (prevTdLabel) prevTdLabel.innerHTML = 'Previous Tax Dec Number';
-                    }
+                    prevTdInput.style.cursor = 'auto';
+                    prevTdInput.placeholder = 'e.g. 12345 or TD-2023-12345';
+                    prevTdInput.required = true;
+                }
+                if (prevTdHelpText) prevTdHelpText.style.display = 'block';
+            } else {
+                if (prevTdLabel) prevTdLabel.innerHTML = 'Previous Tax Dec Number';
+                if (prevTdInput) {
+                    prevTdInput.readOnly = true;
+                    prevTdInput.value = 'N/A';
+                    prevTdInput.placeholder = 'Not Applicable';
+                    prevTdInput.style.backgroundColor = '#f3f4f6';
+                    prevTdInput.style.color = '#6b7280';
+                    prevTdInput.style.pointerEvents = 'none';
+                    prevTdInput.style.cursor = 'not-allowed';
+                    prevTdInput.required = false;
                 }
                 if (prevTdHelpText) prevTdHelpText.style.display = 'none';
             }

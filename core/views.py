@@ -4619,6 +4619,7 @@ def submissions(request):
     transaction_type = (request.GET.get("transaction_type") or "all").strip()
     ownership_type = (request.GET.get("ownership_type") or "all").strip()
     examiner_filter_id = (request.GET.get("examiner") or "all").strip()
+    is_legacy = (request.GET.get("is_legacy") or "all").strip()
     date_from_raw = (request.GET.get("date_from") or "").strip()
     date_to_raw = (request.GET.get("date_to") or "").strip()
 
@@ -4972,6 +4973,11 @@ def submissions(request):
     if date_to:
         qs = qs.filter(**{f"{date_field}__date__lte": date_to})
 
+    if is_legacy == 'yes':
+        qs = qs.filter(is_legacy_override=True)
+    elif is_legacy == 'no':
+        qs = qs.filter(is_legacy_override=False)
+
 
     number_q = (request.GET.get("number") or "").strip()
     if number_q:
@@ -5023,6 +5029,7 @@ def submissions(request):
         "selected_examiner": examiner_filter_id,
         "selected_date_from": date_from_raw,
         "selected_date_to": date_to_raw,
+        "selected_legacy": is_legacy,
         "qs_params": query.urlencode(),
         "qs_params_no_tab": query_no_tab.urlencode(),
         "lgu_list": lgu_list,
