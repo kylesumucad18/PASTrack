@@ -1,9 +1,19 @@
 {% extends "base_new.html" %}
+{% load static %}
 
-{% block title %}Transaction {{ case.tracking_id }} | LegalTrack{% endblock %}
+{% block title %}Transaction {{ case.tracking_id }} | LegalTrack
+
+{% endblock %}
 
 {% block extra_css %}
 <style>
+
+    .btn:disabled, .btn[disabled], .btn:disabled:hover, .btn[disabled]:hover {
+        opacity: 0.6 !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+    }
+
     /* ===== LAYOUT ===== */
     .case-container {
         max-width: 1400px; margin: 0 auto;
@@ -210,6 +220,10 @@
     
     .premium-action-area { border-top: 1px solid var(--border); padding-top: 16px; margin-top: auto; }
 </style>
+
+
+
+
 {% endblock %}
 
 {% block content %}
@@ -364,7 +378,7 @@
                     {% if show_internal and is_examiner %}
                         <form method="post" action="{% url 'review_case_documents' case.tracking_id %}">
                             {% csrf_token %}
-                            <table class="doc-table">
+                            <table class="doc-table" style="width: calc(100% - 10px); margin: 0 auto;">
                                 {% for doc in documents %}
                                 <tr id="doc_row_{{ doc.id }}" class="examiner-doc-row" data-is-new="{% if case.returned_at and doc.uploaded_at > case.returned_at %}true{% else %}false{% endif %}" style="transition: all 0.2s; border-left: 4px solid transparent;">
                                     <td class="doc-icon"><i class="ri-file-pdf-2-line"></i></td>
@@ -376,11 +390,12 @@
                                                 <i class="ri-check-double-line"></i> New File Uploaded
                                             </div>
                                         {% endif %}
-                                        <div class="doc-meta" style="margin-top: 0.5rem;">
+                                        <div class="doc-meta" style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
                                             <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
                                                 <input type="checkbox" name="reviewed_ok_{{ doc.id }}" value="1" class="doc-reviewed-ok" data-doc-id="{{ doc.id }}" {% if doc.reviewed_ok %}checked{% endif %}>
                                                 <span style="font-weight: 500;">Reviewed OK</span>
                                             </label>
+                                            <span id="doc_save_status_{{ doc.id }}" style="font-size: 0.8rem; transition: all 0.2s; opacity: 0; display: flex; align-items: center; gap: 4px;"></span>
                                         </div>
                                         <div class="doc-meta" style="margin-top: 0.5rem;">
                                             <div style="display: flex; gap: 0.5rem; align-items: center;">
@@ -484,6 +499,8 @@
                                             remark.value = '';
                                         }
                                         updateRowStyle(docId);
+                                        checkAllReviewed();
+                                        saveDocumentReview(docId);
                                     });
                                     updateRowStyle(cb.dataset.docId);
                                 });
@@ -497,6 +514,10 @@
                                             checkbox.checked = false;
                                         }
                                         updateRowStyle(docId);
+                                        checkAllReviewed();
+                                    });
+                                    input.addEventListener('change', function() {
+                                        saveDocumentReview(this.dataset.docId);
                                     });
                                 });
                                 document.querySelectorAll('.examiner-correction-upload-input').forEach(input => {
@@ -551,13 +572,73 @@
                             });
                             </script>
 
-                            {% if documents %}
-                                <div style="padding: 1rem 0;">
-                                    <button class="btn btn-outline" type="submit" style="width:100%;">
-                                        <i class="ri-save-3-line"></i> Save Document Review
-                                    </button>
-                                </div>
-                            {% endif %}
+                            <script>
+                            function checkAllReviewed() {
+                                const btn = document.getElementById('forwardToApproverBtn');
+                                if (!btn) return;
+                                if (btn.dataset.canSubmit !== "true") return;
+                                
+                                const checkboxes = document.querySelectorAll('.doc-reviewed-ok');
+                                let allChecked = true;
+                                checkboxes.forEach(cb => {
+                                    if (!cb.checked) allChecked = false;
+                                });
+                                
+                                if (allChecked) {
+                                    btn.disabled = false;
+                                    btn.style.opacity = '1';
+                                    btn.style.cursor = 'pointer';
+                                } else {
+                                    btn.disabled = true;
+                                    btn.style.opacity = '0.6';
+                                    btn.style.cursor = 'not-allowed';
+                                }
+                            }
+
+                            function saveDocumentReview(docId) {
+                                const row = document.getElementById('doc_row_' + docId);
+                                const checkbox = row.querySelector('.doc-reviewed-ok');
+                                const remark = row.querySelector('.doc-review-remark');
+                                const form = checkbox.closest('form');
+                                const statusEl = document.getElementById('doc_save_status_' + docId);
+                                
+                                if (statusEl) {
+                                    statusEl.innerHTML = '<i class="ri-loader-4-line ri-spin" style="color: var(--primary);"></i> <span style="color: var(--text-muted);">Saving...</span>';
+                                    statusEl.style.opacity = '1';
+                                }
+
+                                const formData = new FormData();
+                                formData.append('csrfmiddlewaretoken', form.querySelector('[name=csrfmiddlewaretoken]').value);
+                                formData.append('doc_id', docId);
+                                if (checkbox.checked) {
+                                    formData.append('reviewed_ok_' + docId, '1');
+                                }
+                                formData.append('review_remark_' + docId, remark.value.trim());
+                                
+                                fetch(form.action, {
+                                    method: 'POST',
+                                    body: formData,
+                                    headers: {
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    }
+                                })
+                                .then(() => {
+                                    if (statusEl) {
+                                        statusEl.innerHTML = '<i class="ri-check-line" style="color: #16a34a;"></i> <span style="color: #16a34a;">Saved</span>';
+                                        setTimeout(() => {
+                                            statusEl.style.opacity = '0';
+                                        }, 2000);
+                                    }
+                                    checkAllReviewed();
+                                })
+                                .catch(err => {
+                                    console.error("Error auto-saving document review:", err);
+                                    if (statusEl) {
+                                        statusEl.innerHTML = '<i class="ri-error-warning-line" style="color: #dc2626;"></i> <span style="color: #dc2626;">Error</span>';
+                                    }
+                                });
+                            }
+                            </script>
                         </form>
 
                         {% if document_versions %}
@@ -684,18 +765,19 @@
                     {% elif show_internal and is_approver %}
                         <form method="post" action="{% url 'review_case_documents' case.tracking_id %}">
                             {% csrf_token %}
-                            <table class="doc-table">
+                            <table class="doc-table" style="width: calc(100% - 10px); margin: 0 auto;">
                                 {% for doc in documents %}
                                 <tr id="approver_doc_row_{{ doc.id }}" class="approver-doc-row" style="transition: all 0.2s; border-left: 4px solid transparent;">
                                     <td class="doc-icon"><i class="ri-file-pdf-2-line"></i></td>
                                     <td>
                                         <div class="doc-name" style="font-weight: 600;">{{ doc.doc_type }}</div>
                                         <div class="doc-meta">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
-                                        <div class="doc-meta" style="margin-top: 0.5rem;">
+                                        <div class="doc-meta" style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
                                             <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer;">
                                                 <input type="checkbox" name="reviewed_ok_{{ doc.id }}" value="1" class="doc-reviewed-ok" data-doc-id="{{ doc.id }}" {% if doc.reviewed_ok %}checked{% endif %}>
                                                 <span style="font-weight: 500;">Reviewed OK</span>
                                             </label>
+                                            <span id="approver_doc_save_status_{{ doc.id }}" style="font-size: 0.8rem; transition: all 0.2s; opacity: 0; display: flex; align-items: center; gap: 4px;"></span>
                                         </div>
                                         <div class="doc-meta" style="margin-top: 0.5rem;">
                                             <input
@@ -726,6 +808,65 @@
                             
                             <script>
                             document.addEventListener("DOMContentLoaded", function() {
+                                function checkApproverAllReviewed() {
+                                    const allCheckboxes = Array.from(document.querySelectorAll('.approver-doc-row .doc-reviewed-ok'));
+                                    if (allCheckboxes.length === 0) return;
+                                    const allChecked = allCheckboxes.every(cb => cb.checked);
+                                    
+                                    const approveBtn = document.getElementById('approveBtn');
+                                    if (approveBtn) {
+                                        approveBtn.disabled = !allChecked;
+                                    }
+                                    const taxmapperBtn = document.getElementById('taxmapperBtn');
+                                    if (taxmapperBtn) {
+                                        taxmapperBtn.disabled = !allChecked;
+                                    }
+                                }
+
+                                function saveApproverDocumentReview(docId) {
+                                    const row = document.getElementById('approver_doc_row_' + docId);
+                                    const checkbox = row.querySelector('.doc-reviewed-ok');
+                                    const remark = row.querySelector('.doc-review-remark');
+                                    const form = checkbox.closest('form');
+                                    const statusEl = document.getElementById('approver_doc_save_status_' + docId);
+                                    
+                                    if (statusEl) {
+                                        statusEl.innerHTML = '<i class="ri-loader-4-line ri-spin" style="color: var(--primary);"></i> <span style="color: var(--text-muted);">Saving...</span>';
+                                        statusEl.style.opacity = '1';
+                                    }
+
+                                    const formData = new FormData();
+                                    formData.append('csrfmiddlewaretoken', form.querySelector('[name=csrfmiddlewaretoken]').value);
+                                    formData.append('doc_id', docId);
+                                    if (checkbox.checked) {
+                                        formData.append('reviewed_ok_' + docId, '1');
+                                    }
+                                    formData.append('review_remark_' + docId, remark.value.trim());
+                                    
+                                    fetch(form.action, {
+                                        method: 'POST',
+                                        body: formData,
+                                        headers: {
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        }
+                                    })
+                                    .then(() => {
+                                        if (statusEl) {
+                                            statusEl.innerHTML = '<i class="ri-check-line" style="color: #16a34a;"></i> <span style="color: #16a34a;">Saved</span>';
+                                            setTimeout(() => {
+                                                statusEl.style.opacity = '0';
+                                            }, 2000);
+                                        }
+                                        checkApproverAllReviewed();
+                                    })
+                                    .catch(err => {
+                                        console.error("Error auto-saving document review:", err);
+                                        if (statusEl) {
+                                            statusEl.innerHTML = '<i class="ri-error-warning-line" style="color: #dc2626;"></i> <span style="color: #dc2626;">Error</span>';
+                                        }
+                                    });
+                                }
+
                                 function updateApproverRowStyle(docId) {
                                     const row = document.getElementById('approver_doc_row_' + docId);
                                     if (!row) return;
@@ -753,6 +894,8 @@
                                             remark.value = '';
                                         }
                                         updateApproverRowStyle(docId);
+                                        checkApproverAllReviewed();
+                                        saveApproverDocumentReview(docId);
                                     });
                                     updateApproverRowStyle(cb.dataset.docId);
                                 });
@@ -766,18 +909,19 @@
                                             checkbox.checked = false;
                                         }
                                         updateApproverRowStyle(docId);
+                                        checkApproverAllReviewed();
+                                    });
+                                    input.addEventListener('change', function() {
+                                        saveApproverDocumentReview(this.dataset.docId);
                                     });
                                 });
+
+                                // Initial check on load
+                                checkApproverAllReviewed();
                             });
                             </script>
 
-                            {% if documents %}
-                            <div style="margin-top: 1rem; text-align: right;">
-                                <button type="submit" class="btn btn-primary" style="padding: 0.5rem 1rem;">
-                                    <i class="ri-save-line"></i> Save Remarks
-                                </button>
-                            </div>
-                            {% endif %}
+
                         </form>
                     {% else %}
                         <table class="doc-table">
@@ -883,12 +1027,14 @@
                             <form id="examinerForwardForm" method="post" action="{% url 'submit_for_approval' case.tracking_id %}" class="btn-block">
                                 {% csrf_token %}
                                 <button
+                                    id="forwardToApproverBtn"
                                     class="btn btn-primary"
                                     type="button"
                                     onclick="openExaminerForwardModal()"
+                                    data-can-submit="{% if can_submit_for_approval %}true{% else %}false{% endif %}"
                                     {% if not can_submit_for_approval or examiner_docs_blocked %}disabled{% endif %}
-                                    style="{% if not can_submit_for_approval or examiner_docs_blocked %}opacity:0.6; cursor:not-allowed;{% endif %} width:100%;"
->
+                                    style="{% if not can_submit_for_approval or examiner_docs_blocked %}opacity:0.6; cursor:not-allowed;{% endif %} width:100%; transition: all 0.2s;"
+                                >
                                     <i class="ri-send-plane-2-line"></i> Forward to Approver
                                 </button>
                             </form>
@@ -908,13 +1054,13 @@
 
                         {% if is_approver %}
                             {% if can_assign_taxmapper %}
-                                <button class="btn btn-primary btn-block" type="button" onclick="openTaxmapperAssignModal()">
+                                <button id="taxmapperBtn" class="btn btn-primary btn-block" type="button" onclick="openTaxmapperAssignModal()">
                                     <i class="ri-user-add-line"></i> Assign to Tax Mapper
                                 </button>
                             {% endif %}
 
                             {% if can_approve %}
-                                <button class="btn btn-primary btn-block" type="button" onclick="openApproveModal()">
+                                <button id="approveBtn" class="btn btn-primary btn-block" type="button" onclick="openApproveModal()">
                                     <i class="ri-check-line"></i> Approve
                                 </button>
                             {% endif %}
@@ -945,15 +1091,15 @@
                             <button class="btn btn-outline btn-block" type="button" onclick="openOverrideTdModal()" style="margin-bottom: 0.75rem;">
                                 <i class="ri-edit-2-line"></i> Override Tax Declaration Number
                             </button>
-                            
-                            {% if case.status != 'released' %}
-                                <button class="btn btn-outline btn-block" type="button" onclick="openEmailUpdateModal()" style="color: var(--primary); border-color: var(--primary); margin-bottom: 0.75rem;">
-                                    <i class="ri-mail-send-line"></i> Send Email Update
-                                </button>
-                            {% endif %}
 
                             <button class="btn btn-danger btn-block" type="button" onclick="openDeleteTransactionModal('{{ case.tracking_id }}')">
                                 <i class="ri-delete-bin-line"></i> Delete Transaction
+                            </button>
+                        {% endif %}
+
+                        {% if show_internal and case.status != 'released' %}
+                            <button class="btn btn-outline btn-block" type="button" onclick="openEmailUpdateModal()" style="color: var(--primary); border-color: var(--primary); margin-bottom: 0.75rem;">
+                                <i class="ri-mail-send-line"></i> Send Email Update
                             </button>
                         {% endif %}
 
@@ -1111,7 +1257,7 @@
 
 <!-- Assign Modal (Receiver) -->
 <div id="assignModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         
         <div class="premium-div1 premium-card">
@@ -1167,25 +1313,8 @@
             </div>
         </div>
 
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff">
-                        <div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>
-                        {{ log.actor_display }}
-                    </div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
-
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
@@ -1202,7 +1331,7 @@
 </script>
 
 <div id="reassignModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -1254,21 +1383,8 @@
                 </form>
             </div>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
@@ -1283,7 +1399,7 @@
 
 <!-- Return Modal (Receiver -> Client Correction) -->
 <div id="returnModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -1313,21 +1429,8 @@
                 </form>
             </div>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
@@ -1341,7 +1444,7 @@
 </script>
 
 <div id="deleteTransactionModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -1364,21 +1467,8 @@
                 </div>
             </form>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
@@ -1399,7 +1489,7 @@
 </script>
 
 <div id="receiveModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -1445,21 +1535,8 @@
                 </form>
             </div>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
@@ -1473,7 +1550,7 @@
 </script>
 
 <div id="emailUpdateModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -1506,21 +1583,8 @@
                 </form>
             </div>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
@@ -1534,7 +1598,7 @@
 </script>
 
 <div id="examinerReturnModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -1566,21 +1630,8 @@
                 </form>
             </div>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
@@ -1625,7 +1676,7 @@
 </script>
 
 <div id="approverReturnModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -1658,21 +1709,8 @@
                 </form>
             </div>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
@@ -1686,7 +1724,7 @@
 </script>
 
 <div id="approveModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -1729,26 +1767,13 @@
                 </div>
             </div>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
 <div id="assignNumbererModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -1799,21 +1824,8 @@
                 </form>
             </div>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
@@ -1834,7 +1846,7 @@
 </script>
 
 <div id="taxmapperAssignModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -1884,21 +1896,8 @@
                 </form>
             </div>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
@@ -1913,7 +1912,7 @@
 
 <!-- Transaction Corrected Modal (Receiver) -->
 <div id="transactionCorrectedModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -1936,21 +1935,8 @@
                 </div>
             </form>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
@@ -1994,7 +1980,7 @@
 
 <!-- Examiner Forward Modal -->
 <div id="examinerForwardModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -2033,25 +2019,12 @@
                 </div>
                 <div style="display: flex; gap: 0.75rem;">
                     <button type="button" class="btn btn-outline" style="flex:1;" onclick="closeExaminerForwardModal()">Cancel</button>
-                    <button type="button" class="btn btn-primary" style="flex:1;" onclick="document.getElementById('examinerForwardForm').submit()">Confirm</button>
+                    <button type="button" class="btn btn-primary" style="flex:1;" onclick="submitExaminerForward()">Confirm</button>
                 </div>
             </div>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
@@ -2062,11 +2035,18 @@
     function closeExaminerForwardModal() {
         document.getElementById('examinerForwardModal').style.display = 'none';
     }
+    function submitExaminerForward() {
+        if (window.PASLoader) {
+            window.PASLoader.show();
+            window.PASLoader.startFake();
+        }
+        document.getElementById('examinerForwardForm').submit();
+    }
 </script>
 
 <!-- Input TD Number Modal -->
 <div id="inputTdModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -2127,21 +2107,8 @@
                 </form>
             </div>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
@@ -2163,7 +2130,7 @@
 
 <!-- Override TD Number Modal -->
 <div id="overrideTdModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -2235,21 +2202,8 @@
                 </form>
             </div>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 
@@ -2337,27 +2291,12 @@
 </script>
             </div>
         </div>
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
     </div>
 </div>
 
 <!-- Releaser Modal -->
 <div id="releaserSubmitModal" class="premium-modal-overlay">
-    <div class="premium-parent">
+    <div class="premium-parent" style="position: relative; overflow: hidden;">
         <button type="button" class="premium-close-btn" onclick="this.closest('.premium-modal-overlay').style.display='none'"><i class="ri-close-line" style="font-size: 1.25rem;"></i></button>
         <div class="premium-div1 premium-card">
             <div>
@@ -2430,22 +2369,8 @@
                 </form>
             </div>
         </div>
-        
-        <div class="premium-div2 premium-card">
-            <h3 class="premium-section-title"><i class="ri-history-line"></i> Recent Activity</h3>
-            <div class="premium-timeline">
-                {% for log in recent_modal_logs %}
-                <div class="premium-log-item">
-                    <div class="premium-log-dot {% if log.is_success %}success{% else %}danger{% endif %}"></div>
-                    <div class="premium-log-time">{{ log.created_at }}</div>
-                    <div class="premium-log-action">{{ log.action_text|safe }}</div>
-                    <div class="premium-log-staff"><div class="premium-staff-avatar">{{ log.actor_display|first|upper }}</div>{{ log.actor_display }}</div>
-                </div>
-                {% empty %}
-                <div style="font-size: 0.85rem; color: var(--text-muted);">No activity recorded yet.</div>
-                {% endfor %}
-            </div>
-        </div>
+    
+        {% include "core/partials/case_milestones.html" %}
     </div>
 </div>
 

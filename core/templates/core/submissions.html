@@ -332,7 +332,11 @@
             {% endif %}
         </td>
         <td style="font-family: monospace; font-weight: 700; color: #1e293b; padding-left: 5px;">
-            {{ case.td_number|default:"—" }}
+            {% if case.td_number %}
+                {{ case.td_number }}
+            {% else %}
+                <span class="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded" style="font-size: 0.75rem; font-weight: 500; color: #6b7280; background-color: #f3f4f6; padding: 0.25rem 0.5rem; border-radius: 0.25rem;" title="Not Yet Numbered">NYN</span>
+            {% endif %}
         </td>
         <td style="padding-left: 5px;">
             <span class="request-subtext">{{ case.get_ownership_type_display|default:"-" }}</span>

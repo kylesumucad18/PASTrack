@@ -218,18 +218,46 @@
         font-size: 0.9rem;
         font-weight: 600;
         cursor: pointer;
-        transition: 0.2s;
+        transition: all 0.2s ease-in-out;
         border: none;
         text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .btn-primary {
-        background-color: #1e3a8a;
+        background-color: #2563eb;
         color: white;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
     }
 
     .btn-primary:hover {
-        background-color: #1e40af;
+        background-color: #1d4ed8;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    }
+    
+    .btn-primary:active {
+        transform: translateY(0);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-outline {
+        background-color: white;
+        color: #334155;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-outline:hover {
+        background-color: #f8fafc;
+        border-color: #94a3b8 !important;
+        color: #0f172a;
+    }
+    
+    .btn-outline:active {
+        background-color: #f1f5f9;
     }
 
     .btn-text {
@@ -237,10 +265,12 @@
         color: #64748b;
         padding: 0.65rem 1rem;
         text-decoration: none !important;
+        border-radius: 8px;
     }
 
     .btn-text:hover {
         color: #0f172a;
+        background-color: #f1f5f9;
     }
 
     .error-msg {
@@ -1098,10 +1128,25 @@
                     <div class="form-actions" style="justify-content: space-between;">
                         <div style="display: flex; gap: 1rem; align-items: center;">
                             <a href="{% url 'dashboard' %}" class="btn-text">Cancel</a>
-                            <button type="submit" name="save_draft" value="1" class="btn btn-outline"
-                                style="border: 1px solid var(--border);">Save as Draft</button>
+                            <button type="submit" id="btn-draft-step1" name="save_draft" value="1" class="btn btn-outline"
+                                style="border: 1px solid var(--border);" formnovalidate>Save as Draft</button>
                         </div>
                         <button type="submit" name="save_continue" value="1" class="btn btn-primary">Continue</button>
+                    </div>
+                    
+                    <!-- Minimalistic Validation Modal for Step 1 Draft -->
+                    <div id="step1DraftModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:9999; justify-content:center; align-items:center;">
+                        <div style="background:white; border-radius:12px; padding:1.5rem; width:340px; box-shadow:0 10px 40px rgba(0,0,0,0.15); text-align: center; animation: slideDown 0.2s ease;">
+                            <i class="ri-error-warning-line" style="font-size: 2.5rem; color: #f59e0b; margin-bottom: 0.25rem; display: block;"></i>
+                            <h3 style="margin:0 0 0.5rem 0; font-size:1.1rem; color:#0f172a;">Incomplete Information</h3>
+                            <p style="margin:0 0 1.25rem 0; font-size:0.9rem; color:#64748b;">
+                                Please input all the required fields in Step 1 before saving it as a draft.
+                            </p>
+                            <button type="button" onclick="document.getElementById('step1DraftModal').style.display='none';"
+                                style="width:100%; padding:0.6rem; border-radius:6px; background:#3b82f6; color:white; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; transition: 0.2s;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+                                Okay
+                            </button>
+                        </div>
                     </div>
                     <!-- Minimalistic Co-Owner Delete Modal -->
                     <div id="removeCoOwnerModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:9999; justify-content:center; align-items:center;">
@@ -1265,7 +1310,22 @@
                             <button type="submit" name="save_draft" value="1" class="btn btn-outline"
                                 style="border: 1px solid var(--border);">Save as Draft</button>
                         </div>
-                        <button type="submit" class="btn btn-primary">Continue</button>
+                        <button type="submit" class="btn btn-primary" id="btn-continue-step2">Continue</button>
+                    </div>
+
+                    <!-- Minimalistic Validation Modal for Step 2 Uploads -->
+                    <div id="noUploadsModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:9999; justify-content:center; align-items:center;">
+                        <div style="background:white; border-radius:12px; padding:1.5rem; width:340px; box-shadow:0 10px 40px rgba(0,0,0,0.15); text-align: center; animation: slideDown 0.2s ease;">
+                            <i class="ri-error-warning-line" style="font-size: 2.5rem; color: #f59e0b; margin-bottom: 0.25rem; display: block;"></i>
+                            <h3 style="margin:0 0 0.5rem 0; font-size:1.1rem; color:#0f172a;">Upload Required</h3>
+                            <p style="margin:0 0 1.25rem 0; font-size:0.9rem; color:#64748b;">
+                                Please upload at least 1 document to proceed to Step 3.
+                            </p>
+                            <button type="button" onclick="document.getElementById('noUploadsModal').style.display='none';"
+                                style="width:100%; padding:0.6rem; border-radius:6px; background:#3b82f6; color:white; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; transition: 0.2s;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+                                Okay
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Minimalistic Validation Modal -->
@@ -2592,6 +2652,143 @@
         
         if (areaValueInput) {
             areaValueInput.addEventListener('input', preventZeroStart);
+        }
+    });
+
+    // Step 2 Continue Validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnContinueStep2 = document.getElementById('btn-continue-step2');
+        if (btnContinueStep2) {
+            btnContinueStep2.addEventListener('click', function(e) {
+                const uploadedDocs = document.querySelectorAll('.doc-row.state-completed').length;
+                if (uploadedDocs === 0) {
+                    e.preventDefault();
+                    const modal = document.getElementById('noUploadsModal');
+                    if (modal) {
+                        modal.style.display = 'flex';
+                    }
+                }
+            });
+        }
+    });
+</script>
+
+<!-- Upload Processing Modal -->
+<div id="uploadProcessingModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
+    <div style="background:white; border-radius:12px; padding:2rem; width:340px; box-shadow:0 10px 40px rgba(0,0,0,0.15); text-align: center; animation: slideDown 0.2s ease;">
+        <i class="ri-loader-4-line" style="font-size: 3rem; color: #3b82f6; margin-bottom: 1rem; display: inline-block; animation: spin 1s linear infinite;"></i>
+        <h3 style="margin:0 0 0.5rem 0; font-size:1.15rem; color:#0f172a;">Processing Uploads</h3>
+        <p style="margin:0; font-size:0.9rem; color:#64748b;">
+            Your uploads are being processed. Please wait a bit.
+        </p>
+    </div>
+</div>
+<style>
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const fileInputs = form.querySelectorAll('input[type="file"]');
+                let hasFiles = false;
+                fileInputs.forEach(input => {
+                    if (input.files && input.files.length > 0) {
+                        hasFiles = true;
+                    }
+                });
+                
+                if (hasFiles && !e.defaultPrevented) {
+                    const modal = document.getElementById('uploadProcessingModal');
+                    if (modal) {
+                        modal.style.display = 'flex';
+                    }
+                    // Disable all submit buttons to prevent double submission
+                    const submitBtns = form.querySelectorAll('button[type="submit"]');
+                    submitBtns.forEach(btn => {
+                        // Use a short timeout so the form still submits the button's name/value
+                        setTimeout(() => {
+                            btn.disabled = true;
+                            btn.style.opacity = '0.7';
+                            btn.style.cursor = 'not-allowed';
+                        }, 50);
+                    });
+                }
+            });
+        });
+    });
+
+    // Step 1 Draft Validation
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnDraftStep1 = document.getElementById('btn-draft-step1');
+        
+        function showFrontendError(inputId, message) {
+            const inputEl = document.getElementById(inputId);
+            if (!inputEl) return;
+            const parent = inputEl.closest('.form-group') || inputEl.parentNode;
+            let errorSpan = parent.querySelector('.error-msg');
+            if (!errorSpan) {
+                errorSpan = document.createElement('span');
+                errorSpan.className = 'error-msg';
+                // If it's phone number wrapper, we need to append to the parent of input-prefix-wrapper
+                if (parent.querySelector('.input-prefix-wrapper')) {
+                    parent.appendChild(errorSpan);
+                } else {
+                    parent.appendChild(errorSpan);
+                }
+            }
+            errorSpan.innerText = message;
+        }
+
+        if (btnDraftStep1) {
+            btnDraftStep1.addEventListener('click', function(e) {
+                const step1Form = document.querySelector('.step-1-card form');
+                if (step1Form) {
+                    let isEmpty = true;
+                    
+                    // Explicitly check key fields to avoid false positives from checkboxes or default selects
+                    const fieldsToCheck = [
+                        'id_client_first_name',
+                        'id_client_last_name',
+                        'id_client_number',
+                        'id_client_email',
+                        'id_area',
+                        'id_case_type',
+                        'id_lot_number',
+                        'id_area_value'
+                    ];
+
+                    fieldsToCheck.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el && el.value && el.value.trim() !== '') {
+                            isEmpty = false;
+                        }
+                    });
+
+                    if (isEmpty) {
+                        e.preventDefault();
+                        const modal = document.getElementById('step1DraftModal');
+                        if (modal) {
+                            modal.style.display = 'flex';
+                        }
+                        
+                        // Show frontend validation errors
+                        showFrontendError('{{ form.client_first_name.id_for_label }}', 'First name is required.');
+                        showFrontendError('{{ form.client_last_name.id_for_label }}', 'Last name is required.');
+                        showFrontendError('{{ form.client_number.id_for_label }}', 'Input atleast one contact (Phone Number or Email)');
+                        showFrontendError('{{ form.area.id_for_label }}', 'LGU Origin is required.');
+                        showFrontendError('{{ form.case_type.id_for_label }}', 'Type of transaction is required.');
+                        showFrontendError('{{ form.lot_number.id_for_label }}', 'This field is required.');
+                        
+                        // Property Area might also need it if it's totally empty, but matching user screenshot for now
+                    }
+                }
+            });
         }
     });
 </script>
