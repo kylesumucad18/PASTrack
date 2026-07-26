@@ -1015,6 +1015,12 @@
                                     </button>
                                 {% endif %}
                                 
+                                {% if show_internal and case.status != 'released' %}
+                                    <button class="btn btn-outline btn-block" type="button" onclick="openEmailUpdateModal()" style="color: var(--primary); border-color: var(--primary); margin-bottom: 0.75rem;">
+                                        <i class="ri-mail-send-line"></i> Send Email Update
+                                    </button>
+                                {% endif %}
+                                
                                 {% if can_return %}
                                     <button class="btn btn-danger btn-block" type="button" onclick="openReturnModal()">
                                         <i class="ri-arrow-go-back-line"></i> Return to Client for Correction
@@ -1038,6 +1044,12 @@
                                     <i class="ri-send-plane-2-line"></i> Forward to Approver
                                 </button>
                             </form>
+
+                            {% if show_internal and case.status != 'released' %}
+                                <button class="btn btn-outline btn-block" type="button" onclick="openEmailUpdateModal()" style="color: var(--primary); border-color: var(--primary); margin-bottom: 0.75rem;">
+                                    <i class="ri-mail-send-line"></i> Send Email Update
+                                </button>
+                            {% endif %}
 
                             {% if can_return_to_receiving %}
                                 <button class="btn btn-outline btn-block" type="button" onclick="openExaminerReturnModal()">
@@ -1065,6 +1077,12 @@
                                 </button>
                             {% endif %}
 
+                            {% if show_internal and case.status != 'released' %}
+                                <button class="btn btn-outline btn-block" type="button" onclick="openEmailUpdateModal()" style="color: var(--primary); border-color: var(--primary); margin-bottom: 0.75rem;">
+                                    <i class="ri-mail-send-line"></i> Send Email Update
+                                </button>
+                            {% endif %}
+
                             {% if can_return_for_correction %}
                                 <button class="btn btn-outline btn-block" type="button" onclick="openApproverReturnModal()">
                                     <i class="ri-arrow-go-back-line"></i> Return to Examiner
@@ -1083,8 +1101,14 @@
 
                         {% if is_numberer and can_number %}
                             <button class="btn btn-primary btn-block" type="button" onclick="openInputTdModal()" style="padding: 0.6rem; border-radius: 6px; margin-bottom: 0.75rem;">
-                                <i class="ri-hashtag"></i> Input TD Number
+                                <i class="ri-hashtag"></i> Input Tax Declaration Number
                             </button>
+                            
+                            {% if show_internal and case.status != 'released' %}
+                                <button class="btn btn-outline btn-block" type="button" onclick="openEmailUpdateModal()" style="color: var(--primary); border-color: var(--primary); margin-bottom: 0.75rem;">
+                                    <i class="ri-mail-send-line"></i> Send Email Update
+                                </button>
+                            {% endif %}
                         {% endif %}
 
                         {% if request.user.role == "super_admin" %}
@@ -1094,12 +1118,6 @@
 
                             <button class="btn btn-danger btn-block" type="button" onclick="openDeleteTransactionModal('{{ case.tracking_id }}')">
                                 <i class="ri-delete-bin-line"></i> Delete Transaction
-                            </button>
-                        {% endif %}
-
-                        {% if show_internal and case.status != 'released' %}
-                            <button class="btn btn-outline btn-block" type="button" onclick="openEmailUpdateModal()" style="color: var(--primary); border-color: var(--primary); margin-bottom: 0.75rem;">
-                                <i class="ri-mail-send-line"></i> Send Email Update
                             </button>
                         {% endif %}
 

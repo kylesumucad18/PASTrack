@@ -2766,7 +2766,11 @@
                     fieldsToCheck.forEach(id => {
                         const el = document.getElementById(id);
                         if (el && el.value && el.value.trim() !== '') {
-                            isEmpty = false;
+                            // Ignore disabled/readonly fields (like LGU's prefilled area) 
+                            // so the form is still considered "empty" if the user hasn't typed anything.
+                            if (!el.disabled && !el.readOnly && el.type !== 'hidden') {
+                                isEmpty = false;
+                            }
                         }
                     });
 
