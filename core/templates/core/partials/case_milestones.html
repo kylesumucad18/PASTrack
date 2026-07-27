@@ -1,137 +1,21 @@
 <div class="premium-div2 premium-card">
     <h3 class="premium-section-title"><i class="ri-route-line"></i> Case Milestones</h3>
     <div class="premium-timeline">
-        
+        {% for ms in case_milestones %}
         <div class="premium-log-item">
-            <div class="premium-log-dot success"></div>
-            <div class="premium-log-time">{{ case.created_at|date:"M d, Y, h:i A" }}</div>
-            <div class="premium-log-action">Case Submitted</div>
+            <div class="premium-log-dot {{ ms.dot_class }}"></div>
+            <div class="premium-log-time">{{ ms.time }}</div>
+            <div class="premium-log-action">{{ ms.label }}</div>
             <div class="premium-log-staff">
-                {% if case.submitted_by %}
-                    <div class="premium-staff-avatar">{{ case.submitted_by.email|first|upper }}</div>
-                    {{ case.submitted_by.get_role_display|default:case.submitted_by.email }}
-                    {% if case.submitted_by.last_name or case.submitted_by.first_name %}
-                        - {{ case.submitted_by.last_name|default:"" }}, {{ case.submitted_by.first_name|default:"" }}
-                    {% elif case.submitted_by.full_name %}
-                        - {{ case.submitted_by.full_name }}
-                    {% endif %}
-                {% else %}
-                    <div class="premium-staff-avatar">S</div>
-                    System
-                {% endif %}
+                <div class="premium-staff-avatar">{{ ms.avatar }}</div>
+                {{ ms.actor_display }}
             </div>
         </div>
-
-        {% if case.received_at %}
+        {% empty %}
         <div class="premium-log-item">
-            <div class="premium-log-dot success"></div>
-            <div class="premium-log-time">{{ case.received_at|date:"M d, Y, h:i A" }}</div>
-            <div class="premium-log-action">Received</div>
-            <div class="premium-log-staff">
-                {% if case.received_by %}
-                    <div class="premium-staff-avatar">{{ case.received_by.email|first|upper }}</div>
-                    {{ case.received_by.get_role_display|default:case.received_by.email }}
-                    {% if case.received_by.last_name or case.received_by.first_name %}
-                        - {{ case.received_by.last_name|default:"" }}, {{ case.received_by.first_name|default:"" }}
-                    {% elif case.received_by.full_name %}
-                        - {{ case.received_by.full_name }}
-                    {% endif %}
-                {% endif %}
-            </div>
+            <div class="premium-log-time">No milestones recorded yet.</div>
         </div>
-        {% endif %}
-
-        {% if case.assigned_at %}
-        <div class="premium-log-item">
-            <div class="premium-log-dot success"></div>
-            <div class="premium-log-time">{{ case.assigned_at|date:"M d, Y, h:i A" }}</div>
-            <div class="premium-log-action">Examined / Assigned</div>
-            <div class="premium-log-staff">
-                {% if case.assigned_to %}
-                    <div class="premium-staff-avatar">{{ case.assigned_to.email|first|upper }}</div>
-                    {{ case.assigned_to.get_role_display|default:case.assigned_to.email }}
-                    {% if case.assigned_to.last_name or case.assigned_to.first_name %}
-                        - {{ case.assigned_to.last_name|default:"" }}, {{ case.assigned_to.first_name|default:"" }}
-                    {% elif case.assigned_to.full_name %}
-                        - {{ case.assigned_to.full_name }}
-                    {% endif %}
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
-
-        {% if case.approved_at %}
-        <div class="premium-log-item">
-            <div class="premium-log-dot success"></div>
-            <div class="premium-log-time">{{ case.approved_at|date:"M d, Y, h:i A" }}</div>
-            <div class="premium-log-action">Approved</div>
-        </div>
-        {% endif %}
-
-        {% if case.taxmapped_at %}
-        <div class="premium-log-item">
-            <div class="premium-log-dot success"></div>
-            <div class="premium-log-time">{{ case.taxmapped_at|date:"M d, Y, h:i A" }}</div>
-            <div class="premium-log-action">Taxmapped</div>
-            <div class="premium-log-staff">
-                {% if case.taxmapper_assigned_to %}
-                    <div class="premium-staff-avatar">{{ case.taxmapper_assigned_to.email|first|upper }}</div>
-                    {{ case.taxmapper_assigned_to.get_role_display|default:case.taxmapper_assigned_to.email }}
-                    {% if case.taxmapper_assigned_to.last_name or case.taxmapper_assigned_to.first_name %}
-                        - {{ case.taxmapper_assigned_to.last_name|default:"" }}, {{ case.taxmapper_assigned_to.first_name|default:"" }}
-                    {% elif case.taxmapper_assigned_to.full_name %}
-                        - {{ case.taxmapper_assigned_to.full_name }}
-                    {% endif %}
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
-
-        {% if case.numberer_assigned_at %}
-        <div class="premium-log-item">
-            <div class="premium-log-dot success"></div>
-            <div class="premium-log-time">{{ case.numberer_assigned_at|date:"M d, Y, h:i A" }}</div>
-            <div class="premium-log-action">Approved</div>
-            <div class="premium-log-staff">
-                {% if case.numberer_assigned_to %}
-                    <div class="premium-staff-avatar">{{ case.numberer_assigned_to.email|first|upper }}</div>
-                    Assigned to {{ case.numberer_assigned_to.get_role_display|default:case.numberer_assigned_to.email }}
-                    {% if case.numberer_assigned_to.last_name or case.numberer_assigned_to.first_name %}
-                        - {{ case.numberer_assigned_to.last_name|default:"" }}, {{ case.numberer_assigned_to.first_name|default:"" }}
-                    {% elif case.numberer_assigned_to.full_name %}
-                        - {{ case.numberer_assigned_to.full_name }}
-                    {% endif %}
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
-
-        {% if case.released_at %}
-        <div class="premium-log-item">
-            <div class="premium-log-dot success"></div>
-            <div class="premium-log-time">{{ case.released_at|date:"M d, Y, h:i A" }}</div>
-            <div class="premium-log-action">Released</div>
-        </div>
-        {% endif %}
-        
-        {% if case.returned_at %}
-        <div class="premium-log-item">
-            <div class="premium-log-dot danger"></div>
-            <div class="premium-log-time">{{ case.returned_at|date:"M d, Y, h:i A" }}</div>
-            <div class="premium-log-action">Returned</div>
-            <div class="premium-log-staff">
-                {% if case.returned_by %}
-                    <div class="premium-staff-avatar">{{ case.returned_by.email|first|upper }}</div>
-                    {{ case.returned_by.get_role_display|default:case.returned_by.email }}
-                    {% if case.returned_by.last_name or case.returned_by.first_name %}
-                        - {{ case.returned_by.last_name|default:"" }}, {{ case.returned_by.first_name|default:"" }}
-                    {% elif case.returned_by.full_name %}
-                        - {{ case.returned_by.full_name }}
-                    {% endif %}
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
+        {% endfor %}
 
     </div>
 </div>

@@ -426,11 +426,13 @@
                                         <input type="hidden" name="doc_id" value="{{ doc.id }}">
                                     </td>
                                     <td style="text-align: right; vertical-align: top;">
-                                        {% if case.returned_by and case.returned_by.role == 'capitol_approver' and doc.review_remark %}
-                                            <label class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin-right: 0.5rem; cursor: pointer; color: #3b82f6; border-color: #bfdbfe;">
-                                                <i class="ri-upload-cloud-2-line"></i> Upload New
-                                                <input type="file" class="examiner-correction-upload-input" data-doc-id="{{ doc.id }}" data-tracking-id="{{ case.tracking_id }}" style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-                                            </label>
+                                        {% if case.returned_by or case.return_reason %}
+                                            {% if doc.review_remark or not doc.reviewed_ok %}
+                                                <label class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin-right: 0.5rem; cursor: pointer; color: #3b82f6; border-color: #bfdbfe;">
+                                                    <i class="ri-upload-cloud-2-line"></i> Upload New
+                                                    <input type="file" class="examiner-correction-upload-input" data-doc-id="{{ doc.id }}" data-tracking-id="{{ case.tracking_id }}" style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                                                </label>
+                                            {% endif %}
                                         {% endif %}
                                         <a href="{% url 'download_case_document' doc.id %}" target="_blank" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
                                             Preview <i class="ri-external-link-line"></i>
@@ -641,27 +643,7 @@
                             </script>
                         </form>
 
-                        {% if document_versions %}
-                        <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1rem;">
-                            <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-muted);"><i class="ri-history-line"></i> Document Version History</h3>
-                            <table class="doc-table">
-                                {% for version in document_versions %}
-                                <tr>
-                                    <td class="doc-icon"><i class="ri-file-pdf-2-line" style="color: #94a3b8;"></i></td>
-                                    <td>
-                                        <div class="doc-name" style="font-weight: 500; color: #475569;">{{ version.doc_type }}</div>
-                                        <div class="doc-meta">Replaced on {{ version.uploaded_at|date:"M d, Y, h:i A" }}</div>
-                                    </td>
-                                    <td style="text-align: right; vertical-align: top;">
-                                        <a href="{{ version.file.url }}" target="_blank" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">
-                                            View Old Version <i class="ri-external-link-line"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </table>
-                        </div>
-                        {% endif %}
+
                     {% elif show_internal and is_receiver %}
                         <div style="margin-top: 1rem;">
                             <table class="doc-table">
@@ -686,7 +668,7 @@
                                         {% endif %}
                                     </td>
                                     <td style="text-align: right; vertical-align: top;">
-                                        {% if case.status == 'client_correction' or case.status == 'not_received' %}
+                                        {% if case.status == 'client_correction' or case.status == 'not_received' or case.status == 'received' %}
                                             {% if case.return_reason and not doc.reviewed_ok %}
                                                 <label class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin-right: 0.5rem; cursor: pointer;">
                                                     <i class="ri-upload-cloud-2-line"></i> Upload New
@@ -706,60 +688,7 @@
                                 {% endfor %}
                             </table>
                             <script>
-                            document.addEventListener("DOMContentLoaded", function() {
-                                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}';
-                                
-                                document.querySelectorAll('.correction-upload-input').forEach(input => {
-                                    input.addEventListener('change', function(e) {
-                                        if (!this.files.length) return;
-                                        const file = this.files[0];
-                                        const docId = this.dataset.docId;
-                                        const trackingId = this.dataset.trackingId;
-                                        const row = document.getElementById('receiver_doc_row_' + docId);
-                                        
-                                        const formData = new FormData();
-                                        formData.append('file', file);
-                                        
-                                        // UI Feedback
-                                        const btnLabel = this.parentElement;
-                                        const originalText = btnLabel.innerHTML;
-                                        btnLabel.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Uploading...';
-                                        btnLabel.style.pointerEvents = 'none';
-                                        
-                                        fetch(`/case/${trackingId}/upload-correction/${docId}/`, {
-                                            method: 'POST',
-                                            headers: {
-                                                'X-CSRFToken': csrfToken
-                                            },
-                                            body: formData
-                                        })
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            if (data.success) {
-                                                row.style.backgroundColor = '#eff6ff'; // blue background
-                                                row.style.borderLeft = '4px solid #3b82f6'; // blue border
-                                                
-                                                const badge = row.querySelector('.flagged-badge');
-                                                if (badge) {
-                                                    badge.innerHTML = `<i class="ri-check-double-line"></i> New File Uploaded (${data.uploaded_at})`;
-                                                    badge.style.color = '#2563eb';
-                                                }
-                                                btnLabel.innerHTML = '<i class="ri-check-line"></i> Uploaded';
-                                            } else {
-                                                alert(data.error || 'Failed to upload.');
-                                                btnLabel.innerHTML = originalText;
-                                                btnLabel.style.pointerEvents = 'auto';
-                                            }
-                                        })
-                                        .catch(err => {
-                                            console.error(err);
-                                            alert('An error occurred during upload.');
-                                            btnLabel.innerHTML = originalText;
-                                            btnLabel.style.pointerEvents = 'auto';
-                                        });
-                                    });
-                                });
-                            });
+                            // Script moved to the bottom of the Documents panel to share with LGU users
                             </script>
                         </div>
                     {% elif show_internal and is_approver %}
@@ -926,13 +855,30 @@
                     {% else %}
                         <table class="doc-table">
                             {% for doc in documents %}
-                            <tr>
+                            <tr style="{% if case.returned_at and doc.uploaded_at > case.returned_at %}background-color: #eff6ff; border-left: 4px solid #3b82f6;{% elif case.return_reason and not doc.reviewed_ok %}background-color: #fef2f2; border-left: 4px solid #dc2626;{% endif %} transition: all 0.2s;">
                                 <td class="doc-icon"><i class="ri-file-pdf-2-line"></i></td>
                                 <td>
-                                    <div class="doc-name">{{ doc.doc_type }}</div>
+                                    <div class="doc-name" style="font-weight: 600;">{{ doc.doc_type }}</div>
                                     <div class="doc-meta">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
+                                    {% if case.returned_at and doc.uploaded_at > case.returned_at %}
+                                        <div class="flagged-badge" style="margin-top: 0.5rem; font-size: 0.8rem; color: #2563eb; font-weight: 500;">
+                                            <i class="ri-check-double-line"></i> New File Uploaded
+                                        </div>
+                                    {% elif case.return_reason and not doc.reviewed_ok %}
+                                        <div class="flagged-badge" style="margin-top: 0.5rem; font-size: 0.8rem; color: #b91c1c; font-weight: 500;">
+                                            <i class="ri-error-warning-line"></i> Flagged: {{ doc.review_remark|default:"Needs correction" }}
+                                        </div>
+                                    {% endif %}
                                 </td>
-                                <td style="text-align: right;">
+                                <td style="text-align: right; vertical-align: top;">
+                                    {% if case.status == 'client_correction' or case.status == 'not_received' %}
+                                        {% if case.return_reason and not doc.reviewed_ok %}
+                                            <label class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin-right: 0.5rem; cursor: pointer;">
+                                                <i class="ri-upload-cloud-2-line"></i> Upload New
+                                                <input type="file" class="correction-upload-input" data-doc-id="{{ doc.id }}" data-tracking-id="{{ case.tracking_id }}" style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                                            </label>
+                                        {% endif %}
+                                    {% endif %}
                                     <a href="{% url 'download_case_document' doc.id %}" target="_blank" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
                                         Preview <i class="ri-external-link-line"></i>
                                     </a>
@@ -945,10 +891,90 @@
                             {% endfor %}
                         </table>
                     {% endif %}
+                    
+                    <script>
+                    document.addEventListener("DOMContentLoaded", function() {
+                        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}';
+                        
+                        document.querySelectorAll('.correction-upload-input').forEach(input => {
+                            input.addEventListener('change', function(e) {
+                                if (!this.files.length) return;
+                                const file = this.files[0];
+                                const docId = this.dataset.docId;
+                                const trackingId = this.dataset.trackingId;
+                                const row = this.closest('tr');
+                                
+                                const formData = new FormData();
+                                formData.append('file', file);
+                                
+                                // UI Feedback
+                                const btnLabel = this.parentElement;
+                                const originalText = btnLabel.innerHTML;
+                                btnLabel.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Uploading...';
+                                btnLabel.style.pointerEvents = 'none';
+                                
+                                fetch(`/case/${trackingId}/upload-correction/${docId}/`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRFToken': csrfToken
+                                    },
+                                    body: formData
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        row.style.backgroundColor = '#eff6ff'; // blue background
+                                        row.style.borderLeft = '4px solid #3b82f6'; // blue border
+                                        
+                                        const badge = row.querySelector('.flagged-badge');
+                                        if (badge) {
+                                            badge.innerHTML = `<i class="ri-check-double-line"></i> New File Uploaded (${data.uploaded_at})`;
+                                            badge.style.color = '#2563eb';
+                                        }
+                                        btnLabel.innerHTML = '<i class="ri-check-line"></i> Uploaded';
+                                    } else {
+                                        alert(data.error || 'Failed to upload.');
+                                        btnLabel.innerHTML = originalText;
+                                        btnLabel.style.pointerEvents = 'auto';
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error(err);
+                                    alert('An error occurred during upload.');
+                                    btnLabel.innerHTML = originalText;
+                                    btnLabel.style.pointerEvents = 'auto';
+                                });
+                            });
+                        });
+                    });
+                    </script>
+                    
+                    {% if document_versions and show_internal or document_versions and can_edit %}
+                    <div style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+                        <h3 style="font-size: 1rem; margin-bottom: 0.5rem; color: var(--text-muted);"><i class="ri-history-line"></i> Document Version History</h3>
+                        <table class="doc-table">
+                            {% for version in document_versions %}
+                            <tr>
+                                <td class="doc-icon"><i class="ri-file-pdf-2-line" style="color: #94a3b8;"></i></td>
+                                <td>
+                                    <div class="doc-name" style="font-weight: 500; color: #475569;">{{ version.doc_type }}</div>
+                                    <div class="doc-meta">Replaced on {{ version.uploaded_at|date:"M d, Y, h:i A" }}</div>
+                                </td>
+                                <td style="text-align: right; vertical-align: top;">
+                                    <a href="{{ version.file.url }}" target="_blank" class="btn btn-outline" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;">
+                                        View Old Version <i class="ri-external-link-line"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                    {% endif %}
+
                 </div>
             </div>
 
-            {% if archived_documents %}
+            {% if archived_documents and show_internal or archived_documents and can_edit %}
             <div class="panel">
                 <div class="panel-header"><h2 class="panel-title">Document History</h2></div>
                 <div class="panel-body" style="padding-top: 0; padding-bottom: 0;">
@@ -1010,7 +1036,9 @@
                                 {% endif %}
 
                                 {% if can_assign %}
-                                    <button class="btn btn-primary btn-block" type="button" onclick="openAssignModal('{{ case.tracking_id }}', '{{ case.client_name|escapejs }}')">
+                                    <button class="btn btn-primary btn-block" type="button" onclick="openAssignModal('{{ case.tracking_id }}', '{{ case.client_name|escapejs }}')"
+                                        {% if receiver_docs_blocked %}disabled{% endif %}
+                                        style="{% if receiver_docs_blocked %}opacity:0.6; cursor:not-allowed;{% endif %}">
                                         <i class="ri-user-add-line"></i> Assign to Examiner
                                     </button>
                                 {% endif %}
@@ -1066,13 +1094,17 @@
 
                         {% if is_approver %}
                             {% if can_assign_taxmapper %}
-                                <button id="taxmapperBtn" class="btn btn-primary btn-block" type="button" onclick="openTaxmapperAssignModal()">
+                                <button id="taxmapperBtn" class="btn btn-primary btn-block" type="button" onclick="openTaxmapperAssignModal()"
+                                    {% if approver_docs_blocked %}disabled{% endif %}
+                                    style="{% if approver_docs_blocked %}opacity:0.6; cursor:not-allowed;{% endif %}">
                                     <i class="ri-user-add-line"></i> Assign to Tax Mapper
                                 </button>
                             {% endif %}
 
                             {% if can_approve %}
-                                <button id="approveBtn" class="btn btn-primary btn-block" type="button" onclick="openApproveModal()">
+                                <button id="approveBtn" class="btn btn-primary btn-block" type="button" onclick="openApproveModal()"
+                                    {% if approver_docs_blocked %}disabled{% endif %}
+                                    style="{% if approver_docs_blocked %}opacity:0.6; cursor:not-allowed;{% endif %}">
                                     <i class="ri-check-line"></i> Approve
                                 </button>
                             {% endif %}
@@ -1714,11 +1746,13 @@
             
             <div class="premium-action-area" style="margin-top: auto;">
                 <h3 class="premium-section-title" style="margin-top: 8px;"><i class="ri-error-warning-line"></i> Reason for Return</h3>
-                <div style="font-size: 0.85rem; color: #0284c7; margin-bottom: 1rem; padding: 0.75rem; background-color: #f0f9ff; border-left: 3px solid #0284c7;">
+                <div id="approverReturnNote" style="font-size: 0.85rem; color: #0284c7; margin-bottom: 1rem; padding: 0.75rem; background-color: #f0f9ff; border-left: 3px solid #0284c7;">
                     <strong><i class="ri-information-line"></i> Note:</strong> You can optionally flag files with a <strong>Remark</strong> to specify exactly what needs correction.
                 </div>
+                <div id="approverReturnFlaggedFiles"></div>
                 <form method="post" action="{% url 'return_for_correction' case.tracking_id %}" style="display: flex; flex-direction: column;">
                     {% csrf_token %}
+                    <input type="hidden" name="flagged_docs" id="approverReturnFlaggedInput">
                     <textarea name="reason" class="remarks-input" placeholder="General instructions for the Examiner..." required style="min-height: 120px; margin-bottom: 1.5rem;"></textarea>
                     <div style="display: flex; gap: 0.75rem;">
                         <button type="button" class="btn btn-outline" style="flex:1" onclick="closeApproverReturnModal()">Cancel</button>
@@ -1734,7 +1768,39 @@
 
 <script>
     function openApproverReturnModal() {
-        document.getElementById('approverReturnModal').style.display = 'flex';
+        const modal = document.getElementById('approverReturnModal');
+        const flaggedContainer = document.getElementById('approverReturnFlaggedFiles');
+        const flaggedInput = document.getElementById('approverReturnFlaggedInput');
+        const returnNote = document.getElementById('approverReturnNote');
+        
+        let flaggedHtml = '';
+        let flaggedText = 'Flagged Documents:\n';
+        let hasFlags = false;
+        
+        document.querySelectorAll('.approver-doc-row').forEach(row => {
+            const remark = row.querySelector('.doc-review-remark');
+            if (!remark) return;
+            
+            if (remark.value.trim() !== '') {
+                hasFlags = true;
+                const docName = remark.getAttribute('data-doc-name');
+                const note = remark.value.trim() ? ` - ${remark.value.trim()}` : '';
+                flaggedHtml += `<li style="margin-bottom:0.25rem;"><strong>${docName}</strong>${note}</li>`;
+                flaggedText += `• ${docName}${note}\n`;
+            }
+        });
+        
+        if (hasFlags) {
+            flaggedContainer.innerHTML = `<div style="font-size: 0.85rem; color: #dc2626; margin-bottom: 0.5rem; font-weight: 600;">Flagged Documents:</div><ul style="font-size: 0.85rem; margin-bottom: 1rem; padding-left: 1.25rem; color: #991b1b;">${flaggedHtml}</ul>`;
+            flaggedInput.value = flaggedText.trim();
+            if (returnNote) returnNote.style.display = 'none';
+        } else {
+            flaggedContainer.innerHTML = '';
+            flaggedInput.value = '';
+            if (returnNote) returnNote.style.display = 'block';
+        }
+        
+        modal.style.display = 'flex';
     }
     function closeApproverReturnModal() {
         document.getElementById('approverReturnModal').style.display = 'none';

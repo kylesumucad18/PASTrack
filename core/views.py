@@ -4247,7 +4247,12 @@ def case_detail(request, tracking_id):
     can_number = bool(is_numberer and case.status == "for_numbering")
     can_release = bool(is_releaser and case.status == "for_release")
 
-    examiner_docs_blocked = bool(case.documents.exists() and case.documents.filter(reviewed_ok=False).exists())
+    has_unreviewed_docs = bool(case.documents.exists() and case.documents.filter(reviewed_ok=False).exists())
+    has_remarked_docs = bool(case.documents.exists() and case.documents.exclude(review_remark="").exclude(review_remark__isnull=True).exists())
+
+    examiner_docs_blocked = has_unreviewed_docs
+    approver_docs_blocked = has_remarked_docs
+    receiver_docs_blocked = has_remarked_docs
     examiner_forward_reason = ""
     if case.status not in {"to_examine", "in_review"}:
         examiner_forward_reason = "This transaction is not in the Examiner stage."
@@ -4403,6 +4408,87 @@ def case_detail(request, tracking_id):
             "is_success": log.action not in ["case_returned", "correction_requested"]
         })
 
+    milestone_logs = AuditLog.objects.filter(
+        Q(target_object=f"Case: {case.tracking_id}") | 
+        Q(target_object=f"Draft: {case.draft_id}")
+    ).filter(
+        action__in=[
+            "case_create", "case_receipt", "case_assignment", 
+            "case_status_change", "case_update", "case_approval", 
+            "case_numbered", "case_release"
+        ]
+    ).select_related("actor").order_by("created_at")
+
+    case_milestones = []
+    for log in milestone_logs:
+        if log.actor:
+            actor_name = getattr(log.actor, "last_name", "")
+            if not actor_name: actor_name = getattr(log.actor, "email", "").split("@")[0]
+            actor_role = log.actor.get_role_display()
+            if actor_role == "LGU Admin":
+                actor_role = "LGU"
+            actor_display = f"{actor_role} - {actor_name}"
+            avatar = (log.actor.email[0].upper() if log.actor.email else "U")
+        else:
+            actor_display = "System"
+            avatar = "S"
+
+        dot_class = "success"
+        action_label = ""
+        
+        if log.action == "case_create":
+            action_label = "Case Submitted"
+        elif log.action == "case_receipt":
+            action_label = "Received"
+        elif log.action == "case_assignment":
+            details = log.details or {}
+            if details.get("reassigned"):
+                action_label = "Reassigned"
+            else:
+                action_label = "Examined / Assigned"
+        elif log.action == "case_status_change":
+            details = log.details or {}
+            returned_to = details.get("returned_to")
+            if returned_to:
+                action_label = f"Returned to {returned_to}"
+                dot_class = "danger"
+            else:
+                new_status = details.get("new_status")
+                if new_status == "client_correction":
+                    action_label = "Returned to Client"
+                    dot_class = "danger"
+                elif new_status == "for_taxmapping":
+                    action_label = "Taxmapped"
+                else:
+                    continue
+        elif log.action == "case_update":
+            details = log.details or {}
+            if "corrected_document" in details:
+                if log.actor and (log.actor.role or "").endswith("_examiner"):
+                    action_label = "Corrected by Examiner"
+                elif log.actor and (log.actor.role or "").endswith("_receiving"):
+                    action_label = "Corrected by Capitol Staff"
+                else:
+                    action_label = "Corrected by Client"
+                dot_class = "success" # the user screenshot had green for corrected? The screenshot just showed returned as red. Corrected can be success.
+            else:
+                continue
+        elif log.action == "case_approval":
+            action_label = "Approved"
+        elif log.action == "case_numbered":
+            action_label = "Numbered / Tax Dec Issued"
+        elif log.action == "case_release":
+            action_label = "Released"
+            
+        if action_label:
+            case_milestones.append({
+                "time": timezone.localtime(log.created_at).strftime("%b %d, %Y, %I:%M %p").replace(' 0', ' '),
+                "label": action_label,
+                "actor_display": actor_display,
+                "avatar": avatar,
+                "dot_class": dot_class
+            })
+
     response_context = {
         "case": case,
         "previous_case": previous_case,
@@ -4423,6 +4509,8 @@ def case_detail(request, tracking_id):
         "has_submitted_correction": has_submitted_correction,
         "can_submit_for_approval": can_submit_for_approval,
         "examiner_docs_blocked": examiner_docs_blocked,
+        "approver_docs_blocked": approver_docs_blocked,
+        "receiver_docs_blocked": receiver_docs_blocked,
         "examiner_forward_reason": examiner_forward_reason,
         "can_return_to_receiving": can_return_to_receiving,
         "can_approve": can_approve,
@@ -4458,6 +4546,7 @@ def case_detail(request, tracking_id):
         "can_remark": can_remark,
         "remark_form": remark_form,
         "recent_modal_logs": recent_modal_logs,
+        "case_milestones": case_milestones,
     }
 
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
@@ -6268,7 +6357,7 @@ def upload_correction_document(request, tracking_id, doc_id):
     if role not in ["capitol_receiving", "capitol_examiner"]:
         return JsonResponse({"error": "Unauthorized to upload corrections inline."}, status=403)
         
-    if role == "capitol_receiving" and case.status not in {"client_correction", "not_received"}:
+    if role == "capitol_receiving" and case.status not in {"client_correction", "not_received", "received"}:
         return JsonResponse({"error": "Case is not in correction state for Receiver."}, status=400)
         
     if role == "capitol_examiner" and case.status not in {"in_review", "to_examine"}:
