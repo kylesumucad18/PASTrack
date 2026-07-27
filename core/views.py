@@ -4420,6 +4420,7 @@ def case_detail(request, tracking_id):
     ).select_related("actor").order_by("created_at")
 
     case_milestones = []
+    seen_case_create = False
     for log in milestone_logs:
         if log.actor:
             actor_name = getattr(log.actor, "last_name", "")
@@ -4437,6 +4438,9 @@ def case_detail(request, tracking_id):
         action_label = ""
         
         if log.action == "case_create":
+            if seen_case_create:
+                continue
+            seen_case_create = True
             action_label = "Case Submitted"
         elif log.action == "case_receipt":
             action_label = "Received"
@@ -4463,14 +4467,15 @@ def case_detail(request, tracking_id):
                     continue
         elif log.action == "case_update":
             details = log.details or {}
-            if "corrected_document" in details:
+            corrected_doc = details.get("corrected_document")
+            if corrected_doc:
                 if log.actor and (log.actor.role or "").endswith("_examiner"):
-                    action_label = "Corrected by Examiner"
+                    action_label = f"{corrected_doc}\nCorrected by Examiner"
                 elif log.actor and (log.actor.role or "").endswith("_receiving"):
-                    action_label = "Corrected by Capitol Staff"
+                    action_label = f"{corrected_doc}\nCorrected by Capitol Staff"
                 else:
-                    action_label = "Corrected by Client"
-                dot_class = "success" # the user screenshot had green for corrected? The screenshot just showed returned as red. Corrected can be success.
+                    action_label = f"{corrected_doc}\nCorrected by Client"
+                dot_class = "success"
             else:
                 continue
         elif log.action == "case_approval":
@@ -4536,11 +4541,12 @@ def case_detail(request, tracking_id):
             else (
                 "Archived" if getattr(case, "status", "") == "released"
                 else (
-                    "Currently with Receiver (Correction needed)" if getattr(case, "status", "") == "client_correction"
+                    "Currently with Receiver" if getattr(case, "status", "") == "client_correction"
                     else f"Currently with {_case_current_holder_label(case)}"
                 )
             )
         ),
+        "workflow_status_subtext": "Correction needed" if getattr(case, "status", "") == "client_correction" else "",
         "remarks": remarks,
         "history": history,
         "can_remark": can_remark,

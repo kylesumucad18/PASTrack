@@ -872,12 +872,7 @@
                                 </td>
                                 <td style="text-align: right; vertical-align: top;">
                                     {% if case.status == 'client_correction' or case.status == 'not_received' %}
-                                        {% if case.return_reason and not doc.reviewed_ok %}
-                                            <label class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; margin-right: 0.5rem; cursor: pointer;">
-                                                <i class="ri-upload-cloud-2-line"></i> Upload New
-                                                <input type="file" class="correction-upload-input" data-doc-id="{{ doc.id }}" data-tracking-id="{{ case.tracking_id }}" style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
-                                            </label>
-                                        {% endif %}
+                                        <!-- Removed Upload New button for LGU client; only Receiver can upload -->
                                     {% endif %}
                                     <a href="{% url 'download_case_document' doc.id %}" target="_blank" class="btn btn-outline" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">
                                         Preview <i class="ri-external-link-line"></i>
@@ -1012,6 +1007,9 @@
                     <div class="panel-body">
                         <div style="padding: 0.9rem; background: var(--inactive-bg); border-radius: 8px; color: var(--text-muted); text-align: center; margin-bottom: 1rem;">
                             <p style="margin: 0; font-weight: 600; color: var(--text-main);">{{ workflow_status_text }}</p>
+                            {% if workflow_status_subtext %}
+                                <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; color: #dc2626;">{{ workflow_status_subtext }}</p>
+                            {% endif %}
                             {% if current_holder_detail %}
                                 <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem;">{{ current_holder_detail }}</p>
                             {% endif %}
