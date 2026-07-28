@@ -99,6 +99,15 @@
 
         .status-for_taxmapping, .status-for_approval, .status-for_numbering, .status-for_release { background: #f3e8ff; color: #6b21a8; border-color: #e9d5ff; }
         .status-for_taxmapping::before, .status-for_approval::before, .status-for_numbering::before, .status-for_release::before { background-color: #6b21a8; }
+        
+        .correction-mini-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 20px; height: 20px; border-radius: 50%;
+            background: #fee2e2; color: #dc2626; border: 1px solid #fecaca;
+            font-size: 12px; cursor: help; margin-left: 0.25rem;
+            vertical-align: middle; transition: 0.2s;
+        }
+        .correction-mini-badge:hover { background: #fecaca; }
 
         .action-btn { border: none; background: transparent; cursor: pointer; color: var(--primary); padding: 0.4rem; border-radius: var(--radius-md); transition: 0.2s; font-size: 1.1rem; text-decoration: none;}
         .action-btn:hover { background: var(--primary-light); color: var(--primary-hover); }
@@ -364,10 +373,15 @@
             <td style="padding-left: 5px;"><span class="date-text">{{ case.created_at|date:"M d, Y" }}</span></td>
         {% endif %}
 
-        <td style="padding-left: 5px;">
+        <td style="padding-left: 5px; white-space: nowrap;">
             <span class="status-pill status-{{ case.status }}">
                 {{ case.get_status_display }}
             </span>
+            {% if case.has_corrections %}
+                <span class="correction-mini-badge" title="This case has a history of corrections">
+                    <i class="ri-error-warning-fill"></i>
+                </span>
+            {% endif %}
         </td>
 
     </tr>

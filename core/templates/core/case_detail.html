@@ -219,6 +219,177 @@
     .premium-staff-avatar { width: 20px; height: 20px; background: var(--border); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; color: var(--text-main); font-weight: 600; }
     
     .premium-action-area { border-top: 1px solid var(--border); padding-top: 16px; margin-top: auto; }
+
+    /* ── Wrapper ───────────────────────────────── */
+    .correction-badge-wrapper {
+        position: relative;
+        display: inline-block;
+        vertical-align: middle;
+        margin-left: 10px;
+    }
+
+    /* ── Badge ─────────────────────────────────── */
+    .correction-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+        border-radius: 99px;
+        padding: 0.3rem 0.8rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+        white-space: nowrap;
+        letter-spacing: 0.2px;
+    }
+    .correction-badge:hover,
+    .correction-badge.active {
+        background: #fecaca;
+        border-color: #fca5a5;
+    }
+    .correction-badge-icon {
+        font-size: 0.8rem;
+        line-height: 1;
+    }
+    .correction-badge-count {
+        background: #dc2626;
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 0.1rem 0.4rem;
+        border-radius: 999px;
+        letter-spacing: 0.5px;
+    }
+
+    /* ── Tooltip Container ──────────────────────── */
+    .correction-tooltip {
+        position: absolute;
+        top: calc(100% + 10px);
+        left: 50%;
+        transform: translateX(-50%);
+        width: 310px;
+        background: #ffffff;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(220, 38, 38, 0.15),
+                    0 2px 6px rgba(220, 38, 38, 0.1);
+        z-index: 9999;
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.2s ease, 
+                    visibility 0.2s ease,
+                    transform 0.2s ease;
+        transform: translateX(-50%) translateY(-4px);
+    }
+    .correction-tooltip.visible {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    /* ── Tooltip Header ─────────────────────────── */
+    .tooltip-header {
+        padding: 12px 14px 10px;
+        border-bottom: 1px solid #fee2e2;
+    }
+    .tooltip-title {
+        display: block;
+        font-size: 14px;
+        font-weight: 700;
+        color: #dc2626;
+        margin-bottom: 3px;
+        letter-spacing: 0.3px;
+    }
+    .tooltip-subtitle {
+        display: block;
+        font-size: 12px;
+        color: #7f1d1d;
+    }
+
+    /* ── Tooltip Entries ────────────────────────── */
+    .tooltip-entries {
+        max-height: 220px;
+        overflow-y: auto;
+        padding: 8px 0;
+        scrollbar-width: thin;
+        scrollbar-color: #fecaca transparent;
+    }
+    .tooltip-entry {
+        padding: 10px 14px;
+        border-bottom: 1px solid #fecaca;
+    }
+    .tooltip-entry:last-child {
+        border-bottom: none;
+    }
+    .tooltip-entry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+    .tooltip-who {
+        font-size: 13px;
+        font-weight: 600;
+        color: #991b1b;
+    }
+    .tooltip-role {
+        font-size: 12px;
+        font-weight: 400;
+        color: #dc2626;
+    }
+    .tooltip-date {
+        font-size: 11px;
+        color: #7f1d1d;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .tooltip-reason {
+        font-size: 12px;
+        color: #991b1b;
+        line-height: 1.45;
+        background: #fff5f5;
+        border-left: 2px solid #dc2626;
+        border-radius: 0 4px 4px 0;
+        padding: 6px 10px;
+    }
+    .tooltip-reason-label {
+        font-weight: 600;
+        color: #dc2626;
+        margin-right: 4px;
+    }
+
+    /* ── Tooltip Arrow ──────────────────────────── */
+    .tooltip-arrow {
+        position: absolute;
+        top: -6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 12px;
+        height: 12px;
+        background: #ffffff;
+        border-left: 1px solid #fecaca;
+        border-top: 1px solid #fecaca;
+        border-radius: 2px;
+        transform: translateX(-50%) rotate(45deg);
+    }
+
+    /* ── Viewport edge fix: flip left if near right edge ── */
+    .correction-tooltip.flip-left {
+        left: auto;
+        right: 0;
+        transform: translateX(0) translateY(0);
+    }
+    .correction-tooltip.flip-left .tooltip-arrow {
+        left: auto;
+        right: 16px;
+        transform: translateX(0) rotate(45deg);
+    }
 </style>
 
 
@@ -236,6 +407,70 @@
             <div class="title-block">
                 <h1>{{ case.tracking_id }}</h1>
                 <span class="status-pill status-{{ case.status }}">{{ case.get_status_display }}</span>
+
+                {% if correction_count %}
+                <div class="correction-badge-wrapper">
+
+                  <!-- Badge -->
+                  <button 
+                    type="button"
+                    class="correction-badge"
+                    id="correction-badge-btn"
+                    aria-describedby="correction-tooltip"
+                    data-correction-count="{{ correction_count }}"
+                  >
+                    <span class="correction-badge-icon">&#9888;</span>
+                    Corrected
+                    <span class="correction-badge-count">
+                      {{ correction_count }}x
+                    </span>
+                  </button>
+
+                  <!-- Tooltip -->
+                  <div 
+                    class="correction-tooltip" 
+                    id="correction-tooltip"
+                    role="tooltip"
+                    aria-hidden="true"
+                  >
+                    <div class="tooltip-header">
+                      <span class="tooltip-title">
+                        &#9888; Correction History
+                      </span>
+                      <span class="tooltip-subtitle">
+                        This case was returned {{ correction_count }} 
+                        time{{ correction_count|pluralize }} for correction
+                      </span>
+                    </div>
+
+                    <div class="tooltip-entries">
+                      {% for c in corrections %}
+                      <div class="tooltip-entry">
+                        <div class="tooltip-entry-header">
+                          <span class="tooltip-who">
+                            {{ c.returned_by }}
+                            <span class="tooltip-role">
+                              ({{ c.role }})
+                            </span>
+                          </span>
+                          <span class="tooltip-date">{{ c.date }}</span>
+                        </div>
+                        <div class="tooltip-reason">
+                          <span class="tooltip-reason-label">
+                            Reason:
+                          </span>
+                          {{ c.reason|linebreaksbr }}
+                        </div>
+                      </div>
+                      {% endfor %}
+                    </div>
+
+                    <!-- Tooltip arrow -->
+                    <div class="tooltip-arrow"></div>
+                  </div>
+
+                </div>
+                {% endif %}
             </div>
             <div class="header-actions" style="display: flex; gap: 0.5rem; align-items: center;">
                 <a class="btn btn-outline" href="{% url 'case_pdf' case.tracking_id %}" target="_blank"><i class="ri-printer-line"></i> Print Case Details</a>
@@ -2464,6 +2699,71 @@
     function closeReleaserModal() {
         document.getElementById('releaserSubmitModal').style.display = 'none';
     }
+</script>
+
+<script>
+(function () {
+  const badge   = document.getElementById('correction-badge-btn');
+  const tooltip = document.getElementById('correction-tooltip');
+  if (!badge || !tooltip) return;
+
+  let hideTimer = null;
+
+  function showTooltip() {
+    clearTimeout(hideTimer);
+    tooltip.classList.add('visible');
+    badge.classList.add('active');
+
+    // Viewport edge detection — flip if too close to right
+    const rect = tooltip.getBoundingClientRect();
+    if (rect.right > window.innerWidth - 16) {
+      tooltip.classList.add('flip-left');
+    } else {
+      tooltip.classList.remove('flip-left');
+    }
+    tooltip.setAttribute('aria-hidden', 'false');
+  }
+
+  function hideTooltip() {
+    hideTimer = setTimeout(function () {
+      tooltip.classList.remove('visible');
+      badge.classList.remove('active');
+      tooltip.setAttribute('aria-hidden', 'true');
+    }, 120);
+  }
+
+  // ── Desktop: hover ─────────────────────────
+  badge.addEventListener('mouseenter', showTooltip);
+  badge.addEventListener('mouseleave', hideTooltip);
+  tooltip.addEventListener('mouseenter', function () {
+    clearTimeout(hideTimer);
+  });
+  tooltip.addEventListener('mouseleave', hideTooltip);
+
+  // ── Mobile: tap toggle ─────────────────────
+  badge.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (tooltip.classList.contains('visible')) {
+      hideTooltip();
+    } else {
+      showTooltip();
+    }
+  });
+
+  // ── Close on outside click ─────────────────
+  document.addEventListener('click', function (e) {
+    if (!badge.contains(e.target) && 
+        !tooltip.contains(e.target)) {
+      hideTooltip();
+    }
+  });
+
+  // ── Close on Escape ────────────────────────
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') hideTooltip();
+  });
+
+})();
 </script>
 
 <style>

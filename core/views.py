@@ -4507,8 +4507,34 @@ def case_detail(request, tracking_id):
                 "dot_class": dot_class
             })
 
+    correction_logs = AuditLog.objects.filter(
+        Q(target_object=f"Case: {case.tracking_id}") | 
+        Q(target_object=f"Draft: {case.draft_id}"),
+        action="case_status_change",
+        details__icontains='returned_to'
+    ).order_by('created_at')
+
+    corrections = []
+    for log in correction_logs:
+        log_details = log.details or {}
+        if log_details.get("returned_to") in ["Examiner", "Receiver"]:
+            actor_name = log.actor.get_full_name().strip() if log.actor else ""
+            if not actor_name:
+                actor_name = log.actor.email.split('@')[0] if log.actor and log.actor.email else "System"
+            
+            corrections.append({
+                'returned_by': actor_name,
+                'role':        log.actor.get_role_display() if log.actor else "Staff",
+                'date':        timezone.localtime(log.created_at).strftime('%b %d, %Y %I:%M %p').replace(' 0', ' '),
+                'reason':      log_details.get("reason") or "No reason recorded.",
+            })
+
+    correction_count = len(corrections)
+
     response_context = {
         "case": case,
+        "correction_count": correction_count,
+        "corrections": corrections,
         "previous_case": previous_case,
         "child_cases": child_cases,
         "documents": list(case.documents.all()),
@@ -5100,14 +5126,23 @@ def submissions(request):
 
     all_examiners = CustomUser.objects.filter(role="capitol_examiner", is_active=True).order_by("full_name", "email")
 
-    from django.db.models import Subquery, OuterRef, Value
+    from django.db.models import Subquery, OuterRef, Value, Exists
     from django.db.models.functions import Concat
     approver_sq = AuditLog.objects.filter(
         action="case_approval",
         target_object=Concat(Value("Case: "), OuterRef("tracking_id"))
     ).order_by("-created_at").values("actor__full_name")[:1]
     
-    qs = qs.annotate(approver_name=Subquery(approver_sq))
+    correction_sq = AuditLog.objects.filter(
+        action="case_status_change",
+        target_object=Concat(Value("Case: "), OuterRef("tracking_id")),
+        details__icontains='returned_to'
+    )
+    
+    qs = qs.annotate(
+        approver_name=Subquery(approver_sq),
+        has_corrections=Exists(correction_sq)
+    )
 
     # Preserve parameters for pagination
     query = request.GET.copy()
