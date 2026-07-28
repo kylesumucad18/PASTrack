@@ -387,7 +387,7 @@
                                         <div class="doc-meta">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
                                         {% if case.returned_at and doc.uploaded_at > case.returned_at %}
                                             <div class="flagged-badge" style="margin-top: 0.5rem; font-size: 0.8rem; color: #2563eb; font-weight: 500;">
-                                                <i class="ri-check-double-line"></i> New File Uploaded
+                                                <i class="ri-check-double-line"></i> New File Uploaded{% if doc.uploaded_by %} by {{ doc.uploaded_by.get_role_display }}{% if doc.uploaded_by.last_name or doc.uploaded_by.first_name %} - {% if doc.uploaded_by.last_name %}{{ doc.uploaded_by.last_name|title }}{% endif %}{% if doc.uploaded_by.last_name and doc.uploaded_by.first_name %}, {% endif %}{% if doc.uploaded_by.first_name %}{{ doc.uploaded_by.first_name|title }}{% endif %}{% endif %}{% endif %}
                                             </div>
                                         {% endif %}
                                         <div class="doc-meta" style="margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
@@ -659,7 +659,7 @@
                                             </div>
                                         {% elif case.returned_at and doc.uploaded_at > case.returned_at %}
                                             <div class="flagged-badge" style="margin-top: 0.5rem; font-size: 0.8rem; color: #2563eb; font-weight: 500;">
-                                                <i class="ri-check-double-line"></i> New File Uploaded
+                                                <i class="ri-check-double-line"></i> New File Uploaded{% if doc.uploaded_by %} by {{ doc.uploaded_by.get_role_display }}{% if doc.uploaded_by.last_name or doc.uploaded_by.first_name %} - {% if doc.uploaded_by.last_name %}{{ doc.uploaded_by.last_name|title }}{% endif %}{% if doc.uploaded_by.last_name and doc.uploaded_by.first_name %}, {% endif %}{% if doc.uploaded_by.first_name %}{{ doc.uploaded_by.first_name|title }}{% endif %}{% endif %}{% endif %}
                                             </div>
                                         {% elif case.return_reason and not doc.reviewed_ok %}
                                             <div class="flagged-badge" style="margin-top: 0.5rem; font-size: 0.8rem; color: #b91c1c; font-weight: 500;">
@@ -862,7 +862,7 @@
                                     <div class="doc-meta">Uploaded {{ doc.uploaded_at|date:"M d, Y" }}</div>
                                     {% if case.returned_at and doc.uploaded_at > case.returned_at %}
                                         <div class="flagged-badge" style="margin-top: 0.5rem; font-size: 0.8rem; color: #2563eb; font-weight: 500;">
-                                            <i class="ri-check-double-line"></i> New File Uploaded
+                                            <i class="ri-check-double-line"></i> New File Uploaded{% if doc.uploaded_by %} by {{ doc.uploaded_by.get_role_display }}{% if doc.uploaded_by.last_name or doc.uploaded_by.first_name %} - {% if doc.uploaded_by.last_name %}{{ doc.uploaded_by.last_name|title }}{% endif %}{% if doc.uploaded_by.last_name and doc.uploaded_by.first_name %}, {% endif %}{% if doc.uploaded_by.first_name %}{{ doc.uploaded_by.first_name|title }}{% endif %}{% endif %}{% endif %}
                                         </div>
                                     {% elif case.return_reason and not doc.reviewed_ok %}
                                         <div class="flagged-badge" style="margin-top: 0.5rem; font-size: 0.8rem; color: #b91c1c; font-weight: 500;">
@@ -923,7 +923,8 @@
                                         
                                         const badge = row.querySelector('.flagged-badge');
                                         if (badge) {
-                                            badge.innerHTML = `<i class="ri-check-double-line"></i> New File Uploaded (${data.uploaded_at})`;
+                                            const roleText = data.uploaded_by_role ? ` by ${data.uploaded_by_role}` : '';
+                                            badge.innerHTML = `<i class="ri-check-double-line"></i> New File Uploaded${roleText} (${data.uploaded_at})`;
                                             badge.style.color = '#2563eb';
                                         }
                                         btnLabel.innerHTML = '<i class="ri-check-line"></i> Uploaded';

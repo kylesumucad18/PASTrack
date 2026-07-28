@@ -4423,11 +4423,26 @@ def case_detail(request, tracking_id):
     seen_case_create = False
     for log in milestone_logs:
         if log.actor:
-            actor_name = getattr(log.actor, "last_name", "")
-            if not actor_name: actor_name = getattr(log.actor, "email", "").split("@")[0]
+            last_name = getattr(log.actor, "last_name", "").title()
+            first_name = getattr(log.actor, "first_name", "").title()
+            
+            if last_name and first_name:
+                actor_name = f"{last_name}, {first_name}"
+            elif last_name:
+                actor_name = last_name
+            elif first_name:
+                actor_name = first_name
+            else:
+                actor_name = getattr(log.actor, "email", "").split("@")[0]
+
             actor_role = log.actor.get_role_display()
             if actor_role == "LGU Admin":
-                actor_role = "LGU"
+                municipality = getattr(log.actor, "lgu_municipality", "")
+                if municipality:
+                    actor_role = f"LGU {municipality}"
+                else:
+                    actor_role = "LGU"
+                    
             actor_display = f"{actor_role} - {actor_name}"
             avatar = (log.actor.email[0].upper() if log.actor.email else "U")
         else:
@@ -4469,10 +4484,8 @@ def case_detail(request, tracking_id):
             details = log.details or {}
             corrected_doc = details.get("corrected_document")
             if corrected_doc:
-                if log.actor and (log.actor.role or "").endswith("_examiner"):
-                    action_label = f"{corrected_doc}\nCorrected by Examiner"
-                elif log.actor and (log.actor.role or "").endswith("_receiving"):
-                    action_label = f"{corrected_doc}\nCorrected by Capitol Staff"
+                if log.actor and log.actor.role and log.actor.role in ["capitol_examiner", "capitol_receiving"]:
+                    action_label = f"{corrected_doc}\nCorrected by {log.actor.get_role_display()}"
                 else:
                     action_label = f"{corrected_doc}\nCorrected by Client"
                 dot_class = "success"
@@ -6423,10 +6436,27 @@ def upload_correction_document(request, tracking_id, doc_id):
         details={"corrected_document": doc.doc_type}
     )
     
+    uploaded_by_role = ""
+    if request.user:
+        role_display = request.user.get_role_display()
+        last_name = request.user.last_name.title() if request.user.last_name else ""
+        first_name = request.user.first_name.title() if request.user.first_name else ""
+        
+        name_str = ""
+        if last_name and first_name:
+            name_str = f" - {last_name}, {first_name}"
+        elif last_name:
+            name_str = f" - {last_name}"
+        elif first_name:
+            name_str = f" - {first_name}"
+            
+        uploaded_by_role = f"{role_display}{name_str}"
+
     return JsonResponse({
         "success": True, 
         "message": "File updated successfully.", 
-        "uploaded_at": doc.uploaded_at.strftime("%b %d, %Y")
+        "uploaded_at": doc.uploaded_at.strftime("%b %d, %Y"),
+        "uploaded_by_role": uploaded_by_role
     })
 
 @login_required
