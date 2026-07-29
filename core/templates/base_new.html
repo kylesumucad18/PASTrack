@@ -383,6 +383,141 @@
 </head>
 <body data-theme="{{ request.user.theme_preference|default:'light' }}">
 
+    <!-- Global Toast Notifications (Vanilla CSS for Dashboard) -->
+    {% if messages %}
+    <style>
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+        .toast-message {
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            width: 100%;
+            min-width: 320px;
+            max-width: 384px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            transform: translateX(0);
+            opacity: 1;
+            gap: 12px;
+        }
+        
+        .toast-icon-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+        .toast-icon-container i {
+            font-size: 24px;
+        }
+
+        /* Success */
+        .toast-success .toast-icon-container { background-color: #dcfce7; color: #166534; }
+        /* Error */
+        .toast-error .toast-icon-container { background-color: #fee2e2; color: #dc2626; }
+        /* Warning */
+        .toast-warning .toast-icon-container { background-color: #fef9c3; color: #ca8a04; }
+        /* Info */
+        .toast-info .toast-icon-container { background-color: #eff6ff; color: #1d4ed8; }
+
+        .toast-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .toast-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 0 0 2px 0;
+            line-height: 1.2;
+        }
+        .toast-text {
+            font-size: 13px;
+            color: #64748b;
+            margin: 0;
+            line-height: 1.4;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+            flex-shrink: 0;
+        }
+        .toast-close:hover {
+            color: #0f172a;
+        }
+        
+        .toast-message.hiding {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+    </style>
+    <div id="toast-container">
+        {% for message in messages %}
+            <div class="toast-message {% if message.tags == 'error' %}toast-error{% elif message.tags == 'success' %}toast-success{% elif message.tags == 'warning' %}toast-warning{% else %}toast-info{% endif %}" role="alert">
+                <div class="toast-icon-container">
+                    {% if message.tags == 'error' %}
+                        <i class="ri-close-circle-fill"></i>
+                    {% elif message.tags == 'success' %}
+                        <i class="ri-checkbox-circle-fill"></i>
+                    {% elif message.tags == 'warning' %}
+                        <i class="ri-error-warning-fill"></i>
+                    {% else %}
+                        <i class="ri-information-fill"></i>
+                    {% endif %}
+                </div>
+                <div class="toast-content">
+                    <h4 class="toast-title">
+                        {% if message.tags == 'error' %}Error
+                        {% elif message.tags == 'success' %}Success
+                        {% elif message.tags == 'warning' %}Warning
+                        {% else %}Notification{% endif %}
+                    </h4>
+                    <p class="toast-text">{{ message|safe }}</p>
+                </div>
+                <button type="button" class="toast-close" onclick="this.parentElement.remove();" aria-label="Close">
+                    <i class="ri-close-line" style="font-size: 20px;"></i>
+                </button>
+            </div>
+        {% endfor %}
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const toasts = document.querySelectorAll('.toast-message');
+            toasts.forEach(toast => {
+                setTimeout(() => {
+                    toast.classList.add('hiding');
+                    setTimeout(() => toast.remove(), 300);
+                }, 15000); // Disappear after 15 seconds
+            });
+        });
+    </script>
+    {% endif %}
+
     <!-- INTERACTIVE SIDEBAR -->
     <aside class="sidebar">
     <div class="brand-logo" style="display: flex; align-items: center; gap: 2px; padding: 0 ;">

@@ -11,6 +11,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
         /* Global CSS Reset for the Wizard */
@@ -24,7 +25,8 @@
             -webkit-font-smoothing: antialiased;
             height: 100vh;      /* Exactly 100% of viewport height */
             width: 100vw;       /* Exactly 100% of viewport width */
-            overflow: hidden;   /* Kills the main browser scrollbar */
+            overflow-x: hidden;
+            overflow-y: auto;
         }
         
         /* Utility Classes */
@@ -35,6 +37,50 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Global Toast Notifications -->
+    {% if messages %}
+    <div id="toast-container" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none">
+        {% for message in messages %}
+            <div class="toast-message pointer-events-auto flex items-center p-3 w-full min-w-[320px] max-w-[384px] bg-white rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] transform transition-all duration-300 translate-x-0 gap-3" role="alert">
+                <div class="flex items-center justify-center w-[42px] h-[42px] rounded-lg flex-shrink-0 {% if message.tags == 'error' %}bg-red-100 text-red-600{% elif message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-600{% else %}bg-blue-100 text-blue-700{% endif %}">
+                    {% if message.tags == 'error' %}
+                        <i class="ri-close-circle-fill text-2xl"></i>
+                    {% elif message.tags == 'success' %}
+                        <i class="ri-checkbox-circle-fill text-2xl"></i>
+                    {% elif message.tags == 'warning' %}
+                        <i class="ri-error-warning-fill text-2xl"></i>
+                    {% else %}
+                        <i class="ri-information-fill text-2xl"></i>
+                    {% endif %}
+                </div>
+                <div class="flex-grow flex flex-col">
+                    <h4 class="text-[15px] font-semibold text-slate-900 m-0 leading-tight">
+                        {% if message.tags == 'error' %}Error
+                        {% elif message.tags == 'success' %}Success
+                        {% elif message.tags == 'warning' %}Warning
+                        {% else %}Notification{% endif %}
+                    </h4>
+                    <p class="text-[13px] text-slate-500 m-0 leading-snug">{{ message|safe }}</p>
+                </div>
+                <button type="button" class="flex-shrink-0 bg-transparent text-slate-400 hover:text-slate-900 p-1 rounded-md inline-flex items-center justify-center transition-colors focus:outline-none" onclick="this.parentElement.remove();" aria-label="Close">
+                    <i class="ri-close-line text-xl"></i>
+                </button>
+            </div>
+        {% endfor %}
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const toasts = document.querySelectorAll('.toast-message');
+            toasts.forEach(toast => {
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'translate-x-full');
+                    setTimeout(() => toast.remove(), 300);
+                }, 15000); // Disappear after 15 seconds
+            });
+        });
+    </script>
+    {% endif %}
+
     {% block content %}
     {% endblock %}
 

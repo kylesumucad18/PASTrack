@@ -3692,8 +3692,9 @@ def case_wizard(request, tracking_id, step: int):
                 )
 
                 messages.success(request, "Checklist and uploads saved.")
-                if case.status in {"not_received", "in_review"} and case.lgu_submitted_at is not None:
-                    return redirect("case_detail", tracking_id=case.tracking_id)
+                if "go_back" in request.POST:
+                    return redirect("case_wizard", tracking_id=case.tracking_id, step=1)
+                
                 return redirect("case_wizard", tracking_id=case.tracking_id, step=3)
         else:
             formset = FormSet(initial=initial, form_kwargs={"doc_type_choices": doc_type_choices})
@@ -3712,7 +3713,7 @@ def case_wizard(request, tracking_id, step: int):
         })
 
     # Wizard step 3
-    if not _lgu_can_finalize(request.user, case):
+    if not _lgu_can_edit_details(request.user, case):
         messages.error(request, "This case cannot be finalized right now.")
         return redirect("case_detail", tracking_id=case.tracking_id)
 
@@ -3730,6 +3731,9 @@ def case_wizard(request, tracking_id, step: int):
         })
 
     if request.method == "POST":
+        if "go_back" in request.POST:
+            return redirect("case_wizard", tracking_id=case.tracking_id, step=2)
+            
         if case.status == "returned":
             case.status = "not_received"
             case.client_correction_deadline = None
@@ -3751,7 +3755,7 @@ def case_wizard(request, tracking_id, step: int):
             target_object=f"Case: {case.tracking_id}",
             details={"step": 3, "finalized": True}
         )
-        messages.success(request, f"Case {case.tracking_id} submitted.")
+        messages.success(request, f"Case <b>{case.tracking_id}</b> submitted.")
         return redirect("case_detail", tracking_id=case.tracking_id)
 
     return render(request, "core/submit_case.html", {
@@ -4141,7 +4145,7 @@ def draft_wizard(request, draft_id, step: int):
             target_object=f"Case: {case.tracking_id}",
             details={"step": 3, "finalized": True}
         )
-        messages.success(request, f"Case {case.tracking_id} submitted.")
+        messages.success(request, f"Case <b>{case.tracking_id}</b> submitted.")
         return redirect("case_detail", tracking_id=case.tracking_id)
 
     return render(request, "core/submit_case.html", {
@@ -4637,7 +4641,7 @@ def forward_for_approval(request, tracking_id):
         details={"old_status": old_status, "new_status": "for_approval", "note": "Examiner approved documents."}
     )
 
-    messages.success(request, f"Case {case.tracking_id} forwarded for approval.")
+    messages.success(request, f"Case <b>{case.tracking_id}</b> forwarded for approval.")
     return redirect("submissions") # Redirect to workspace since it's no longer their task
 
 @login_required
@@ -5325,7 +5329,7 @@ PAStrack Document Tracking System"""
 
 
 
-    messages.success(request, f"Case {case.tracking_id} marked as Received.")
+    messages.success(request, f"Case <b>{case.tracking_id}</b> marked as Received.")
     return redirect("case_detail", tracking_id=case.tracking_id)
 
 
@@ -5475,7 +5479,7 @@ PAStrack Document Tracking System"""
     if email_ok or sns_ok:
         messages.info(request, "Client notification sent.")
 
-    messages.success(request, f"Case {case.tracking_id} returned to client (30-day correction window).")
+    messages.success(request, f"Case <b>{case.tracking_id}</b> returned to client (30-day correction window).")
     return redirect("case_detail", tracking_id=case.tracking_id)
 
 @login_required
@@ -5526,7 +5530,7 @@ def assign_case(request, tracking_id):
             }
         )
 
-        messages.success(request, f"Case {case.tracking_id} successfully assigned to {examiner.get_full_name()}.")
+        messages.success(request, f"Case <b>{case.tracking_id}</b> successfully assigned to <b>{examiner.get_full_name()}</b>.")
         
         # After assigning, redirecting to case_detail will now show the 
         # "Assigned" status and lock the controls for the Receiver.
@@ -5578,7 +5582,7 @@ def reassign_case_examiner(request, tracking_id):
         },
     )
 
-    messages.success(request, f"Transaction {case.tracking_id} reassigned to {new_examiner.get_full_name()}.")
+    messages.success(request, f"Transaction <b>{case.tracking_id}</b> reassigned to <b>{new_examiner.get_full_name()}</b>.")
     return redirect("case_detail", tracking_id=case.tracking_id)
     
 @login_required
@@ -5617,7 +5621,7 @@ def submit_for_approval(request, tracking_id):
         details={"old_status": old_status, "new_status": case.status}
     )
 
-    messages.success(request, f"Case {case.tracking_id} sent for approval.")
+    messages.success(request, f"Case <b>{case.tracking_id}</b> sent for approval.")
     return redirect("case_detail", tracking_id=case.tracking_id)
 
 
@@ -5730,7 +5734,7 @@ PAStrack Document Tracking System"""
     )
     sns_hook(event="case_approved", payload={"tracking_id": case.tracking_id, "status": case.status})
 
-    messages.success(request, f"Case {case.tracking_id} approved.")
+    messages.success(request, f"Case <b>{case.tracking_id}</b> approved.")
     return redirect("case_detail", tracking_id=case.tracking_id)
 
 
@@ -5805,7 +5809,7 @@ def assign_numberer(request, tracking_id):
     )
     sns_hook(event="case_approved", payload={"tracking_id": case.tracking_id, "status": case.status})
 
-    messages.success(request, f"Case {case.tracking_id} approved and assigned to {numberer.get_full_name()}.")
+    messages.success(request, f"Case <b>{case.tracking_id}</b> approved and assigned to <b>{numberer.get_full_name()}</b>.")
     return redirect("case_detail", tracking_id=case.tracking_id)
 
 
@@ -5846,7 +5850,7 @@ def assign_taxmapper(request, tracking_id):
         },
     )
 
-    messages.success(request, f"Case {case.tracking_id} assigned for tax mapping.")
+    messages.success(request, f"Case <b>{case.tracking_id}</b> assigned for tax mapping.")
     return redirect("case_detail", tracking_id=case.tracking_id)
 
 
@@ -5896,7 +5900,7 @@ def complete_taxmapping(request, tracking_id):
         ),
     )
 
-    messages.success(request, f"Case {case.tracking_id} marked as taxmapped and sent to Numberer.")
+    messages.success(request, f"Case <b>{case.tracking_id}</b> marked as taxmapped and sent to Numberer.")
     return redirect("case_detail", tracking_id=case.tracking_id)
 
 
@@ -5955,7 +5959,7 @@ def return_for_correction(request, tracking_id):
         }
     )
 
-    messages.success(request, f"Case {case.tracking_id} returned to examiner for correction.")
+    messages.success(request, f"Case <b>{case.tracking_id}</b> returned to examiner for correction.")
     return redirect("case_detail", tracking_id=case.tracking_id)
 
 
@@ -6012,7 +6016,7 @@ def return_to_receiving(request, tracking_id):
         }
     )
 
-    messages.success(request, f"Case {case.tracking_id} returned to Receiving.")
+    messages.success(request, f"Case <b>{case.tracking_id}</b> returned to Receiving.")
     return redirect("case_detail", tracking_id=case.tracking_id)
 
 
@@ -6219,7 +6223,7 @@ def mark_numbered(request, tracking_id):
             ),
         )
 
-        messages.success(request, f"Transaction Number saved. Case {case.tracking_id} moved to For Release.")
+        messages.success(request, f"Transaction Number saved. Case <b>{case.tracking_id}</b> moved to For Release.")
     else:
         messages.success(request, "Transaction Number updated.")
     return redirect("case_detail", tracking_id=case.tracking_id)
@@ -6312,7 +6316,7 @@ PAStrack Document Tracking System"""
         html_message=html_message,
     )
 
-    messages.success(request, f"Case {case.tracking_id} marked as corrected and re-received.")
+    messages.success(request, f"Case <b>{case.tracking_id}</b> marked as corrected and re-received.")
     return redirect("case_detail", tracking_id=case.tracking_id)
 
 
@@ -6397,7 +6401,7 @@ def release_case(request, tracking_id):
 
     
 
-    messages.success(request, f"Case {case.tracking_id} marked as Released.")
+    messages.success(request, f"Case <b>{case.tracking_id}</b> marked as Released.")
     return redirect("case_detail", tracking_id=case.tracking_id)
 
 
@@ -6644,7 +6648,7 @@ def send_email_update(request, tracking_id):
         }
     )
 
-    messages.success(request, f"Email update sent successfully for {case.tracking_id}.")
+    messages.success(request, f"Email update sent successfully for <b>{case.tracking_id}</b>.")
     return redirect("case_detail", tracking_id=case.tracking_id)
 
 

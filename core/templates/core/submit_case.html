@@ -11,884 +11,310 @@
 
 {% block extra_css %}
 <style>
-    /* ===== WIZARD LAYOUT (No Scroll) ===== */
-    .wizard-page {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        width: 100vw;
-        overflow: hidden;
-        background-color: #f8fafc;
-    }
-
-    .wizard-inner {
-        display: flex;
-        align-items: flex-start;
-        gap: 2.5rem;
-        width: 100%;
-        max-width: 1350px;
-        padding: 0 2rem;
-    }
-
-    /* --- LEFT COLUMN: STEPPER --- */
-    .wizard-left {
-        width: 300px;
-        display: flex;
-        flex-direction: column;
-        flex-shrink: 0;
-    }
-
-    .back-link {
-        color: #94a3b8;
-        text-decoration: none;
-        font-size: 0.85rem;
-        font-weight: 500;
-        margin-bottom: 1rem;
-        display: inline-block;
-        transition: 0.2s;
-        line-height: 1.5rem;
-    }
-
-    .back-link:hover {
-        color: #1e3a8a;
-    }
-
-    .wizard-left-card {
-        background-color: #f4f7fb;
-        border-radius: 16px;
-        padding: 2.5rem 2rem;
-    }
-
-    .brand-logo {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: #0f172a;
-        margin-bottom: 2.5rem;
-    }
-
-    .stepper {
-        display: flex;
-        flex-direction: column;
-        position: relative;
-    }
-
-    .stepper::before {
-        content: '';
-        position: absolute;
-        top: 20px;
-        bottom: 40px;
-        left: 15px;
-        width: 2px;
-        background-color: #cbd5e1;
-        z-index: 0;
-    }
-
-    .step-item {
-        display: flex;
-        gap: 1rem;
-        position: relative;
-        z-index: 1;
-        padding-bottom: 2.5rem;
-    }
-
-    .step-item:last-child {
-        padding-bottom: 0;
-    }
-
-    .step-box {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 0.85rem;
-        font-weight: 700;
-        background-color: white;
-        border: 2px solid #cbd5e1;
-        color: #94a3b8;
-        transition: 0.3s;
-        flex-shrink: 0;
-    }
-
-    .step-text {
-        padding-top: 0.25rem;
-    }
-
-    .step-text h4 {
-        margin: 0 0 0.2rem 0;
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: #0f172a;
-    }
-
-    .step-text p {
-        margin: 0;
-        font-size: 0.75rem;
-        color: #64748b;
-        line-height: 1.4;
-    }
-
-    .step-item.active .step-box {
-        background-color: #1e3a8a;
-        border-color: #1e3a8a;
-        color: white;
-    }
-
-    .step-item.active .step-text h4 {
-        color: #1e3a8a;
-    }
-
-    .step-item.completed .step-box {
-        background-color: white;
-        border-color: #1e3a8a;
-        color: #1e3a8a;
-    }
-
-    .step-item.pending .step-text h4 {
-        color: #64748b;
-    }
-
-    /* --- RIGHT COLUMN: MAIN CONTENT --- */
-    .wizard-right {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        margin-top: 2.5rem;
-        height: calc(100vh - 5rem);
-        overflow-y: auto;
-        scrollbar-width: none;
-        align-items: flex-start;
-    }
-
-    .wizard-right::-webkit-scrollbar {
-        display: none;
-    }
-
-    .wizard-right-card {
-        background-color: #ffffff;
-        border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03), 0 1px 3px rgba(0, 0, 0, 0.02);
-        border: 1px solid #f1f5f9;
-        padding: 2.5rem 3rem;
-        width: 100%;
-        margin-bottom: 2rem;
-    }
-
-    /* Dynamic widths based on step */
-    .step-1-card {
-        max-width: 850px;
-    }
-
-    .step-2-card {
-        max-width: 950px;
-    }
-
-    .step-3-card {
-        max-width: 1000px;
-        padding: 3rem 4rem;
-    }
-
-    /* Wider for previewer */
-
-    .card-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #0f172a;
-        margin-top: 0;
-        margin-bottom: 1.5rem;
-    }
-
-    /* Shared Forms & Buttons */
-    .form-actions {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 1rem;
-        margin-top: 2rem;
-    }
-
-    .btn {
-        padding: 0.65rem 1.5rem;
-        border-radius: 8px;
-        font-size: 0.9rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease-in-out;
-        border: none;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .btn-primary {
-        background-color: #2563eb;
-        color: white;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    }
-
-    .btn-primary:hover {
-        background-color: #1d4ed8;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-    }
-    
-    .btn-primary:active {
-        transform: translateY(0);
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    }
-
-    .btn-outline {
-        background-color: white;
-        color: #334155;
-        border: 1px solid #cbd5e1 !important;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-    }
-
-    .btn-outline:hover {
-        background-color: #f8fafc;
-        border-color: #94a3b8 !important;
-        color: #0f172a;
-    }
-    
-    .btn-outline:active {
-        background-color: #f1f5f9;
-    }
-
-    .btn-text {
-        background: transparent;
-        color: #64748b;
-        padding: 0.65rem 1rem;
-        text-decoration: none !important;
-        border-radius: 8px;
-    }
-
-    .btn-text:hover {
-        color: #0f172a;
-        background-color: #f1f5f9;
-    }
-
-    .error-msg {
-        font-size: 0.75rem;
-        color: #dc2626;
-        margin-top: 0.2rem;
-        display: block;
-    }
-
-    .alert-error {
-        background: #fee2e2;
-        color: #991b1b;
-        padding: 0.75rem;
-        border-radius: 8px;
-        margin-bottom: 1.5rem;
-        font-size: 0.85rem;
-    }
-
-    /* ===== STEP 1 CSS ===== */
-    .form-grid {
-        display: grid;
-        grid-template-columns: repeat(12, 1fr);
-        gap: 1.25rem 1rem;
-    }
-
-    .col-4 {
-        grid-column: span 4;
-    }
-
-    .col-2 {
-        grid-column: span 2;
-    }
-
-    .col-6 {
-        grid-column: span 6;
-    }
-
-    .col-12 {
-        grid-column: span 12;
-    }
-
-    .form-group label {
-        display: block;
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #1e293b;
-        margin-bottom: 0.35rem;
-    }
-
-    .form-group input[type="text"],
-    .form-group input[type="email"],
-    .form-group input[type="number"],
-    .form-group select {
-        width: 100%;
-        padding: 0.6rem 1rem;
-        border: 1px solid #cbd5e1;
-        border-radius: 8px;
-        font-size: 0.875rem;
-        color: #0f172a;
-        outline: none;
-        transition: 0.2s;
-        background-color: #ffffff;
-    }
-
-    .form-group input:focus,
-    .form-group select:focus {
-        border-color: #1e3a8a;
-        box-shadow: 0 0 0 3px #eff6ff;
-    }
-
-    .form-group select {
-        appearance: none;
-        background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-        background-repeat: no-repeat;
-        background-position: right 1rem top 50%;
-        background-size: 0.65rem auto;
-    }
-
-    .input-prefix-wrapper {
-        position: relative;
-        display: flex;
-        align-items: center;
-    }
-
-    .prefix-text {
-        position: absolute;
-        left: 1rem;
-        color: #64748b;
-        font-size: 0.875rem;
-        pointer-events: none;
-    }
-
-    .input-prefix-wrapper input {
-        padding-left: 3rem !important;
-    }
-
-    /* ===== STEP 2 CSS ===== */
-    .doc-list {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .doc-row {
-        border-bottom: 1px solid #f1f5f9;
-        padding: 1.25rem 0;
-        transition: all 0.3s ease;
-    }
-
-    .doc-row:last-child {
-        border-bottom: none;
-    }
-
-    .view-pending,
-    .view-dropzone,
-    .view-completed {
-        display: none;
-    }
-
-    .state-pending .view-pending {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .state-dropzone .view-dropzone {
-        display: block;
-        animation: slideDown 0.3s ease;
-    }
-
-    .state-completed .view-completed {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .doc-label {
-        font-size: 0.9rem;
-        color: #0f172a;
-        font-weight: 500;
-        flex: 1;
-    }
-
-    .text-success {
-        color: #22c55e !important;
-    }
-
-    .btn-upload-trigger {
-        background-color: #1e3a8a;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        padding: 0.5rem 1.25rem;
-        font-size: 0.85rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: 0.2s;
-    }
-
-    .btn-upload-trigger:hover {
-        background-color: #1e40af;
-    }
-
-    .dropzone-area {
-        border: 2px dashed #cbd5e1;
-        border-radius: 12px;
-        padding: 2rem;
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        transition: 0.2s;
-        background-color: white;
-        margin-top: 0.75rem;
-    }
-
-    .dropzone-area:hover {
-        border-color: #1e3a8a;
-        background-color: #f8fafc;
-    }
-
-    .dz-icon {
-        color: #1e3a8a;
-        font-size: 1.75rem;
-        margin-right: 1rem;
-    }
-
-    .dz-text {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .dz-text strong {
-        color: #0f172a;
-        font-size: 0.9rem;
-        margin-bottom: 0.2rem;
-    }
-
-    .dz-text span {
-        color: #94a3b8;
-        font-size: 0.75rem;
-    }
-
-    .dz-btn {
-        border: 1px solid #cbd5e1;
-        color: #1e3a8a;
-        background: white;
-        border-radius: 6px;
-        padding: 0.4rem 1rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        pointer-events: none;
-    }
-
-    .dropzone-area:hover .dz-btn {
-        border-color: #1e3a8a;
-    }
-
-    .doc-filename {
-        font-size: 0.85rem;
-        color: #0f172a;
-        font-weight: 500;
-        flex: 2;
-        text-align: center;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        padding: 0 1rem;
-    }
-
-    .doc-meta {
-        font-size: 0.8rem;
-        color: #0f172a;
-        font-weight: 500;
-        text-align: right;
-        margin-right: 1.5rem;
-        flex: 1;
-    }
-
-    .doc-actions {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .icon-btn {
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        border: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        transition: 0.2s;
-    }
-
-    .edit-btn {
-        background-color: #eff6ff;
-        color: #3b82f6;
-    }
-
-    .edit-btn:hover {
-        background-color: #dbeafe;
-    }
-
-    .delete-btn {
-        background-color: #fee2e2;
-        color: #ef4444;
-    }
-
-    .delete-btn:hover {
-        background-color: #fecaca;
-    }
-
-    .btn-add-custom {
-        background: transparent;
-        border: none;
-        color: #94a3b8;
-        font-size: 0.9rem;
-        font-weight: 500;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        cursor: pointer;
-        margin-top: 1rem;
-        padding: 0.5rem 0;
-    }
-
-    .btn-add-custom:hover {
-        color: #0f172a;
-    }
-
-    .custom-doc-input {
-        width: 100%;
-        max-width: 300px;
-        padding: 0.5rem;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-        font-size: 0.85rem;
-        margin-top: 0.5rem;
-        outline: none;
-    }
-
-    .custom-doc-input:focus {
-        border-color: #1e3a8a;
-    }
-
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    /* ===== STEP 3 CSS (NEW REVIEW DESIGN) ===== */
-    .summary-header {
-        text-align: center;
-        border-bottom: 1px solid #e2e8f0;
-        padding-bottom: 1.5rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .summary-id {
-        color: #1e3a8a;
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin: 0 0 0.25rem 0;
-        letter-spacing: 0.02em;
-    }
-
-    .summary-type {
-        color: #0f172a;
-        font-weight: 600;
-        font-size: 1rem;
-    }
-
-    .summary-list {
-        display: flex;
-        flex-direction: column;
-        margin-bottom: 3rem;
-    }
-
-    .summary-row {
-        display: flex;
-        padding: 1rem 0;
-        border-bottom: 1px solid #f1f5f9;
-    }
-
-    .summary-label {
-        width: 35%;
-        color: #64748b;
-        font-size: 0.875rem;
-        font-weight: 500;
-    }
-
-    .summary-value {
-        flex: 1;
-        color: #0f172a;
-        font-size: 0.875rem;
-    }
-
-    /* Split Document Viewer */
-    .preview-container {
-        display: flex;
-        gap: 2rem;
-        align-items: stretch;
-        height: 500px;
-    }
-
-    .preview-sidebar {
-        width: 280px;
-        display: flex;
-        flex-direction: column;
-        overflow-y: auto;
-        border-right: 1px solid #e2e8f0;
-        padding-right: 1rem;
-    }
-
-    .preview-tab {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 0.5rem;
-        border-bottom: 1px solid #f1f5f9;
-        cursor: pointer;
-        transition: 0.2s;
-    }
-
-    .preview-tab:hover {
-        background-color: #f8fafc;
-    }
-
-    .tab-name {
-        font-size: 0.85rem;
-        color: #0f172a;
-        font-weight: 500;
-    }
-
-    .tab-action {
-        font-size: 0.75rem;
-        color: #94a3b8;
-    }
-
-    /* Active Tab State */
-    .preview-tab.active .tab-name {
-        color: #3b82f6;
-    }
-
-    /* Highlight Blue */
-    .preview-tab.active .tab-action {
-        display: none;
-    }
-
-    /* Hide the word 'Preview' when active */
-
-    .preview-viewer {
-        flex: 1;
-        background-color: #737373;
-        border-radius: 8px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        overflow: hidden;
-        position: relative;
-        border: 1px solid #475569;
-    }
-
-    .preview-iframe {
-        width: 100%;
-        height: 100%;
-        border: none;
-        background: white;
-    }
-
-    .preview-empty {
-        color: #cbd5e1;
-        font-size: 0.9rem;
-        text-align: center;
-    }
-
-    /* ===== RESPONSIVE FIXES ===== */
-    @media (max-width: 1023px) {
-        .wizard-page {
-            display: block;
-            overflow-y: auto;
-            height: 100vh;
-        }
-
-        .wizard-inner {
-            flex-direction: column;
-            gap: 1rem;
-            padding: 1rem;
-            align-items: stretch;
-        }
-
-        .wizard-left {
-            width: 100%;
-            margin-bottom: 0;
-        }
-
-        .wizard-left-card {
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .stepper {
-            flex-direction: row;
-            gap: 1rem;
-            overflow-x: auto;
-            padding-bottom: 0.5rem;
-        }
-
-        .stepper::before {
-            display: none;
-        }
-
-        .step-item {
-            padding-bottom: 0;
-            white-space: nowrap;
-        }
-
-        .step-text {
-            display: none;
-        }
-
-        /* Hide text on mobile to save space */
-        .wizard-right {
-            margin-top: 0;
-            height: auto;
-            overflow: visible;
-            width: 100%;
-        }
-
-        .wizard-right-card {
-            padding: 1.5rem;
-            max-width: 100% !important;
-            margin-bottom: 1rem;
-        }
-
-        .form-grid {
-            grid-template-columns: 1fr;
-            gap: 1rem;
-        }
-
-        .col-2,
-        .col-4,
-        .col-6,
-        .col-12 {
-            grid-column: span 1;
-        }
-
-        .preview-container {
-            flex-direction: column;
-            height: auto;
-        }
-
-        .preview-sidebar {
-            width: 100%;
-            border-right: none;
-            border-bottom: 1px solid #e2e8f0;
-            padding-right: 0;
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
-            max-height: 200px;
-        }
-
-        .preview-viewer {
-            height: 400px;
-            width: 100%;
-        }
-
-        .doc-actions {
-            flex-direction: column;
-        }
-
-        .view-completed {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
-        }
-
-        .doc-filename {
-            text-align: left;
-            padding: 0;
-        }
-
-        .doc-meta {
-            text-align: left;
-            margin: 0;
-        }
-    }
+/* New Wizard Progress CSS */
+.step-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #94a3b8;
+}
+.step-indicator.active {
+    color: #4f46e5;
+}
+.step-indicator.done {
+    color: #94a3b8;
+}
+.step-number {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+.step-indicator.active .step-number {
+    background: #4f46e5;
+    color: #fff;
+    box-shadow: 0 0 0 3px rgba(79,70,229,0.15);
+}
+.step-indicator.done .step-number {
+    background: #a5b4fc;
+    color: #fff;
+}
+
+/* Input Form Styling */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+select,
+textarea {
+    width: 100%;
+    height: 38px !important;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 12px !important;
+    font-size: 13.5px !important;
+    line-height: 1.5 !important;
+    color: #1e293b;
+    background: #f8fafc;
+    outline: none;
+    transition: border-color 0.15s, 
+                box-shadow 0.15s,
+                background 0.15s;
+}
+textarea {
+    height: auto;
+    min-height: 80px;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: #6366f1;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+}
+input::placeholder, textarea::placeholder {
+    color: #cbd5e1;
+}
+label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 5px;
+}
+.form-group {
+    margin-bottom: 20px;
+}
+.error-msg {
+    font-size: 0.75rem;
+    color: #dc2626;
+    margin-top: 0.2rem;
+    display: block;
+}
+.alert-error {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+}
+
+/* Phone Number Prefix Wrapper */
+.input-prefix-wrapper {
+    display: flex;
+    align-items: center;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    overflow: hidden;
+}
+.input-prefix-wrapper:focus-within {
+    border-color: #6366f1;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+}
+.prefix-text {
+    padding: 8px 12px;
+    color: #64748b;
+    font-size: 13.5px;
+    font-weight: 500;
+    border-right: 1.5px solid #e2e8f0;
+    background: #f1f5f9;
+}
+.input-prefix-wrapper input {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding-left: 12px;
+}
+.input-prefix-wrapper input:focus {
+    box-shadow: none !important;
+    border: none !important;
+}
+
+/* Step 2 Document Upload Card Styling */
+.doc-upload-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    background: #fff;
+    transition: border-color 0.15s;
+}
+.doc-upload-card.uploaded {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+}
+.doc-upload-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.doc-upload-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #64748b;
+    flex-shrink: 0;
+}
+.doc-upload-card.uploaded .doc-upload-icon {
+    background: #dcfce7;
+    color: #16a34a;
+}
+.doc-upload-name {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #1e293b;
+}
+.doc-upload-filename {
+    display: block;
+    font-size: 11px;
+    color: #16a34a;
+    margin-top: 2px;
+}
+.doc-upload-hint {
+    display: block;
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 2px;
+}
+.doc-upload-btn {
+    background: #4f46e5;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 7px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+    border: none;
+}
+.doc-upload-btn:hover {
+    background: #4338ca;
+}
+
+/* Misc old classes that might be needed by JS */
+.view-pending, .view-dropzone, .view-completed { display: none; }
+.state-pending .view-pending { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+.state-dropzone .view-dropzone { display: block; width: 100%; }
+.state-completed .view-completed { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+
+.icon-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s;
+    background: transparent;
+}
+.icon-btn:hover { background-color: #f1f5f9; }
+.delete-btn { color: #ef4444; }
+.rename-btn { color: #3b82f6; }
+
+/* Grid for Step 1 */
+.form-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 1.25rem 1rem; }
+.col-2 { grid-column: span 2; }
+.col-4 { grid-column: span 4; }
+.col-6 { grid-column: span 6; }
+.col-12 { grid-column: span 12; }
+@media (max-width: 1023px) {
+    .col-2, .col-4, .col-6, .col-12 { grid-column: span 12; }
+}
+
+/* Modal Animations */
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="wizard-page">
-    <div class="wizard-inner">
+<div class="min-h-screen bg-white flex flex-col">
 
-        <!-- ===== LEFT SIDEBAR: STEPPER ===== -->
-        <div class="wizard-left">
-            <a href="{% url 'dashboard' %}" class="back-link">Back to Dashboard</a>
-            <div class="wizard-left-card">
-                <div class="brand-logo" style="display: flex; align-items: center; gap: 2px; padding: 0 ;">
-                    <img src="{% static 'core/logo.png' %}" alt="Logo"
-                        style="width: 54px; height: 54px; object-fit: contain;">
-                    PAStrack
-                </div>
+  <!-- Top of page, full width -->
+  <div class="w-full relative">
+    <a href="{% url 'dashboard' %}" class="text-xs text-gray-400 hover:text-gray-600 absolute top-6 left-6">&#8592; Back to Dashboard</a>
+    
+    <!-- Top-Center Logo -->
+    <div class="flex justify-center pt-8">
+        <img src="{% static 'core/PASTrack-logo.png' %}" alt="PASTrack Logo" class="h-10 object-contain">
+    </div>
 
-                <div class="stepper">
-                    <div
-                        class="step-item {% if step == 1 %}active{% elif step > 1 %}completed{% else %}pending{% endif %}">
-                        <div class="step-box">{% if step > 1 %}<i class="ri-check-line"></i>{% else %}1{% endif %}</div>
-                        <div class="step-text">
-                            <h4>Client Information</h4>
-                            <p>Complete client metadata and required fields.</p>
-                        </div>
-                    </div>
+    <!-- Step Labels -->
+    <div class="flex justify-center gap-12 py-4 mt-2">
+      <div class="step-indicator {% if step == 1 %}active{% elif step > 1 %}done{% else %}inactive{% endif %}">
+        <span class="step-number">1</span>
+        <span class="step-label">General Information</span>
+      </div>
+      <div class="step-indicator {% if step == 2 %}active{% elif step > 2 %}done{% else %}inactive{% endif %}">
+        <span class="step-number">2</span>
+        <span class="step-label">Checklist & Attachments</span>
+      </div>
+      <div class="step-indicator {% if step == 3 %}active{% else %}inactive{% endif %}">
+        <span class="step-number">3</span>
+        <span class="step-label">Review & Submit</span>
+      </div>
+    </div>
 
-                    <div
-                        class="step-item {% if step == 2 %}active{% elif step > 2 %}completed{% else %}pending{% endif %}">
-                        <div class="step-box">{% if step > 2 %}<i class="ri-check-line"></i>{% else %}2{% endif %}</div>
-                        <div class="step-text">
-                            <h4>Checklist and Attachments</h4>
-                            <p>Upload supporting documents.</p>
-                        </div>
-                    </div>
+    <!-- Progress Bar -->
+    <div class="w-full h-0.5 bg-gray-100">
+      <div class="h-0.5 bg-indigo-600 transition-all duration-500"
+           style="width: {% if step == 1 %}33%{% elif step == 2 %}66%{% else %}100%{% endif %}">
+      </div>
+    </div>
+  </div>
 
-                    <div class="step-item {% if step == 3 %}active{% else %}pending{% endif %}">
-                        <div class="step-box">3</div>
-                        <div class="step-text">
-                            <h4>Review</h4>
-                            <p>Review details before submission.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+  <!-- Centered content -->
+  <div class="flex-1 flex flex-col items-center justify-start pt-12 pb-16 px-4">
+    <div class="w-full max-w-3xl">
 
-        <!-- ===== RIGHT COLUMN: MAIN CONTENT ===== -->
-        <div class="wizard-right">
+      <!-- Step heading -->
+      <div class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-900 tracking-tight mb-2">
+          {% if step == 1 %}
+            Let's set up the case
+          {% elif step == 2 %}
+            Upload required documents
+          {% else %}
+            Review before submitting
+          {% endif %}
+        </h1>
+        <p class="text-sm text-gray-400">
+          {% if step == 1 %}
+            Fill in the client details and property information accurately.
+          {% elif step == 2 %}
+            Upload all supporting documents for this transaction type.
+          {% else %}
+            Confirm all details are correct before final submission.
+          {% endif %}
+        </p>
+      </div>
 
-            <!-- ==============================
-                 STEP 1: CLIENT INFORMATION
-                 ============================== -->
-            {% if step == 1 %}
-            <div class="wizard-right-card step-1-card">
-                <h2 class="card-title">Client Information</h2>
-
-                {% if form.non_field_errors %}
-                <div class="alert-error">{{ form.non_field_errors }}</div>
-                {% endif %}
-
-                <form method="post" enctype="multipart/form-data">
+      {% if step == 1 %}
+      
+            <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="form-grid">
                         <!-- Ownership Type -->
@@ -1125,16 +551,21 @@
                         </div> {% endcomment %}
                     </div>
 
-                    <div class="form-actions" style="justify-content: space-between;">
-                        <div style="display: flex; gap: 1rem; align-items: center;">
-                            <a href="{% url 'dashboard' %}" class="btn-text">Cancel</a>
-                            <button type="submit" id="btn-draft-step1" name="save_draft" value="1" class="btn btn-outline"
-                                style="border: 1px solid var(--border);" formnovalidate>Save as Draft</button>
-                        </div>
-                        <button type="submit" name="save_continue" value="1" class="btn btn-primary">Continue</button>
-                    </div>
                     
-                    <!-- Minimalistic Validation Modal for Step 1 Draft -->
+        
+      <!-- Navigation buttons for Step 1 -->
+      <div class="flex items-center justify-between mt-10 pt-6 border-t border-gray-100">
+        <div class="flex gap-4">
+          {% if not case or case.status == 'draft' %}
+          <button type="submit" id="btn-draft-step1" name="save_draft" value="1" class="text-sm font-semibold text-gray-600 bg-white border border-gray-200 px-6 py-2.5 rounded-lg hover:bg-gray-50 transition-colors" formnovalidate>Save as Draft</button>
+          {% endif %}
+        </div>
+        <button type="submit" name="save_continue" value="1" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+          Next Step &#8594;
+        </button>
+      </div>
+      
+      <!-- Minimalistic Validation Modal for Step 1 Draft -->
                     <div id="step1DraftModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:9999; justify-content:center; align-items:center;">
                         <div style="background:white; border-radius:12px; padding:1.5rem; width:340px; box-shadow:0 10px 40px rgba(0,0,0,0.15); text-align: center; animation: slideDown 0.2s ease;">
                             <i class="ri-error-warning-line" style="font-size: 2.5rem; color: #f59e0b; margin-bottom: 0.25rem; display: block;"></i>
@@ -1188,336 +619,240 @@
                                 </button>
                             </div>
                         </div>
-                    </div>
-                </form>
+                    
             </div>
 
             <!-- ==============================
                  STEP 2: CHECKLIST & ATTACHMENTS
                  ============================== -->
-            {% elif step == 2 %}
-            <div class="wizard-right-card step-2-card">
-                <h2 class="card-title" style="margin-bottom: 0.2rem;">Checklist and Attachments</h2>
-                <p style="color: #64748b; font-size: 0.9rem; margin-top: 0; margin-bottom: 2.5rem;">
-                    Upload the required documents for your <span style="color: #1e3a8a; font-weight: 600;">{{ case.get_case_type_display|default:"transaction" }}</span> request.
-                    <a href="{% url 'draft_wizard' case.draft_id 1 %}"
-                        style="color: #94a3b8; text-decoration: none; margin-left: 0.2rem;">Change</a>
-                </p>
+            
+      </form>
+      
+      {% elif step == 2 %}
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ formset.management_form }}
 
-                <form method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    {{ formset.management_form }}
+        {% if formset.non_form_errors %}
+        <div class="alert-error">{{ formset.non_form_errors }}</div>
+        {% endif %}
 
-                    {% if formset.non_form_errors %}
-                    <div class="alert-error">{{ formset.non_form_errors }}</div>
-                    {% endif %}
+        <div class="doc-list">
+            {% for row in rows %}
+            <div class="doc-upload-card doc-row {% if row.doc and row.doc.file %}uploaded state-completed{% else %}state-pending{% endif %}"
+                id="row-{{ forloop.counter0 }}" data-is-custom="{{ row.is_custom|yesno:'true,false' }}">
 
-                    <div class="doc-list">
-                        {% for row in rows %}
-                        <div class="doc-row {% if row.doc and row.doc.file %}state-completed{% else %}state-pending{% endif %}"
-                            id="row-{{ forloop.counter0 }}" data-is-custom="{{ row.is_custom|yesno:'true,false' }}">
+                <div style="display: none;">
+                    {{ row.form.doc_type }}
+                    {{ row.form.custom_doc_type }}
+                    {{ row.form.old_doc_type }}
+                    {{ row.form.file }}
+                    {{ row.form.is_deleted }}
+                </div>
 
-                            <div style="display: none;">
-                                {{ row.form.doc_type }}
-                                {{ row.form.custom_doc_type }}
-                                {{ row.form.old_doc_type }}
-                                {{ row.form.file }}
-                                {{ row.form.is_deleted }}
-                            </div>
-
-                            <!-- STATE A: PENDING -->
-                            <div class="view-pending">
-                                <div class="doc-label">
-                                    <span class="custom-name-display" style="{% if not row.is_custom %}display: none;{% endif %}; color: #94a3b8; font-style: italic;">{{ row.form.custom_doc_type.value|default:row.doc_type|default:"Custom Document" }}</span>
-                                    <span class="standard-name-display" style="{% if row.is_custom %}display: none;{% endif %}">{{ row.doc_type }}</span>
-                                </div>
-                                <button type="button" class="btn-upload-trigger"
-                                    onclick="openDropzone('row-{{ forloop.counter0 }}')"><i class="ri-add-line"></i>
-                                    Upload</button>
-                            </div>
-
-                            <!-- STATE B: DROPZONE -->
-                            <div class="view-dropzone">
-                                <div class="doc-label">
-                                    <span class="custom-name-display" style="{% if not row.is_custom %}display: none;{% endif %}">{{ row.form.custom_doc_type.value|default:row.doc_type|default:"Custom Document" }}</span>
-                                    <span class="standard-name-display" style="{% if row.is_custom %}display: none;{% endif %}">{{ row.doc_type }}</span>
-                                </div>
-                                <label class="dropzone-area" for="{{ row.form.file.id_for_label }}">
-                                    <div class="dz-icon"><i class="ri-cloud-upload-line"></i></div>
-                                    <div class="dz-text">
-                                        <strong>Select a file or drag and drop here</strong>
-                                        <span>JPG, PNG, WORD or PDF, file size no more than 25MB</span>
-                                    </div>
-                                    <div class="dz-btn">SELECT FILE</div>
-                                </label>
-                            </div>
-
-                            <!-- STATE C: COMPLETED -->
-                            <div class="view-completed">
-                                <div class="doc-label text-success">
-                                    <span class="custom-name-display" style="{% if not row.is_custom %}display: none;{% endif %}">{{ row.form.custom_doc_type.value|default:row.doc_type|default:"Custom Document" }}</span>
-                                    <span class="standard-name-display" style="{% if row.is_custom %}display: none;{% endif %}">{{ row.doc_type }}</span>
-                                </div>
-                                <div class="doc-filename" id="filename-{{ forloop.counter0 }}" title="{% if row.doc and row.doc.file %}{{ row.filename|default:row.doc.file.name|cut:'cases/' }}{% endif %}">
-                                    {% if row.doc and row.doc.file %}{{ row.filename|default:row.doc.file.name|cut:"cases/" }}{% endif %}
-                                </div>
-                                <div class="doc-meta" id="filemeta-{{ forloop.counter0 }}">
-                                    {% if row.doc and row.doc.file %}{{ row.doc.uploaded_at|date:"Y-m-d g:i A" }}{% else %}Ready to save{% endif %}
-                                </div>
-                                <div class="doc-actions">
-                                    <button type="button" class="icon-btn rename-btn" style="{% if not row.is_custom %}display: none;{% endif %}" onclick="renameCustomDoc('row-{{ forloop.counter0 }}')" title="Rename Document"><i class="ri-edit-line"></i></button>
-                                    <button type="button" class="icon-btn edit-btn"
-                                        onclick="document.getElementById('{{ row.form.file.id_for_label }}').click();" title="Replace File"><i
-                                            class="ri-pencil-fill"></i></button>
-                                    {% if row.doc_type != 'Legacy Document Scan' %}
-                                    <button type="button" class="icon-btn delete-btn"
-                                        onclick="confirmDeleteDoc('row-{{ forloop.counter0 }}', '{{ row.form.file.id_for_label }}')" title="Remove"><i
-                                            class="ri-delete-bin-fill"></i></button>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {% if row.form.file.errors %}<span class="error-msg" style="margin-top: 0.5rem;">{{ row.form.file.errors.0 }}</span>{% endif %}
-                        </div>
-                        {% endfor %}
-                    </div>
-
-                    <div id="custom-add-container" class="doc-row" style="border-bottom: none; padding-top: 1.5rem;">
-                        <div id="btn-show-custom-input" style="display: flex; justify-content: flex-start; align-items: center; width: 100%;">
-                            <button type="button" onclick="this.parentElement.style.display='none'; document.getElementById('custom-input-wrapper').style.display='flex'; document.getElementById('custom_attachment_name').focus();" style="background: transparent; color: #1e3a8a; border: none; font-weight: 600; padding: 0.5rem 0; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; font-size: 0.95rem;">
-                                <i class="ri-add-line"></i> Add Document
-                            </button>
-                        </div>
-                        
-                        <div id="custom-input-wrapper" style="display: none; justify-content: space-between; align-items: center; width: 100%;">
-                            <div class="doc-label" style="display: flex; align-items: center;">
-                                <input type="text" id="custom_attachment_name" placeholder="Name of the Attachment" style="padding: 0.6rem 0.8rem; border: 2px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-size: 0.9rem; min-width: 320px; outline: none; transition: 0.2s;" onfocus="this.style.borderColor='#1e3a8a'" onblur="this.style.borderColor='#cbd5e1'" />
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                <button type="button" class="btn-upload-trigger" onclick="triggerCustomUpload()">
-                                    <i class="ri-upload-cloud-2-line"></i> Upload
-                                </button>
-                                <button type="button" onclick="cancelCustomAdd()" title="Cancel" style="background: #f1f5f9; color: #0f172a; border: none; width: 36px; height: 36px; border-radius: 6px; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; transition: 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
-                                    <i class="ri-close-line"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-actions" style="margin-top: 3rem; justify-content: space-between;">
-                        <div style="display: flex; gap: 1rem; align-items: center;">
-                            <button type="submit" name="go_back" value="1" class="btn-text"
-                                style="padding-left:0; border:none; background:none; cursor:pointer;">Back</button>
-                            <button type="submit" name="save_draft" value="1" class="btn btn-outline"
-                                style="border: 1px solid var(--border);">Save as Draft</button>
-                        </div>
-                        <button type="submit" class="btn btn-primary" id="btn-continue-step2">Continue</button>
-                    </div>
-
-                    <!-- Minimalistic Validation Modal for Step 2 Uploads -->
-                    <div id="noUploadsModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:9999; justify-content:center; align-items:center;">
-                        <div style="background:white; border-radius:12px; padding:1.5rem; width:340px; box-shadow:0 10px 40px rgba(0,0,0,0.15); text-align: center; animation: slideDown 0.2s ease;">
-                            <i class="ri-error-warning-line" style="font-size: 2.5rem; color: #f59e0b; margin-bottom: 0.25rem; display: block;"></i>
-                            <h3 style="margin:0 0 0.5rem 0; font-size:1.1rem; color:#0f172a;">Upload Required</h3>
-                            <p style="margin:0 0 1.25rem 0; font-size:0.9rem; color:#64748b;">
-                                Please upload at least 1 document to proceed to Step 3.
-                            </p>
-                            <button type="button" onclick="document.getElementById('noUploadsModal').style.display='none';"
-                                style="width:100%; padding:0.6rem; border-radius:6px; background:#3b82f6; color:white; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; transition: 0.2s;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
-                                Okay
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Minimalistic Validation Modal -->
-                    <div id="nameRequiredModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:9999; justify-content:center; align-items:center;">
-                        <div style="background:white; border-radius:12px; padding:1.5rem; width:340px; box-shadow:0 10px 40px rgba(0,0,0,0.15); text-align: center; animation: slideDown 0.2s ease;">
-                            <i class="ri-information-line" style="font-size: 2.5rem; color: #3b82f6; margin-bottom: 0.25rem; display: block;"></i>
-                            <h3 style="margin:0 0 0.5rem 0; font-size:1.1rem; color:#0f172a;">Name Required</h3>
-                            <p style="margin:0 0 1.25rem 0; font-size:0.9rem; color:#64748b;">
-                                Please specify the name of the attachment before uploading.
-                            </p>
-                            <button type="button" onclick="document.getElementById('nameRequiredModal').style.display='none'; document.getElementById('custom_attachment_name').focus();"
-                                style="width:100%; padding:0.6rem; border-radius:6px; background:#3b82f6; color:white; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; transition: 0.2s;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
-                                Okay
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Minimalistic Rename Modal -->
-                    <div id="renameDocModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:9999; justify-content:center; align-items:center;">
-                        <div style="background:white; border-radius:12px; padding:1.5rem; width:340px; box-shadow:0 10px 40px rgba(0,0,0,0.15); text-align: center; animation: slideDown 0.2s ease;">
-                            <i class="ri-edit-line" style="font-size: 2.5rem; color: #3b82f6; margin-bottom: 0.25rem; display: block;"></i>
-                            <h3 style="margin:0 0 0.5rem 0; font-size:1.1rem; color:#0f172a;">Rename Document</h3>
-                            <p style="margin:0 0 1.25rem 0; font-size:0.9rem; color:#64748b;">
-                                Enter a new name for this document.
-                            </p>
-                            <input type="text" id="rename_attachment_name" class="form-input" style="width: 100%; margin-bottom: 1.25rem; text-align: center;" placeholder="Document Name" onkeypress="if(event.key === 'Enter'){ submitRename(); event.preventDefault(); }">
-                            <input type="hidden" id="rename_target_row">
-                            <div style="display: flex; gap: 0.5rem;">
-                                <button type="button" onclick="document.getElementById('renameDocModal').style.display='none';"
-                                    style="flex: 1; padding:0.6rem; border-radius:6px; background:#f1f5f9; color:#0f172a; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; transition: 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
-                                    Cancel
-                                </button>
-                                <button type="button" onclick="submitRename()"
-                                    style="flex: 1; padding:0.6rem; border-radius:6px; background:#3b82f6; color:white; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; transition: 0.2s;" onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
-                                    Save
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Minimalistic Delete Modal -->
-                    <div id="deleteDocModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.3); z-index:9999; justify-content:center; align-items:center;">
-                        <div style="background:white; border-radius:12px; padding:1.5rem; width:340px; box-shadow:0 10px 40px rgba(0,0,0,0.15); text-align: center; animation: slideDown 0.2s ease;">
-                            <i class="ri-alert-line" style="font-size: 2.5rem; color: #ef4444; margin-bottom: 0.25rem; display: block;"></i>
-                            <h3 style="margin:0 0 0.5rem 0; font-size:1.1rem; color:#0f172a;">Remove Document?</h3>
-                            <p style="margin:0 0 1.25rem 0; font-size:0.9rem; color:#64748b;">
-                                Are you sure you want to remove this document?
-                            </p>
-                            <input type="hidden" id="delete_target_row">
-                            <input type="hidden" id="delete_target_input">
-                            <div style="display: flex; gap: 0.5rem;">
-                                <button type="button" onclick="document.getElementById('deleteDocModal').style.display='none';"
-                                    style="flex: 1; padding:0.6rem; border-radius:6px; background:#f1f5f9; color:#0f172a; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; transition: 0.2s;" onmouseover="this.style.background='#e2e8f0'" onmouseout="this.style.background='#f1f5f9'">
-                                    Cancel
-                                </button>
-                                <button type="button" onclick="executeDelete()"
-                                    style="flex: 1; padding:0.6rem; border-radius:6px; background:#ef4444; color:white; border:none; font-weight:600; cursor:pointer; font-size:0.9rem; transition: 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
-                                    Remove
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <!-- ==============================
-                 STEP 3: REVIEW (NEW SPLIT DESIGN)
-                 ============================== -->
-            {% else %}
-            <div class="wizard-right-card step-3-card">
-                <h2 class="card-title">Review Submission</h2>
-
-                <!-- ID Header -->
-                <div class="summary-header">
-                    <h3 class="summary-id" style="font-style: normal; margin-bottom: 0;">
-                        {% if case.tracking_id %}
-                        {{ case.tracking_id }}
+                <div class="doc-upload-left">
+                    <div class="doc-upload-icon">
+                        {% if row.doc and row.doc.file %}
+                            <i class="ri-check-line text-lg"></i>
                         {% else %}
-                        <!-- Stylized Placeholder for Drafts -->
-                        <span style="color: #1e3a8a; font-weight: 700;">
-                            {% if case.submitted_by.role == 'lgu_admin' and case.lgu_area_code %}
-                            L{{ case.lgu_area_code }}-PAS-{% now "y" %}-
-                            {% else %}
-                            PAS-{% now "y" %}-
-                            {% endif %}
-                        </span><span style="color: #94a3b8; font-weight: 500;">XXXXXX</span>
+                            <i class="ri-file-text-line text-lg"></i>
                         {% endif %}
-                    </h3>
-                    <div class="summary-type" style="margin-top: 0.5rem;">{{ case.get_case_type_display|default:"Transaction Type" }}</div>
-                </div>
-
-                <!-- Client Info List -->
-                <div class="summary-list">
-                    <div class="summary-row">
-                        <span class="summary-label">Full Name</span>
-                        <span class="summary-value">{{ case.client_display_name }}</span>
                     </div>
-                    <div class="summary-row">
-                        <span class="summary-label">Phone Number</span>
-                        <span class="summary-value">{{ case.client_number|default:"—" }}</span>
-                    </div>
-                    <div class="summary-row">
-                        <span class="summary-label">Email</span>
-                        <span class="summary-value">{{ case.client_email|default:"—" }}</span>
-                    </div>
-                    <div class="summary-row">
-                        <span class="summary-label">LGU Origin</span>
-                        <span class="summary-value">{{ case.area|default:"—" }}</span>
-                    </div>
-                    {% if case.needs_taxmapping %}
-                    <div class="summary-row" style="border-bottom: none;">
-                        <span class="summary-label">Tax Mapping</span>
-                        <span class="summary-value" style="color: #ea580c; font-weight: 600;">Required</span>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <h4 style="font-size: 1rem; color: #0f172a; margin: 0 0 1rem 0;">Checklist and Attachments</h4>
-
-                <!-- Interactive Split Document Viewer -->
-                <div class="preview-container">
-
-                    <!-- Left Tab List -->
-                    <div class="preview-sidebar" id="doc-tabs">
-                        {% for doc in documents %}
-                        <div class="preview-tab {% if forloop.first %}active{% endif %}"
-                            data-url="{% url 'download_case_document' doc.id %}"
-                            onclick="changePreview(this, this.getAttribute('data-url'))">
-                            <div class="tab-name">{{ doc.doc_type }}</div>
-                            <div class="tab-action">Preview</div>
-                        </div>
-                        {% empty %}
-                        <p style="color: #64748b; font-size: 0.85rem;">No documents attached.</p>
-                        {% endfor %}
-
-                        <!-- List missing required documents for context -->
-                        {% for item in checklist %}
-                        {% if not item.uploaded %}
-                        <div class="preview-tab" style="cursor: not-allowed; opacity: 0.6;">
-                            <div class="tab-name">{{ item.doc_type }}</div>
-                            <div class="tab-action" style="color: #ef4444;">Missing</div>
-                        </div>
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-
-                    <!-- Right Viewer Frame -->
-                    <div class="preview-viewer">
-                        {% if documents %}
-                        <!-- Loads the URL of the first document initially -->
-                        <iframe id="doc-preview-frame" class="preview-iframe"
-                            src="{% url 'download_case_document' documents.0.id %}#toolbar=0"
-                            title="Document Preview"></iframe>
-                        <div id="doc-empty-state" class="preview-empty" style="display: none;">Select a document to
-                            preview</div>
+                    <div class="doc-upload-info">
+                        <span class="doc-upload-name">
+                            <span class="custom-name-display" style="{% if not row.is_custom %}display: none;{% endif %}">{{ row.form.custom_doc_type.value|default:row.doc_type|default:"Custom Document" }}</span>
+                            <span class="standard-name-display" style="{% if row.is_custom %}display: none;{% endif %}">{{ row.doc_type }}</span>
+                        </span>
+                        {% if row.doc and row.doc.file %}
+                        <span class="doc-upload-filename" id="filename-{{ forloop.counter0 }}">
+                            {{ row.filename|default:row.doc.file.name|cut:"cases/" }}
+                        </span>
                         {% else %}
-                        <div class="preview-empty"><i class="ri-file-forbid-line"
-                                style="font-size: 2rem; display:block; margin-bottom: 0.5rem;"></i> No file available
-                            for preview</div>
+                        <span class="doc-upload-hint" id="filename-{{ forloop.counter0 }}">
+                            PDF, JPG, PNG accepted (Max 25MB)
+                        </span>
                         {% endif %}
                     </div>
-
                 </div>
 
-                <form method="post" style="margin-top: 3rem;" id="step3SubmitForm">
-                    {% csrf_token %}
-                    <div class="form-actions" style="justify-content: space-between;">
-                        <a href="{% url 'draft_wizard' case.draft_id 2 %}" class="btn-text"
-                            style="padding-left:0;">Back</a>
-                        <button type="submit" class="btn btn-primary" style="background-color: #1e3a8a;">Submit</button>
-                    </div>
-                </form>
-
-                <!-- No Documents Warning Modal -->
-                <div id="noDocsModal"
-                    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
-                    <div
-                        style="background:white; border-radius:16px; padding:2rem; width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.2); border-top: 4px solid #dc2626;">
-                        <h3 style="margin:0 0 0.75rem 0; font-size:1.1rem; color:#dc2626;"><i
-                                class="ri-error-warning-line"></i> Missing Documents</h3>
-                        <p style="margin:0 0 1.5rem 0; font-size:0.9rem; color:#64748b;">
-                            Please upload at least 1 document for this transaction.
-                        </p>
-                        <button onclick="document.getElementById('noDocsModal').style.display='none';"
-                            style="width:100%; padding:0.65rem; border-radius:8px; background:#1e3a8a; color:white; border:none; font-weight:600; cursor:pointer; font-size:0.9rem;">OK,
-                            Go Back</button>
-                    </div>
+                <div class="flex items-center gap-2">
+                    {% if row.is_custom %}
+                        <button type="button" class="icon-btn rename-btn" style="{% if not row.is_custom %}display: none;{% endif %}" onclick="renameCustomDoc('row-{{ forloop.counter0 }}')" title="Rename Document"><i class="ri-edit-line"></i></button>
+                    {% endif %}
+                    {% if row.doc_type != 'Legacy Document Scan' %}
+                        <button type="button" class="icon-btn delete-btn" onclick="confirmDeleteDoc('row-{{ forloop.counter0 }}', '{{ row.form.file.id_for_label }}')" title="Remove"><i class="ri-delete-bin-fill"></i></button>
+                    {% endif %}
+                    <label class="doc-upload-btn mb-0" onclick="document.getElementById('{{ row.form.file.id_for_label }}').click();">
+                        {% if row.doc and row.doc.file %}
+                            &#8635; Replace
+                        {% else %}
+                            + Upload
+                        {% endif %}
+                    </label>
                 </div>
             </div>
-            {% endif %}
-
+            {% endfor %}
         </div>
+        
+        <div id="custom-add-container" style="padding-top: 1rem;">
+            <div id="btn-show-custom-input" style="display: flex; justify-content: flex-start; align-items: center; width: 100%;">
+                <button type="button" onclick="this.parentElement.style.display='none'; document.getElementById('custom-input-wrapper').style.display='flex'; document.getElementById('custom_attachment_name').focus();" style="background: transparent; color: #4f46e5; border: none; font-weight: 600; padding: 0.5rem 0; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; font-size: 13px;">
+                    <i class="ri-add-line"></i> Add Document
+                </button>
+            </div>
+            
+            <div id="custom-input-wrapper" style="display: none; justify-content: space-between; align-items: center; width: 100%;" class="doc-upload-card">
+                <div class="doc-upload-left w-full">
+                    <input type="text" id="custom_attachment_name" placeholder="Name of the Attachment" style="flex:1; padding: 0.6rem 0.8rem; border: 1.5px solid #e2e8f0; border-radius: 6px; font-size: 13px; outline: none;" onfocus="this.style.borderColor='#4f46e5'" onblur="this.style.borderColor='#e2e8f0'" />
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: 10px;">
+                    <button type="button" class="doc-upload-btn" onclick="triggerCustomUpload()">
+                        Upload
+                    </button>
+                    <button type="button" onclick="cancelCustomAdd()" title="Cancel" class="icon-btn" style="background: #f1f5f9; color: #0f172a;">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation buttons for Step 2 -->
+        <div class="flex items-center justify-between mt-10 pt-6 border-t border-gray-100">
+            <div class="flex gap-4">
+                <button type="submit" name="go_back" value="1" class="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors bg-transparent border-none cursor-pointer">
+                    &#8592; Back
+                </button>
+                {% if not case or case.status == 'draft' %}
+                <button type="submit" name="save_draft" value="1" class="text-sm font-semibold text-gray-600 bg-white border border-gray-200 px-6 py-2.5 rounded-lg hover:bg-gray-50 transition-colors">
+                    Save as Draft
+                </button>
+                {% endif %}
+            </div>
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2" id="btn-continue-step2">
+                Next Step &#8594;
+            </button>
+        </div>
+        
+        
+      </form>
+      
+      {% else %}
+        <!-- STEP 3 NEW DESIGN -->
+        <div class="bg-gray-50 rounded-xl border border-gray-100 p-6 mb-6 mt-4 text-left">
+            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+                Case Information
+            </h3>
+            <div class="grid grid-cols-2 gap-x-8 gap-y-4">
+                <div>
+                    <p class="text-xs text-gray-400 mb-0.5">Full Name</p>
+                    <p class="text-sm font-medium text-gray-800">{{ case.client_display_name }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-0.5">Phone Number</p>
+                    <p class="text-sm font-medium text-gray-800">{{ case.client_number|default:"—" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-0.5">Email</p>
+                    <p class="text-sm font-medium text-gray-800">{{ case.client_email|default:"—" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-0.5">LGU Origin</p>
+                    <p class="text-sm font-medium text-gray-800">{{ case.area|default:"—" }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 mb-0.5">Transaction Type</p>
+                    <p class="text-sm font-medium text-gray-800">{{ case.get_case_type_display|default:"—" }}</p>
+                </div>
+                {% if case.needs_taxmapping %}
+                <div>
+                    <p class="text-xs text-gray-400 mb-0.5">Tax Mapping</p>
+                    <p class="text-sm font-medium text-amber-600">Required</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="bg-gray-50 rounded-xl border border-gray-100 p-6 text-left">
+            <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-4">
+                Checklist & Attachments
+            </h3>
+            
+            <div class="flex flex-col md:flex-row gap-6">
+                <!-- Left side: Document List -->
+                <div class="flex-1 flex flex-col gap-2">
+                    {% for doc in documents %}
+                    <div class="uploaded-doc-item relative p-4 bg-white rounded-lg border border-gray-100 cursor-pointer hover:border-indigo-300 transition-colors" onclick="loadDocPreview(this, '{{ doc.file.url }}')">
+                        <div class="flex items-center gap-3 pr-24">
+                            <i class="ri-file-text-line text-indigo-500 text-lg flex-shrink-0"></i>
+                            <span class="text-sm text-gray-700 font-medium leading-tight">{{ doc.doc_type }}</span>
+                        </div>
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full whitespace-nowrap w-[76px] text-center inline-block">
+                            Uploaded
+                        </span>
+                    </div>
+                    {% empty %}
+                    <p class="text-sm text-gray-500 italic py-2">No documents attached.</p>
+                    {% endfor %}
+
+                    {% for item in checklist %}
+                    {% if not item.uploaded %}
+                    <div class="relative p-4 bg-white rounded-lg border border-gray-100 opacity-60">
+                        <div class="flex items-center gap-3 pr-24">
+                            <i class="ri-file-warning-line text-amber-500 text-lg flex-shrink-0"></i>
+                            <span class="text-sm text-gray-700 font-medium leading-tight">{{ item.doc_type }}</span>
+                        </div>
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded-full whitespace-nowrap w-[76px] text-center inline-block">
+                            Missing
+                        </span>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+
+                <!-- Right side: Preview Frame -->
+                <div class="w-full md:w-1/2 bg-white rounded-lg border border-gray-200 overflow-hidden relative min-h-[350px]">
+                    <iframe id="doc-preview-frame" style="display:none; width:100%; height:100%; border:none;"></iframe>
+                    <div id="doc-empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-sm text-gray-400">
+                        <i class="ri-file-search-line text-4xl mb-2 text-gray-300"></i>
+                        Select a document to preview
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post" id="step3SubmitForm">
+            {% csrf_token %}
+            <div class="flex items-center justify-between mt-10 pt-6 border-t border-gray-100">
+                <button type="submit" name="go_back" value="1" class="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700 transition-colors bg-transparent border-none cursor-pointer">
+                    &#8592; Back
+                </button>
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    Submit Case
+                </button>
+            </div>
+        </form>
+
+        <!-- No Documents Warning Modal -->
+        <div id="noDocsModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:9999; justify-content:center; align-items:center;">
+            <div style="background:white; border-radius:16px; padding:2rem; width:420px; box-shadow:0 20px 60px rgba(0,0,0,0.2); border-top: 4px solid #dc2626;">
+                <h3 style="margin:0 0 0.75rem 0; font-size:1.1rem; color:#dc2626;"><i class="ri-error-warning-line"></i> Missing Documents</h3>
+                <p style="margin:0 0 1.5rem 0; font-size:0.9rem; color:#64748b;">
+                    Please upload at least 1 document for this transaction.
+                </p>
+                <button type="button" onclick="document.getElementById('noDocsModal').style.display='none';" style="width:100%; padding:0.65rem; border-radius:8px; background:#4f46e5; color:white; border:none; font-weight:600; cursor:pointer; font-size:0.9rem;">OK, Go Back</button>
+            </div>
+        </div>
+
+        <!-- Submit Loading Modal -->
+        <div id="submitLoadingModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.7); backdrop-filter:blur(4px); z-index:9999; justify-content:center; align-items:center; flex-direction:column; gap:1rem;">
+            <div class="animate-spin rounded-full h-14 w-14 border-4 border-white border-t-transparent"></div>
+            <p class="text-white font-medium text-lg tracking-wide">Finalizing Case Submission...</p>
+        </div>
+
+      {% endif %}
+
     </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -1763,7 +1098,13 @@
                 if (isCustom) {
                     row.style.display = 'none';
                 } else {
-                    row.classList.remove('state-completed');
+                    row.classList.remove('state-completed', 'uploaded');
+                    const icon = row.querySelector('.doc-upload-icon i');
+                    if (icon) { icon.className = 'ri-file-text-line text-lg'; }
+                    const iconContainer = row.querySelector('.doc-upload-icon');
+                    if (iconContainer) { iconContainer.style.background = '#f1f5f9'; iconContainer.style.color = '#64748b'; }
+                    const uploadBtn = row.querySelector('.doc-upload-btn');
+                    if (uploadBtn) { uploadBtn.innerHTML = '+ Upload'; }
                     row.classList.add('state-pending');
                 }
             }
@@ -1796,7 +1137,13 @@
                         customLabelDisplays.forEach(d => d.textContent = customInput.value.trim());
                     }
                     row.classList.remove('state-pending', 'state-dropzone');
-                    row.classList.add('state-completed');
+                    row.classList.add('state-completed', 'uploaded');
+                    const icon = row.querySelector('.doc-upload-icon i');
+                    if (icon) { icon.className = 'ri-check-line text-lg'; }
+                    const iconContainer = row.querySelector('.doc-upload-icon');
+                    if (iconContainer) { iconContainer.style.background = '#dcfce7'; iconContainer.style.color = '#16a34a'; }
+                    const uploadBtn = row.querySelector('.doc-upload-btn');
+                    if (uploadBtn) { uploadBtn.innerHTML = '&#8635; Replace'; }
                 }
             }
         });
@@ -1900,16 +1247,34 @@
             }
         };
 
+        window.loadDocPreview = function (element, fileUrl) {
+            document.querySelectorAll('.uploaded-doc-item').forEach(function (item) {
+                item.classList.remove('border-indigo-500', 'bg-indigo-50');
+            });
+            element.classList.add('border-indigo-500', 'bg-indigo-50');
+
+            const iframe = document.getElementById('doc-preview-frame');
+            const emptyState = document.getElementById('doc-empty-state');
+
+            if (iframe && fileUrl) {
+                iframe.src = fileUrl + "#toolbar=0";
+                iframe.style.display = "block";
+                if (emptyState) emptyState.style.display = "none";
+            }
+        };
+
         // Frontend guard: block submission if no documents are attached
         const step3Form = document.getElementById('step3SubmitForm');
         if (step3Form) {
             step3Form.addEventListener('submit', function (e) {
-                // Count preview tabs that have a data-url (real uploaded documents)
-                const docTabs = document.querySelectorAll('#doc-tabs .preview-tab[data-url]');
-                if (docTabs.length === 0) {
+                const docItems = document.querySelectorAll('.uploaded-doc-item');
+                if (docItems.length === 0) {
                     e.preventDefault();
                     const modal = document.getElementById('noDocsModal');
                     if (modal) modal.style.display = 'flex';
+                } else {
+                    const loadingModal = document.getElementById('submitLoadingModal');
+                    if (loadingModal) loadingModal.style.display = 'flex';
                 }
             });
         }
